@@ -37,17 +37,32 @@ Codex or user in VS Code
   -> risky actions require explicit user approval
 ```
 
-## Initial Commands
+## Current Commands
 
-These are target commands for the first implementation pass:
+These commands work in the current fixture-driven implementation:
+
+```bash
+python -m controller.main report
+python -m controller.main report --input history/runs/<timestamp>/fleet-health.json
+python -m controller.main check
+python -m controller.main check --input history/runs/<timestamp>/fleet-health.json
+python -m controller.main actions list
+python -m controller.main collect --dry-run --inventory config/servers.example.yaml
+python -m unittest discover -s tests
+```
+
+These commands are planned for the SSH collection and action execution phases:
 
 ```bash
 python -m controller.main collect
-python -m controller.main report
-python -m controller.main check
-python -m controller.main actions list
 python -m controller.main actions run <action_id> --server <server_id>
 ```
+
+## Server Script Installation
+
+The controller does not silently install scripts on servers. For v1, install the read-only server scripts deliberately and then point `config/servers.yaml` at the installed remote path.
+
+Later, this repo can add an explicit deployment command that copies scripts over SSH, verifies paths or checksums, and requires approval before writing to a server.
 
 ## Documentation
 
@@ -56,5 +71,6 @@ python -m controller.main actions run <action_id> --server <server_id>
 - [Codex Operating Guide](docs/codex-operating-guide.md)
 - [Data Schema](docs/data-schema.md)
 - [Implementation Roadmap](docs/implementation-roadmap.md)
+- [Server Setup](docs/server-setup.md)
 - [Decision Log](docs/decision-log.md)
 - [Implementation Tracker](IMPLEMENTATION_TRACKER.md)

@@ -21,6 +21,7 @@ Codex is the analyst. The controller is the deterministic evidence collector and
 - Do not change firewall, SSH, OpenVPN, Docker, or system configuration without explicit approval.
 - Do not reboot a server without explicit approval.
 - Do not add OpenAI API integration to the controller unless the project direction changes.
+- Do not install or replace server scripts unless the user explicitly approves that deployment step.
 
 ## Normal Operating Pattern
 

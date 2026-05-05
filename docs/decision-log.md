@@ -68,3 +68,25 @@ Consequences:
 - Codex may recommend action IDs, not free-form shell commands.
 - New actions require explicit implementation and documentation.
 - Risky actions require human approval.
+
+## 0004: Server Script Installation Is Explicit
+
+Status: accepted
+
+Date: 2026-05-05
+
+Decision:
+
+The controller will not silently install or replace scripts on managed servers. The first implementation expects scripts to be installed deliberately before real collection runs.
+
+Reasoning:
+
+- Copying files to servers is a server mutation, even when the files are read-only health scripts.
+- Explicit installation keeps the first live connection safer and easier to understand.
+- Future deployment support can be added as a predefined approval-required action.
+
+Consequences:
+
+- `python -m controller.main collect` expects `remote_health_command` to already exist.
+- `collect --dry-run` should be used before a real connection.
+- A future deployment command must copy only known repository scripts and require approval before writing to a server.

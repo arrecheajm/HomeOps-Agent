@@ -108,6 +108,7 @@ HomeOps-Agent/
     codex-operating-guide.md
     data-schema.md
     implementation-roadmap.md
+    server-setup.md
     decision-log.md
 
   reports/

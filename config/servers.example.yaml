@@ -1,0 +1,37 @@
+{
+  "servers": [
+    {
+      "server_id": "openvpn-server",
+      "role": "openvpn_server",
+      "host": "openvpn-server.local",
+      "user": "homeops",
+      "port": 22,
+      "enabled": true,
+      "connect_timeout_seconds": 10,
+      "command_timeout_seconds": 30,
+      "remote_health_command": "/opt/homeops-agent/server-scripts/common/health_summary.sh"
+    },
+    {
+      "server_id": "ispy-server",
+      "role": "ispy_server",
+      "host": "ispy-server.local",
+      "user": "homeops",
+      "port": 22,
+      "enabled": true,
+      "connect_timeout_seconds": 10,
+      "command_timeout_seconds": 30,
+      "remote_health_command": "/opt/homeops-agent/server-scripts/common/health_summary.sh"
+    },
+    {
+      "server_id": "container-host",
+      "role": "container_host",
+      "host": "container-host.local",
+      "user": "homeops",
+      "port": 22,
+      "enabled": true,
+      "connect_timeout_seconds": 10,
+      "command_timeout_seconds": 30,
+      "remote_health_command": "/opt/homeops-agent/server-scripts/common/health_summary.sh"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "auto_run_low_risk_actions": false,
+  "approval_required_actions": [
+    "restart_service",
+    "restart_docker_container",
+    "apply_security_updates",
+    "reboot_server"
+  ],
+  "forbidden_action_patterns": [
+    "rm -rf",
+    "ufw",
+    "iptables",
+    "nft",
+    "firewall-cmd",
+    "sshd_config",
+    "openvpn",
+    "dockerd"
+  ],
+  "thresholds": {
+    "disk_warning_percent": 80,
+    "disk_critical_percent": 95,
+    "failed_ssh_login_warning_24h": 20,
+    "failed_ssh_login_critical_24h": 100
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-05-05T02:45:00Z",
+  "servers_checked": 3,
+  "servers_failed": 0,
+  "collection_errors": [],
+  "servers": [
+    {
+      "schema_version": "1.0",
+      "server_id": "openvpn-server",
+      "role": "openvpn_server",
+      "collected_at": "2026-05-05T02:44:30Z",
+      "hostname": "openvpn-server",
+      "os": {
+        "name": "Ubuntu",
+        "version": "24.04",
+        "kernel": "6.8.0"
+      },
+      "uptime_seconds": 216233,
+      "resources": {
+        "load_1m": 0.18,
+        "cpu_count": 2,
+        "memory_used_percent": 38.4,
+        "swap_used_percent": 0.0
+      },
+      "disk": [
+        {
+          "mount": "/",
+          "used_percent": 62,
+          "free_gb": 44.8
+        }
+      ],
+      "updates": {
+        "pending_total": 4,
+        "pending_security": 1,
+        "reboot_required": false
+      },
+      "services": [
+        {
+          "name": "ssh",
+          "state": "active",
+          "enabled": true
+        },
+        {
+          "name": "openvpn",
+          "state": "active",
+          "enabled": true
+        }
+      ],
+      "docker": {
+        "installed": false
+      },
+      "security": {
+        "failed_ssh_logins_24h": 3,
+        "successful_ssh_logins_24h": 2,
+        "last_login_summary": [
+          "admin from 192.168.1.20"
+        ]
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "server_id": "ispy-server",
+      "role": "ispy_server",
+      "collected_at": "2026-05-05T02:44:36Z",
+      "hostname": "ispy-server",
+      "os": {
+        "name": "Ubuntu",
+        "version": "24.04",
+        "kernel": "6.8.0"
+      },
+      "uptime_seconds": 452018,
+      "resources": {
+        "load_1m": 1.12,
+        "cpu_count": 4,
+        "memory_used_percent": 66.1,
+        "swap_used_percent": 2.0
+      },
+      "disk": [
+        {
+          "mount": "/",
+          "used_percent": 55,
+          "free_gb": 88.2
+        },
+        {
+          "mount": "/recordings",
+          "used_percent": 84,
+          "free_gb": 310.7
+        }
+      ],
+      "updates": {
+        "pending_total": 8,
+        "pending_security": 0,
+        "reboot_required": false
+      },
+      "services": [
+        {
+          "name": "ssh",
+          "state": "active",
+          "enabled": true
+        },
+        {
+          "name": "agent-dvr",
+          "state": "active",
+          "enabled": true
+        }
+      ],
+      "docker": {
+        "installed": false
+      },
+      "security": {
+        "failed_ssh_logins_24h": 1,
+        "successful_ssh_logins_24h": 1,
+        "last_login_summary": [
+          "admin from 192.168.1.20"
+        ]
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "server_id": "container-host",
+      "role": "container_host",
+      "collected_at": "2026-05-05T02:44:42Z",
+      "hostname": "container-host",
+      "os": {
+        "name": "Ubuntu",
+        "version": "24.04",
+        "kernel": "6.8.0"
+      },
+      "uptime_seconds": 345992,
+      "resources": {
+        "load_1m": 0.42,
+        "cpu_count": 4,
+        "memory_used_percent": 61.2,
+        "swap_used_percent": 4.5
+      },
+      "disk": [
+        {
+          "mount": "/",
+          "used_percent": 72,
+          "free_gb": 85.4
+        }
+      ],
+      "updates": {
+        "pending_total": 14,
+        "pending_security": 2,
+        "reboot_required": false
+      },
+      "services": [
+        {
+          "name": "ssh",
+          "state": "active",
+          "enabled": true
+        },
+        {
+          "name": "docker",
+          "state": "active",
+          "enabled": true
+        }
+      ],
+      "docker": {
+        "installed": true,
+        "containers_total": 12,
+        "containers_running": 11,
+        "unhealthy": [
+          {
+            "name": "homepage",
+            "status": "unhealthy"
+          }
+        ]
+      },
+      "security": {
+        "failed_ssh_logins_24h": 3,
+        "successful_ssh_logins_24h": 2,
+        "last_login_summary": [
+          "admin from 192.168.1.20"
+        ]
+      }
+    }
+  ]
+}

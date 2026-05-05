@@ -1,5 +1,11 @@
 # Implementation Roadmap
 
+## Current Status
+
+The controller can now generate fixture reports, load the example inventory, build SSH commands, dry-run collection, and run collector logic under tests. No real server collection has been run yet.
+
+The next milestone is preparing the servers with the read-only health script and creating a local `config/servers.yaml`.
+
 ## Phase 1: Documentation and Project Shape
 
 Goal: lock the operating model before writing controller code.

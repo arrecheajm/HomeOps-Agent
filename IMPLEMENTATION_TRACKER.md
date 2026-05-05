@@ -4,7 +4,15 @@ This tracker records the planned implementation state for HomeOps Agent.
 
 ## Current Status
 
-Project stage: planning complete, implementation ready to start.
+Project stage: read-only collection code is implemented and ready for server preparation.
+
+Live status:
+
+- Fixture-based reports work.
+- Inventory loading works.
+- SSH command dry-run works.
+- Collector code writes raw results and `fleet-health.json`.
+- No real server collection has been run yet.
 
 Current operating model:
 
@@ -16,35 +24,36 @@ Current operating model:
 
 ## MVP Checklist
 
-- [ ] Create Python package skeleton under `controller/`.
-- [ ] Add CLI entrypoint at `controller/main.py`.
-- [ ] Add `config/servers.example.yaml`.
-- [ ] Add fixture data for one fake fleet run.
-- [ ] Generate a Markdown report from fixture data.
-- [ ] Add SSH inventory loading.
-- [ ] Add SSH collection wrapper with timeouts.
-- [ ] Add `server-scripts/common/health_summary.sh`.
-- [ ] Save raw run artifacts under `history/runs/<timestamp>/`.
-- [ ] Normalize server outputs into `fleet-health.json`.
-- [ ] Add local rules for disk, updates, services, Docker, and SSH login summaries.
-- [ ] Write generated report to `reports/generated/`.
-- [ ] Add action registry skeleton.
-- [ ] Add `actions list` command.
-- [ ] Keep mutating actions disabled until read-only collection is reliable.
+- [x] Create Python package skeleton under `controller/`.
+- [x] Add CLI entrypoint at `controller/main.py`.
+- [x] Add `config/servers.example.yaml`.
+- [x] Add fixture data for one fake fleet run.
+- [x] Generate a Markdown report from fixture data.
+- [x] Add SSH inventory loading.
+- [x] Add SSH collection wrapper with timeouts.
+- [x] Add `server-scripts/common/health_summary.sh`.
+- [x] Save raw run artifacts under `history/runs/<timestamp>/`.
+- [x] Normalize server outputs into `fleet-health.json`.
+- [x] Add local rules for disk, updates, services, Docker, and SSH login summaries.
+- [x] Write generated report to `reports/generated/`.
+- [x] Add action registry skeleton.
+- [x] Add `actions list` command.
+- [x] Keep mutating actions disabled until read-only collection is reliable.
+- [x] Add initial unit tests for rules and report rendering.
 
 ## Initial Controller Modules
 
 | Module | Purpose | Status |
 |---|---|---|
-| `controller/main.py` | CLI entrypoint | Planned |
-| `controller/config.py` | paths and settings | Planned |
-| `controller/inventory.py` | server inventory loading | Planned |
-| `controller/ssh_client.py` | SSH command execution | Planned |
-| `controller/collector.py` | orchestration of server collection | Planned |
-| `controller/normalizer.py` | common fleet model | Planned |
-| `controller/rules.py` | local issue detection | Planned |
-| `controller/report_writer.py` | Markdown report generation | Planned |
-| `controller/action_registry.py` | allowed action definitions | Planned |
+| `controller/main.py` | CLI entrypoint | Implemented |
+| `controller/config.py` | paths and settings | Implemented |
+| `controller/inventory.py` | server inventory loading | Implemented |
+| `controller/ssh_client.py` | SSH command execution | Implemented |
+| `controller/collector.py` | orchestration of server collection | Implemented |
+| `controller/normalizer.py` | common fleet model | Implemented |
+| `controller/rules.py` | local issue detection | Implemented |
+| `controller/report_writer.py` | Markdown report generation | Implemented |
+| `controller/action_registry.py` | allowed action definitions | Implemented |
 | `controller/approvals.py` | approval checks and prompts | Planned |
 | `controller/schemas.py` | schema loading and validation helpers | Planned |
 
@@ -52,7 +61,7 @@ Current operating model:
 
 | Script | Purpose | Risk | Status |
 |---|---|---|---|
-| `server-scripts/common/health_summary.sh` | combined read-only host summary | read_only | Planned |
+| `server-scripts/common/health_summary.sh` | combined read-only host summary | read_only | Implemented |
 | `server-scripts/common/disk_check.sh` | mount usage summary | read_only | Planned |
 | `server-scripts/common/update_check.sh` | apt update and reboot-required summary | read_only | Planned |
 | `server-scripts/common/service_check.sh` | approved service status summary | read_only | Planned |
@@ -63,34 +72,34 @@ Current operating model:
 
 ## Local Rule Backlog
 
-- [ ] `disk_usage_warning`: any mount at or above 80%.
-- [ ] `disk_usage_critical`: any mount at or above 95%.
-- [ ] `service_failed`: approved service is not active.
-- [ ] `security_updates_pending`: one or more security updates pending.
-- [ ] `reboot_required`: server reports reboot required.
-- [ ] `docker_unhealthy_container`: Docker reports unhealthy containers.
-- [ ] `docker_container_stopped`: expected container is stopped.
-- [ ] `ssh_failed_login_spike`: failed SSH logins exceed policy threshold.
-- [ ] `collection_failed`: server collection fails or returns invalid JSON.
+- [x] `disk_usage_high`: any mount at or above 80%.
+- [x] `disk_usage_critical`: any mount at or above 95%.
+- [x] `service_failed`: approved service is not active.
+- [x] `security_updates_pending`: one or more security updates pending.
+- [x] `reboot_required`: server reports reboot required.
+- [x] `docker_unhealthy_container`: Docker reports unhealthy containers.
+- [x] `docker_container_stopped`: expected container is stopped.
+- [x] `ssh_failed_login_spike`: failed SSH logins exceed policy threshold.
+- [x] `collection_failed`: server collection fails or returns invalid JSON.
 
 ## Action Registry Backlog
 
-Read-only actions first:
+Read-only action IDs are registered. Execution is still pending.
 
-- [ ] `collect_health`
-- [ ] `collect_disk`
-- [ ] `collect_updates`
-- [ ] `collect_services`
-- [ ] `collect_docker`
-- [ ] `collect_openvpn`
-- [ ] `collect_ispy`
+- [x] `collect_health`
+- [x] `collect_disk`
+- [x] `collect_updates`
+- [x] `collect_services`
+- [x] `collect_docker`
+- [x] `collect_openvpn`
+- [x] `collect_ispy`
 
-Approval-required actions later:
+Approval-required action IDs are registered but not executable.
 
-- [ ] `restart_service`
-- [ ] `restart_docker_container`
-- [ ] `apply_security_updates`
-- [ ] `reboot_server`
+- [x] `restart_service`
+- [x] `restart_docker_container`
+- [x] `apply_security_updates`
+- [x] `reboot_server`
 
 Forbidden actions:
 
@@ -102,10 +111,21 @@ Forbidden actions:
 
 ## Next Implementation Step
 
-Start with the controller skeleton and fixture-driven report generation before connecting to real servers.
+Prepare for the first real read-only collection.
 
 Recommended first task:
 
 ```text
-Create controller CLI, fixture fleet JSON, and Markdown report writer.
+Create config/servers.yaml from the example, install health_summary.sh on each server, run collect --dry-run, then run the first read-only collect.
 ```
+
+Connection readiness:
+
+- [ ] Create local `config/servers.yaml`.
+- [ ] Install `health_summary.sh` on `openvpn-server`.
+- [ ] Install `health_summary.sh` on `ispy-server`.
+- [ ] Install `health_summary.sh` on `container-host`.
+- [ ] Validate script JSON output locally on each server.
+- [ ] Confirm SSH key authentication from controller to each server.
+- [ ] Run `python -m controller.main collect --dry-run`.
+- [ ] Run first real `python -m controller.main collect`.
