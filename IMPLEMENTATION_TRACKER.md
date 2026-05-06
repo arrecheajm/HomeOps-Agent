@@ -1,10 +1,10 @@
 # Implementation Tracker
 
-This tracker records the planned implementation state for HomeOps Agent.
+This tracker records the implementation state for HomeOps Agent.
 
 ## Current Status
 
-Project stage: read-only collection code is implemented and ready for server preparation.
+Project stage: read-only collection and reporting are live for enabled servers.
 
 Live status:
 
@@ -122,18 +122,12 @@ Forbidden actions:
 
 ## Next Implementation Step
 
-Prepare for the first real read-only collection.
-
-Recommended first task:
-
-```text
-Create config/servers.yaml from the example, install health_summary.sh on each server, run collect --dry-run, then run the first read-only collect.
-```
+Bring `container-host` online and add it to the same read-only collection path. After all servers collect cleanly, decide whether to implement approval-gated maintenance actions.
 
 Connection readiness:
 
 - [x] Harden controller trust boundary before live SSH collection.
-- [ ] Create local `config/servers.yaml`.
+- [x] Create local `config/servers.yaml` for enabled servers.
 - [x] Install `health_summary.sh` on `openvpn-server`.
 - [x] Install `health_summary.sh` on `ispy-server`.
 - [ ] Install `health_summary.sh` on `container-host`.

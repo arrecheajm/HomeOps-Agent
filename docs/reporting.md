@@ -43,6 +43,8 @@ Open that file in a browser to review:
 - grouped run timeline
 - links to Markdown reports and fleet JSON
 
+`reports/generated/` is ignored by git. Regenerate the dashboard locally whenever needed instead of committing generated HTML.
+
 ## Run Grouping
 
 The dashboard groups run history into operating periods:

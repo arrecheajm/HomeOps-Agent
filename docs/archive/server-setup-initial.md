@@ -1,4 +1,14 @@
-# Server Setup
+# Archived: Initial Server Setup Notes
+
+This document is archived. Use the active walkthrough instead:
+
+```text
+docs/server-setup-walkthrough.md
+```
+
+The notes below are preserved for historical context.
+
+# Initial Server Setup
 
 This project is not ready to mutate servers automatically. The current implementation can load inventory, show planned SSH commands, and run read-only collection if the configured scripts already exist on each server.
 

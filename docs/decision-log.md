@@ -90,3 +90,25 @@ Consequences:
 - `python -m controller.main collect` expects `remote_health_command` to already exist.
 - `collect --dry-run` should be used before a real connection.
 - A future deployment command must copy only known repository scripts and require approval before writing to a server.
+
+## 0005: HTML Dashboard Is Generated From Structured Run History
+
+Status: accepted
+
+Date: 2026-05-06
+
+Decision:
+
+The HTML dashboard will be generated from `history/runs/<timestamp>/fleet-health.json`, not from Markdown reports.
+
+Reasoning:
+
+- Fleet JSON contains normalized server IDs, roles, counts, findings, and collection errors.
+- Markdown reports are human-readable snapshots and may exist without matching structured run data.
+- Grouping by today, this week, earlier this month, and monthly archives is more useful than a flat report list.
+
+Consequences:
+
+- `reports/generated/index.html` is regenerated locally and ignored by git.
+- Markdown-only legacy reports are not included in dashboard trends.
+- New report visualizations should read structured run history first.

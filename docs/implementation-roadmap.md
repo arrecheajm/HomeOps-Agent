@@ -2,9 +2,11 @@
 
 ## Current Status
 
-The controller can now generate fixture reports, load the example inventory, validate approved remote health commands, build SSH commands, dry-run collection, validate collected server health shapes, normalize inventory identity, and run collector logic under tests. No real server collection has been run yet.
+The controller can generate Markdown reports and an HTML dashboard, load inventory with optional SSH identity files, validate approved remote health commands, dry-run collection, validate collected server health shapes, normalize inventory identity, and run collector logic under tests.
 
-The next milestone is preparing the servers with the read-only health script and creating a local `config/servers.yaml`.
+The first real read-only collection has succeeded for `openvpn-server` and `ispy-server`. `container-host` is temporarily disabled in local inventory while that server is offline.
+
+The next milestone is bringing `container-host` online, installing the read-only health script there, and then deciding whether to implement approval-gated maintenance actions.
 
 ## Phase 1: Documentation and Project Shape
 
@@ -109,6 +111,8 @@ Goal: allow safe, predefined maintenance actions.
 - write action history
 - keep destructive or config-changing operations out of scope
 
+Status: planned. The registry exists and `actions list` works, but action execution is intentionally not implemented.
+
 ## Phase 8: Hardening
 
 Goal: make failures understandable and safe.
@@ -124,7 +128,7 @@ Goal: make failures understandable and safe.
 
 ## Minimum Viable Version
 
-The MVP is complete when this works:
+The read-only MVP is complete for enabled servers when this works:
 
 ```bash
 python -m controller.main collect
@@ -136,6 +140,7 @@ And produces:
 ```text
 history/runs/<timestamp>/fleet-health.json
 reports/generated/homeops-report-<timestamp>.md
+reports/generated/index.html
 ```
 
 MVP constraints:
@@ -144,4 +149,4 @@ MVP constraints:
 - no OpenAI API integration
 - no automated risky actions
 - local rule findings included in report
-- report clear enough for Codex to analyze from VS Code
+- report and dashboard clear enough for Codex to analyze from VS Code

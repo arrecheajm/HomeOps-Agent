@@ -2,7 +2,7 @@
 
 ## Summary
 
-HomeOps Agent is a central controller for collecting server health evidence and running approved maintenance actions. It is designed for a small home fleet and for a developer who wants the system to stay transparent while learning infrastructure automation.
+HomeOps Agent is a central controller for collecting server health evidence and preparing approved maintenance workflows. It is designed for a small home fleet and for a developer who wants the system to stay transparent while learning infrastructure automation.
 
 The controller does not call the OpenAI API. Codex in VS Code provides analysis by reading generated reports and JSON files from this repository.
 
@@ -19,9 +19,10 @@ The controller runs from the main machine and owns:
 - normalization into a fleet health model
 - local rule-based issue detection
 - Markdown report generation
-- action registry enforcement
-- approval workflow
-- history of reports and actions
+- HTML dashboard generation
+- action registry definitions
+- future approval workflow
+- history of reports
 
 ### Managed Servers
 
@@ -39,7 +40,7 @@ The servers do not run autonomous agents and do not store any OpenAI API key.
 
 Codex acts as the analyst and operator assistant:
 
-- reads the latest Markdown report
+- reads the latest HTML dashboard or Markdown report
 - reads matching JSON evidence when more detail is needed
 - explains issues and tradeoffs
 - recommends predefined action IDs
@@ -60,7 +61,7 @@ Codex must not invent direct server maintenance commands when an action registry
 8. Normalize per-server data into one fleet health bundle using inventory identity as the source of truth.
 9. Run local rules for common issues using policy thresholds.
 10. Write raw data, normalized data, findings, and report artifacts.
-11. Optionally run a predefined action after approval.
+11. Future action execution will run only predefined actions after approval.
 ```
 
 ## Recommended Folder Structure
@@ -77,7 +78,9 @@ HomeOps-Agent/
     normalizer.py
     rules.py
     policy.py
+    history.py
     report_writer.py
+    html_report_writer.py
     approvals.py
     action_registry.py
     schemas.py
@@ -105,31 +108,37 @@ HomeOps-Agent/
     fleet_health.schema.json
 
   docs/
+    README.md
     architecture.md
     command-safety.md
     codex-operating-guide.md
     data-schema.md
     implementation-roadmap.md
-    server-setup.md
+    server-setup-walkthrough.md
+    reporting.md
     decision-log.md
+    archive/
 
   reports/
     EXAMPLE_REPORT.md
     generated/
+      index.html
 
   history/
     runs/
-    actions/
+    actions/   # planned for future action execution
 
   tests/
     fixtures/
     test_normalizer.py
     test_rules.py
+    test_history.py
+    test_html_report_writer.py
     test_policy.py
 ```
 
 ## First Implementation Boundary
 
-The first version should collect and report only. Risky server-side changes should not be implemented until collection, validation, reports, and local rule checks are working against real server output.
+The current version collects and reports only. Risky server-side changes should not be implemented until collection, validation, reports, dashboard review, and local rule checks are reliable across the fleet.
 
 Inventory identity is authoritative for `server_id` and `role`. If a remote script reports a different identity, the controller preserves it as reported metadata but keeps findings and reports keyed to the inventory entry.

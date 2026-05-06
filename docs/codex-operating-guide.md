@@ -2,16 +2,16 @@
 
 This repository is intended to be opened and operated from VS Code with Codex.
 
-Codex is the analyst. The controller is the deterministic evidence collector and approved action runner.
+Codex is the analyst. The controller is the deterministic evidence collector. Approved action execution is planned but not implemented yet.
 
 ## When Reviewing Server Health
 
-1. Read the latest generated Markdown report in `reports/generated/`.
+1. Read the latest generated HTML dashboard at `reports/generated/index.html`.
 2. If more detail is needed, read the matching run directory in `history/runs/`.
 3. Use normalized fleet JSON as the source of truth for server IDs and roles.
 4. Explain findings by severity and operational impact.
-5. Recommend only predefined action IDs when an executable action is appropriate.
-6. Ask for explicit approval before running any `approval_required` action.
+5. Recommend only predefined action IDs when a future executable action is appropriate.
+6. Do not run mutating actions until controller action execution and approval checks are implemented.
 
 ## What Codex Must Not Do
 
@@ -26,13 +26,12 @@ Codex is the analyst. The controller is the deterministic evidence collector and
 ## Normal Operating Pattern
 
 ```text
-1. Run collection/report command.
-2. Inspect generated artifacts.
+1. Run collection or dashboard command.
+2. Inspect generated HTML, Markdown, and JSON artifacts.
 3. Summarize issues.
 4. Map any recommendation to an action_id.
-5. Ask the user for approval when required.
-6. Run the controller action command only after approval.
-7. Re-run collection to verify results.
+5. Ask the user for approval before any manual server mutation.
+6. Re-run collection to verify results after approved manual maintenance.
 ```
 
 ## Preferred Findings Format
@@ -53,8 +52,8 @@ Residual risk or missing data
 Prefer evidence in this order:
 
 1. Generated fleet health JSON
-2. Generated Markdown report
-3. Controller action history
+2. Generated HTML dashboard
+3. Generated Markdown report
 4. Server script source
 5. Direct read-only inspection commands approved by the user
 

@@ -13,7 +13,7 @@
 
 ## Allowed Execution Model
 
-All server-side commands must be represented by predefined action IDs in the controller action registry.
+Mutating server-side commands must be represented by predefined action IDs in the controller action registry. Action execution is not implemented yet.
 
 An LLM or Codex may recommend an action, but executable actions must map to a local controller definition:
 
@@ -23,7 +23,7 @@ recommendation -> action_id -> registry lookup -> policy check -> approval check
 
 Free-form commands from an LLM response are advisory text only and must not be executed against servers.
 
-For the current read-only collection phase, the inventory `remote_health_command` is also allowlisted. The only approved v1 remote health command is:
+For the current read-only collection phase, the inventory `remote_health_command` is allowlisted. The only approved v1 remote health command is:
 
 ```text
 /opt/homeops-agent/server-scripts/common/health_summary.sh
@@ -113,6 +113,6 @@ Every action attempt should write an action history record containing:
 
 ## Script Deployment
 
-The first implementation expects server scripts to already be installed on each server at the configured remote path.
+The current implementation expects server scripts to already be installed on each server at the configured remote path.
 
 Future deployment support must be explicit and approval-based. A deployment command may copy known repository scripts to a configured directory, but it must not copy arbitrary generated commands or mutate system configuration.

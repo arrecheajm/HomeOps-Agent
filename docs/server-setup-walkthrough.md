@@ -1,6 +1,6 @@
 # Server Setup Walkthrough
 
-Use this walkthrough while preparing the first real read-only HomeOps collection.
+Use this walkthrough while preparing and extending read-only HomeOps collection.
 Pause at any step and ask Codex questions using this file as the shared checklist.
 
 ## Goal
@@ -21,13 +21,15 @@ Do not add mutating action support during this setup. This pass is read-only col
 
 | Server | Inventory updated | SSH key works | Script installed | Local JSON valid | Controller dry-run checked | First collect checked |
 |---|---|---:|---:|---:|---:|---:|
-| `openvpn-server` | no | no | no | no | no | no |
-| `ispy-server` | no | no | no | no | no | no |
-| `container-host` | no | no | no | no | no | no |
+| `openvpn-server` | yes | yes | yes | yes | yes | yes |
+| `ispy-server` | yes | yes | yes | yes | yes | yes |
+| `container-host` | pending | no | no | no | no | no |
+
+Current local inventory has `container-host` disabled while that server is offline.
 
 ## Step 1: Create Local Inventory
 
-Run this from the controller machine:
+Run this from the controller machine when starting a new local inventory:
 
 ```powershell
 Copy-Item config\servers.example.yaml config\servers.yaml
@@ -74,7 +76,7 @@ Leave `identity_file` as `null` only when the default SSH identity or SSH config
 
 ## Step 3: Create The Server User
 
-Run this on each Ubuntu server as an existing admin user:
+Run this on each Ubuntu server as an existing admin user if you want a dedicated `homeops` account:
 
 ```bash
 sudo useradd -m -s /bin/bash homeops
@@ -92,6 +94,13 @@ Add the controller public key to:
 ```
 
 For v1, do not grant broad passwordless sudo to `homeops`.
+
+Current setup uses existing users for the two enabled servers:
+
+- `openvpn-server`: `vpnserver`
+- `ispy-server`: `spy`
+
+That is acceptable for the current read-only phase. A dedicated `homeops` user can be introduced later if you want tighter separation.
 
 ## Step 4: Install The Read-Only Script
 
@@ -144,6 +153,13 @@ ssh -i $env:USERPROFILE\.ssh\homeops_ed25519 homeops@container-host.local /opt/h
 
 Each command should print one JSON object.
 
+Current enabled-server examples:
+
+```powershell
+ssh -i $env:USERPROFILE\.ssh\homeops_ed25519 vpnserver@192.168.86.25 /opt/homeops-agent/server-scripts/common/health_summary.sh
+ssh -i $env:USERPROFILE\.ssh\homeops_ed25519 spy@192.168.86.27 /opt/homeops-agent/server-scripts/common/health_summary.sh
+```
+
 ## Step 7: Dry-Run The Controller
 
 From the repository root:
@@ -160,7 +176,7 @@ Confirm each generated command points to:
 - the expected `-i` identity file, when configured
 - `/opt/homeops-agent/server-scripts/common/health_summary.sh`
 
-## Step 8: First Real Read-Only Collection
+## Step 8: First Real Read-Only Collection Or Refresh
 
 Only after the dry-run is correct:
 
@@ -173,6 +189,7 @@ Review the generated artifacts:
 ```text
 history/runs/<timestamp>/fleet-health.json
 reports/generated/homeops-report-<timestamp>.md
+reports/generated/index.html
 ```
 
 If collection fails for one server, keep the raw result in `history/runs/<timestamp>/raw/<server_id>.json` and ask Codex to inspect it before changing server permissions.
