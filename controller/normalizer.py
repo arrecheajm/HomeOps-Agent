@@ -15,8 +15,12 @@ def normalize_server_health(
 
     normalized = deepcopy(health)
     normalized.setdefault("schema_version", "1.0")
-    normalized["server_id"] = str(normalized.get("server_id") or server.server_id)
-    normalized["role"] = str(normalized.get("role") or server.role)
+    if "server_id" in normalized:
+        normalized["reported_server_id"] = str(normalized["server_id"])
+    if "role" in normalized:
+        normalized["reported_role"] = str(normalized["role"])
+    normalized["server_id"] = server.server_id
+    normalized["role"] = server.role
     normalized.setdefault("hostname", server.host)
     normalized.setdefault("disk", [])
     normalized.setdefault("services", [])

@@ -23,6 +23,14 @@ recommendation -> action_id -> registry lookup -> policy check -> approval check
 
 Free-form commands from an LLM response are advisory text only and must not be executed against servers.
 
+For the current read-only collection phase, the inventory `remote_health_command` is also allowlisted. The only approved v1 remote health command is:
+
+```text
+/opt/homeops-agent/server-scripts/common/health_summary.sh
+```
+
+Changing `config/servers.yaml` to a different command string should fail before SSH execution.
+
 ## Risk Levels
 
 ### read_only

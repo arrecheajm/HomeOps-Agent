@@ -27,6 +27,18 @@ class SshClientTests(unittest.TestCase):
             command[-1], "/opt/homeops-agent/server-scripts/common/health_summary.sh"
         )
 
+    def test_build_ssh_command_rejects_unapproved_command(self):
+        server = ServerInventoryItem(
+            server_id="container-host",
+            role="container_host",
+            host="container-host.local",
+            user="homeops",
+            remote_health_command="uname -a",
+        )
+
+        with self.assertRaisesRegex(ValueError, "not approved"):
+            build_ssh_command(server)
+
 
 if __name__ == "__main__":
     unittest.main()

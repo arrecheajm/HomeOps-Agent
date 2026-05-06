@@ -93,6 +93,17 @@ The controller should combine server results into one fleet object:
 }
 ```
 
+During normalization, inventory values are authoritative for `server_id` and `role`. Remote script values are useful diagnostics, but they must not replace inventory identity. When the remote script reports those fields, the controller may preserve them as `reported_server_id` and `reported_role` on the normalized server object.
+
+Collected per-server JSON is accepted only when key sections have the expected shapes:
+
+- `disk` and `services` must be lists of objects.
+- `updates`, `docker`, and `security` must be objects.
+- numeric counters and percentages must be numbers.
+- boolean state fields such as `updates.reboot_required` and `docker.installed` must be booleans.
+
+Invalid shapes are recorded as collection failures instead of being passed to local rules or report rendering.
+
 ## Finding Object
 
 Local rules should produce finding objects:
@@ -125,3 +136,4 @@ Local rules should produce finding objects:
 - Include enough evidence for a junior-to-mid level engineer to understand the issue.
 - Prefer `null` or omitted role-specific sections when a check is not applicable.
 - Preserve raw collection output in history for debugging.
+- Keep local rule thresholds in `config/policy.yaml` so report behavior can be tuned without changing controller code.

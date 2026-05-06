@@ -29,9 +29,9 @@ Codex in VS Code acts as the human-facing analyst by reading the generated repor
 Codex or user in VS Code
   -> runs the controller CLI
   -> controller SSHes into servers
-  -> controller runs approved scripts
+  -> controller runs approved read-only scripts
   -> controller validates and normalizes JSON
-  -> controller applies local rules
+  -> controller applies local rules using policy thresholds
   -> controller writes reports and history
   -> Codex reads those artifacts and explains next steps
   -> risky actions require explicit user approval
@@ -39,7 +39,7 @@ Codex or user in VS Code
 
 ## Current Commands
 
-These commands work in the current fixture-driven implementation:
+These commands work in the current implementation:
 
 ```bash
 python -m controller.main report
@@ -48,19 +48,25 @@ python -m controller.main check
 python -m controller.main check --input history/runs/<timestamp>/fleet-health.json
 python -m controller.main actions list
 python -m controller.main collect --dry-run --inventory config/servers.example.yaml
+python -m controller.main collect
 python -m unittest discover -s tests
 ```
 
-These commands are planned for the SSH collection and action execution phases:
+This command is planned for the action execution phase:
 
 ```bash
-python -m controller.main collect
 python -m controller.main actions run <action_id> --server <server_id>
 ```
 
 ## Server Script Installation
 
-The controller does not silently install scripts on servers. For v1, install the read-only server scripts deliberately and then point `config/servers.yaml` at the installed remote path.
+The controller does not silently install scripts on servers. For v1, install the read-only server scripts deliberately and then point `config/servers.yaml` at the approved remote path.
+
+The current approved remote health command path is:
+
+```text
+/opt/homeops-agent/server-scripts/common/health_summary.sh
+```
 
 Later, this repo can add an explicit deployment command that copies scripts over SSH, verifies paths or checksums, and requires approval before writing to a server.
 

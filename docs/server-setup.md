@@ -50,6 +50,8 @@ Validate it locally on the server:
 
 The output should be one JSON object.
 
+The script may emit its local hostname and role, but the controller uses `config/servers.yaml` as the source of truth for `server_id` and `role`.
+
 ## Controller Inventory
 
 Copy the example inventory:
@@ -68,6 +70,14 @@ Edit:
 
 The example file uses JSON-compatible YAML so the controller can parse it without extra Python dependencies.
 
+For v1, `remote_health_command` must be the approved read-only script path:
+
+```text
+/opt/homeops-agent/server-scripts/common/health_summary.sh
+```
+
+The controller rejects other command strings before building or running SSH commands.
+
 ## Connection Readiness Checklist
 
 - [ ] `config/servers.yaml` exists and has correct hostnames or IP addresses.
@@ -75,6 +85,7 @@ The example file uses JSON-compatible YAML so the controller can parse it withou
 - [ ] The configured SSH user can run the remote health command.
 - [ ] `health_summary.sh` exists on each server and is executable.
 - [ ] Running the health script directly on each server prints valid JSON.
+- [ ] The inventory `remote_health_command` is the approved `health_summary.sh` path.
 - [ ] `python -m controller.main collect --dry-run` shows the expected SSH commands.
 
 After those pass, the repo is ready for the first real read-only collection:

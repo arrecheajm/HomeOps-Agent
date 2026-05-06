@@ -15,6 +15,7 @@ RUNS_DIR = HISTORY_DIR / "runs"
 DEFAULT_FIXTURE_PATH = BASE_DIR / "tests" / "fixtures" / "fleet-health.json"
 DEFAULT_INVENTORY_PATH = CONFIG_DIR / "servers.yaml"
 EXAMPLE_INVENTORY_PATH = CONFIG_DIR / "servers.example.yaml"
+POLICY_PATH = CONFIG_DIR / "policy.yaml"
 
 
 def utc_now_iso() -> str:

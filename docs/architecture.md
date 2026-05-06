@@ -14,7 +14,7 @@ The controller runs from the main machine and owns:
 
 - server inventory
 - SSH connection logic
-- script execution
+- approved read-only script execution
 - JSON parsing and schema validation
 - normalization into a fleet health model
 - local rule-based issue detection
@@ -51,15 +51,16 @@ Codex must not invent direct server maintenance commands when an action registry
 
 ```text
 1. Load server inventory.
-2. Connect to each server over SSH.
-3. Run approved read-only collection scripts.
-4. Capture stdout, stderr, exit code, and timing.
-5. Parse JSON output.
-6. Validate against the expected schema.
-7. Normalize per-server data into one fleet health bundle.
-8. Run local rules for common issues.
-9. Write raw data, normalized data, findings, and report artifacts.
-10. Optionally run a predefined action after approval.
+2. Validate that each configured remote health command is approved.
+3. Connect to each server over SSH.
+4. Run approved read-only collection scripts.
+5. Capture stdout, stderr, exit code, and timing.
+6. Parse JSON output.
+7. Validate expected field shapes.
+8. Normalize per-server data into one fleet health bundle using inventory identity as the source of truth.
+9. Run local rules for common issues using policy thresholds.
+10. Write raw data, normalized data, findings, and report artifacts.
+11. Optionally run a predefined action after approval.
 ```
 
 ## Recommended Folder Structure
@@ -75,6 +76,7 @@ HomeOps-Agent/
     collector.py
     normalizer.py
     rules.py
+    policy.py
     report_writer.py
     approvals.py
     action_registry.py
@@ -128,4 +130,6 @@ HomeOps-Agent/
 
 ## First Implementation Boundary
 
-The first version should collect and report only. Risky server-side changes should not be implemented until collection, validation, reports, and local rule checks are working.
+The first version should collect and report only. Risky server-side changes should not be implemented until collection, validation, reports, and local rule checks are working against real server output.
+
+Inventory identity is authoritative for `server_id` and `role`. If a remote script reports a different identity, the controller preserves it as reported metadata but keeps findings and reports keyed to the inventory entry.

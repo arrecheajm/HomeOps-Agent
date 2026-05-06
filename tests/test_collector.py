@@ -56,6 +56,48 @@ class CollectorTests(unittest.TestCase):
         fleet_path = save_fleet_health(fleet, run_dir)
         self.assertTrue(fleet_path.exists())
 
+    def test_collect_fleet_uses_inventory_identity(self):
+        output_dir = Path("tests/.tmp/collector-identity")
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+
+        server = ServerInventoryItem(
+            server_id="container-host",
+            role="container_host",
+            host="container-host.local",
+            user="homeops",
+        )
+        stdout = json.dumps(
+            {
+                "server_id": "actual-hostname",
+                "role": "unknown",
+                "disk": [],
+                "services": [],
+                "updates": {},
+                "docker": {"installed": True},
+                "security": {},
+            }
+        )
+
+        with patch(
+            "controller.collector.run_remote_command",
+            return_value=RemoteCommandResult(
+                server_id="container-host",
+                command=["ssh"],
+                exit_code=0,
+                stdout=stdout,
+                stderr="",
+                duration_seconds=0.1,
+            ),
+        ):
+            fleet, _run_dir = collect_fleet([server], output_dir)
+
+        health = fleet["servers"][0]
+        self.assertEqual(health["server_id"], "container-host")
+        self.assertEqual(health["role"], "container_host")
+        self.assertEqual(health["reported_server_id"], "actual-hostname")
+        self.assertEqual(health["reported_role"], "unknown")
+
     def test_collect_fleet_records_nonzero_exit(self):
         output_dir = Path("tests/.tmp/collector-error")
         if output_dir.exists():
@@ -84,6 +126,35 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(fleet["servers_checked"], 0)
         self.assertEqual(fleet["servers_failed"], 1)
         self.assertEqual(fleet["collection_errors"][0]["server_id"], "openvpn-server")
+
+    def test_collect_fleet_records_schema_error(self):
+        output_dir = Path("tests/.tmp/collector-schema-error")
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+
+        server = ServerInventoryItem(
+            server_id="openvpn-server",
+            role="openvpn_server",
+            host="openvpn-server.local",
+            user="homeops",
+        )
+
+        with patch(
+            "controller.collector.run_remote_command",
+            return_value=RemoteCommandResult(
+                server_id="openvpn-server",
+                command=["ssh"],
+                exit_code=0,
+                stdout=json.dumps({"disk": {"mount": "/"}}),
+                stderr="",
+                duration_seconds=0.1,
+            ),
+        ):
+            fleet, _run_dir = collect_fleet([server], output_dir)
+
+        self.assertEqual(fleet["servers_checked"], 0)
+        self.assertEqual(fleet["servers_failed"], 1)
+        self.assertIn("invalid schema", fleet["collection_errors"][0]["message"])
 
 
 if __name__ == "__main__":

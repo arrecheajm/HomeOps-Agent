@@ -2,7 +2,7 @@
 
 ## Current Status
 
-The controller can now generate fixture reports, load the example inventory, build SSH commands, dry-run collection, and run collector logic under tests. No real server collection has been run yet.
+The controller can now generate fixture reports, load the example inventory, validate approved remote health commands, build SSH commands, dry-run collection, validate collected server health shapes, normalize inventory identity, and run collector logic under tests. No real server collection has been run yet.
 
 The next milestone is preparing the servers with the read-only health script and creating a local `config/servers.yaml`.
 
@@ -39,6 +39,7 @@ Goal: collect read-only health JSON from configured servers.
 - add `config/servers.example.yaml`
 - add inventory loader
 - add SSH client wrapper with timeout handling
+- reject unapproved remote health commands
 - run one approved collection command per server
 - save raw collection results under `history/runs/`
 
@@ -65,6 +66,8 @@ Goal: detect common issues without Codex.
 
 - validate server JSON
 - normalize into fleet health JSON
+- keep inventory `server_id` and `role` authoritative
+- load rule thresholds from `config/policy.yaml`
 - detect failed services
 - detect high disk usage
 - detect pending security updates
@@ -99,6 +102,7 @@ Goal: allow safe, predefined maintenance actions.
 Goal: make failures understandable and safe.
 
 - add tests for config, rules, reports, and policy
+- add tests for command allowlisting, identity normalization, and schema failures
 - redact sensitive values
 - improve SSH error reporting
 - handle partial fleet failures

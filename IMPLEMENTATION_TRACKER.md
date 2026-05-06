@@ -12,6 +12,9 @@ Live status:
 - Inventory loading works.
 - SSH command dry-run works.
 - Collector code writes raw results and `fleet-health.json`.
+- Controller validates collected server health shapes before normalization.
+- Inventory and SSH command building reject unapproved remote health commands.
+- Local rule thresholds are loaded from `config/policy.yaml`.
 - No real server collection has been run yet.
 
 Current operating model:
@@ -52,10 +55,11 @@ Current operating model:
 | `controller/collector.py` | orchestration of server collection | Implemented |
 | `controller/normalizer.py` | common fleet model | Implemented |
 | `controller/rules.py` | local issue detection | Implemented |
+| `controller/policy.py` | policy loading and thresholds | Implemented |
 | `controller/report_writer.py` | Markdown report generation | Implemented |
 | `controller/action_registry.py` | allowed action definitions | Implemented |
 | `controller/approvals.py` | approval checks and prompts | Planned |
-| `controller/schemas.py` | schema loading and validation helpers | Planned |
+| `controller/schemas.py` | schema loading and validation helpers | Implemented |
 
 ## First Server Scripts
 
@@ -121,6 +125,7 @@ Create config/servers.yaml from the example, install health_summary.sh on each s
 
 Connection readiness:
 
+- [x] Harden controller trust boundary before live SSH collection.
 - [ ] Create local `config/servers.yaml`.
 - [ ] Install `health_summary.sh` on `openvpn-server`.
 - [ ] Install `health_summary.sh` on `ispy-server`.

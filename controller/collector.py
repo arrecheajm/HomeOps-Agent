@@ -9,6 +9,7 @@ from typing import Any
 from . import config
 from .inventory import ServerInventoryItem
 from .normalizer import normalize_server_health
+from .schemas import validate_server_health
 from .ssh_client import RemoteCommandResult, run_remote_command
 
 
@@ -67,6 +68,19 @@ def collect_fleet(
                     "server_id": server.server_id,
                     "message": "Health command returned JSON that was not an object.",
                     "exit_code": result.exit_code,
+                }
+            )
+            continue
+
+        try:
+            validate_server_health(parsed)
+        except ValueError as exc:
+            collection_errors.append(
+                {
+                    "server_id": server.server_id,
+                    "message": f"Health command returned invalid schema: {exc}",
+                    "exit_code": result.exit_code,
+                    "stderr": _summary(result.stderr),
                 }
             )
             continue

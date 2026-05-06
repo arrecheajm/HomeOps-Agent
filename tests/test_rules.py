@@ -26,6 +26,35 @@ class RulesTests(unittest.TestCase):
         self.assertEqual(counts["warning"], 4)
         self.assertEqual(counts["info"], 1)
 
+    def test_evaluate_fleet_uses_policy_thresholds(self):
+        fleet = {
+            "servers": [
+                {
+                    "server_id": "ispy-server",
+                    "disk": [{"mount": "/recordings", "used_percent": 84}],
+                    "services": [],
+                    "updates": {},
+                    "docker": {},
+                    "security": {"failed_ssh_logins_24h": 5},
+                }
+            ],
+            "collection_errors": [],
+        }
+        policy = {
+            "thresholds": {
+                "disk_warning_percent": 90,
+                "disk_critical_percent": 95,
+                "failed_ssh_login_warning_24h": 5,
+                "failed_ssh_login_critical_24h": 10,
+            }
+        }
+
+        findings = evaluate_fleet(fleet, policy)
+        codes = {finding["code"] for finding in findings}
+
+        self.assertNotIn("disk_usage_high", codes)
+        self.assertIn("ssh_failed_login_spike", codes)
+
 
 if __name__ == "__main__":
     unittest.main()

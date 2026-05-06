@@ -12,6 +12,8 @@ DEFAULT_REMOTE_HEALTH_COMMAND = (
     "/opt/homeops-agent/server-scripts/common/health_summary.sh"
 )
 
+ALLOWED_REMOTE_HEALTH_COMMANDS = (DEFAULT_REMOTE_HEALTH_COMMAND,)
+
 
 @dataclass(frozen=True)
 class ServerInventoryItem:
@@ -82,6 +84,15 @@ def _server_from_mapping(index: int, value: Any) -> ServerInventoryItem:
     if missing:
         raise ValueError(f"servers[{index}] is missing required keys: {missing}")
 
+    remote_health_command = str(
+        value.get("remote_health_command") or DEFAULT_REMOTE_HEALTH_COMMAND
+    )
+    if not is_allowed_remote_health_command(remote_health_command):
+        raise ValueError(
+            f"servers[{index}].remote_health_command is not approved: "
+            f"{remote_health_command}"
+        )
+
     return ServerInventoryItem(
         server_id=str(value["server_id"]),
         role=str(value["role"]),
@@ -91,7 +102,11 @@ def _server_from_mapping(index: int, value: Any) -> ServerInventoryItem:
         enabled=bool(value.get("enabled", True)),
         connect_timeout_seconds=int(value.get("connect_timeout_seconds", 10)),
         command_timeout_seconds=int(value.get("command_timeout_seconds", 30)),
-        remote_health_command=str(
-            value.get("remote_health_command") or DEFAULT_REMOTE_HEALTH_COMMAND
-        ),
+        remote_health_command=remote_health_command,
     )
+
+
+def is_allowed_remote_health_command(command: str) -> bool:
+    """Return whether a configured remote health command is approved for v1."""
+
+    return command in ALLOWED_REMOTE_HEALTH_COMMANDS

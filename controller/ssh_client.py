@@ -6,7 +6,7 @@ import subprocess
 import time
 from dataclasses import dataclass
 
-from .inventory import ServerInventoryItem
+from .inventory import ServerInventoryItem, is_allowed_remote_health_command
 
 
 @dataclass(frozen=True)
@@ -22,6 +22,11 @@ class RemoteCommandResult:
 
 def build_ssh_command(server: ServerInventoryItem) -> list[str]:
     """Build the local SSH command for one inventory item."""
+
+    if not is_allowed_remote_health_command(server.remote_health_command):
+        raise ValueError(
+            f"Remote health command is not approved: {server.remote_health_command}"
+        )
 
     return [
         "ssh",

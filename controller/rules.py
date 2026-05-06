@@ -4,14 +4,18 @@ from __future__ import annotations
 
 from typing import Any
 
+from . import policy as policy_config
 
 SEVERITY_RANK = {"critical": 3, "warning": 2, "info": 1}
 
 
-def evaluate_fleet(fleet: dict[str, Any]) -> list[dict[str, Any]]:
+def evaluate_fleet(
+    fleet: dict[str, Any], policy_data: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
     """Evaluate local rules and return normalized finding objects."""
 
     findings: list[dict[str, Any]] = []
+    active_policy = policy_data or policy_config.DEFAULT_POLICY
 
     for error in fleet.get("collection_errors") or []:
         findings.append(
@@ -27,7 +31,7 @@ def evaluate_fleet(fleet: dict[str, Any]) -> list[dict[str, Any]]:
         )
 
     for server in fleet.get("servers") or []:
-        findings.extend(_evaluate_server(server))
+        findings.extend(_evaluate_server(server, active_policy))
 
     return sorted(
         findings,
@@ -57,28 +61,36 @@ def worst_severity(findings: list[dict[str, Any]]) -> str | None:
     return worst
 
 
-def _evaluate_server(server: dict[str, Any]) -> list[dict[str, Any]]:
+def _evaluate_server(
+    server: dict[str, Any], policy_data: dict[str, Any]
+) -> list[dict[str, Any]]:
     server_id = str(server.get("server_id") or server.get("hostname") or "unknown")
     findings: list[dict[str, Any]] = []
 
-    findings.extend(_disk_findings(server_id, server.get("disk") or []))
+    findings.extend(_disk_findings(server_id, server.get("disk") or [], policy_data))
     findings.extend(_service_findings(server_id, server.get("services") or []))
     findings.extend(_update_findings(server_id, server.get("updates") or {}))
     findings.extend(_docker_findings(server_id, server.get("docker") or {}))
-    findings.extend(_security_findings(server_id, server.get("security") or {}))
+    findings.extend(
+        _security_findings(server_id, server.get("security") or {}, policy_data)
+    )
 
     return findings
 
 
-def _disk_findings(server_id: str, disks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _disk_findings(
+    server_id: str, disks: list[dict[str, Any]], policy_data: dict[str, Any]
+) -> list[dict[str, Any]]:
     findings = []
+    warning_percent = policy_config.threshold(policy_data, "disk_warning_percent")
+    critical_percent = policy_config.threshold(policy_data, "disk_critical_percent")
     for disk in disks:
         used_percent = _as_float(disk.get("used_percent"))
         if used_percent is None:
             continue
 
         mount = str(disk.get("mount") or "unknown")
-        if used_percent >= 95:
+        if used_percent >= critical_percent:
             findings.append(
                 _finding(
                     server_id,
@@ -90,7 +102,7 @@ def _disk_findings(server_id: str, disks: list[dict[str, Any]]) -> list[dict[str
                     [],
                 )
             )
-        elif used_percent >= 80:
+        elif used_percent >= warning_percent:
             findings.append(
                 _finding(
                     server_id,
@@ -215,9 +227,17 @@ def _docker_findings(server_id: str, docker: dict[str, Any]) -> list[dict[str, A
     return findings
 
 
-def _security_findings(server_id: str, security: dict[str, Any]) -> list[dict[str, Any]]:
+def _security_findings(
+    server_id: str, security: dict[str, Any], policy_data: dict[str, Any]
+) -> list[dict[str, Any]]:
     failed_logins = _as_int(security.get("failed_ssh_logins_24h")) or 0
-    if failed_logins >= 100:
+    critical_count = policy_config.threshold(
+        policy_data, "failed_ssh_login_critical_24h"
+    )
+    warning_count = policy_config.threshold(
+        policy_data, "failed_ssh_login_warning_24h"
+    )
+    if failed_logins >= critical_count:
         return [
             _finding(
                 server_id,
@@ -229,7 +249,7 @@ def _security_findings(server_id: str, security: dict[str, Any]) -> list[dict[st
                 [],
             )
         ]
-    if failed_logins >= 20:
+    if failed_logins >= warning_count:
         return [
             _finding(
                 server_id,

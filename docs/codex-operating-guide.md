@@ -8,7 +8,7 @@ Codex is the analyst. The controller is the deterministic evidence collector and
 
 1. Read the latest generated Markdown report in `reports/generated/`.
 2. If more detail is needed, read the matching run directory in `history/runs/`.
-3. Use local JSON evidence as the source of truth.
+3. Use normalized fleet JSON as the source of truth for server IDs and roles.
 4. Explain findings by severity and operational impact.
 5. Recommend only predefined action IDs when an executable action is appropriate.
 6. Ask for explicit approval before running any `approval_required` action.
@@ -56,6 +56,6 @@ Prefer evidence in this order:
 2. Generated Markdown report
 3. Controller action history
 4. Server script source
-5. Direct read-only inspection commands
+5. Direct read-only inspection commands approved by the user
 
 Direct server mutation commands are not part of normal operation.

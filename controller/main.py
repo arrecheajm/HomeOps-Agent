@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from . import action_registry, collector, config, inventory, rules
+from . import action_registry, collector, config, inventory, policy, rules
 from .report_writer import write_report
 from .ssh_client import build_ssh_command
 
@@ -33,7 +33,12 @@ def apply_local_rules(fleet: dict[str, Any]) -> dict[str, Any]:
     """Return a copy of fleet health with rule findings attached."""
 
     updated = dict(fleet)
-    updated["findings"] = rules.evaluate_fleet(updated)
+    try:
+        policy_data = policy.load_policy()
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    updated["findings"] = rules.evaluate_fleet(updated, policy_data)
     updated["servers_checked"] = len(updated.get("servers") or [])
     updated["servers_failed"] = len(updated.get("collection_errors") or [])
     return updated
