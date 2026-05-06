@@ -132,6 +132,7 @@ def _server_section(run: history.RunSummary) -> list[str]:
         updates = server.get("updates") if isinstance(server.get("updates"), dict) else {}
         pending_total = updates.get("pending_total", 0)
         reboot_required = "yes" if updates.get("reboot_required") else "no"
+        services = _server_services(server)
         lines.extend(
             [
                 f'<article class="server-card status-{status.lower()}">',
@@ -142,6 +143,10 @@ def _server_section(run: history.RunSummary) -> list[str]:
                 f"<div><dt>Updates</dt><dd>{escape(str(pending_total))}</dd></div>",
                 f"<div><dt>Reboot</dt><dd>{escape(reboot_required)}</dd></div>",
                 "</dl>",
+                '<div class="service-block">',
+                "<h4>Services</h4>",
+                _service_list(services),
+                "</div>",
                 f"<p>{escape(note)}</p>",
                 "</article>",
             ]
@@ -185,6 +190,55 @@ def _findings_section(run: history.RunSummary) -> list[str]:
         )
     lines.extend(["</tbody>", "</table>", "</section>"])
     return lines
+
+
+def _server_services(server: dict[str, Any]) -> list[dict[str, Any]]:
+    services = server.get("services")
+    if not isinstance(services, list):
+        return []
+
+    role = str(server.get("role") or "")
+    priority = {
+        "openvpn_server": ("openvpnas", "openvpn", "openvpn-server@server", "ssh"),
+        "ispy_server": ("AgentDVR", "ispy", "agent-dvr", "ssh"),
+        "container_host": ("docker", "ssh"),
+    }.get(role, ("ssh",))
+
+    def sort_key(service: dict[str, Any]) -> tuple[int, str]:
+        name = str(service.get("name") or "")
+        try:
+            rank = priority.index(name)
+        except ValueError:
+            rank = len(priority)
+        return (rank, name.lower())
+
+    return sorted(
+        [service for service in services if isinstance(service, dict)],
+        key=sort_key,
+    )
+
+
+def _service_list(services: list[dict[str, Any]]) -> str:
+    if not services:
+        return '<p class="muted">No services reported.</p>'
+
+    items = []
+    for service in services:
+        name = str(service.get("name") or "unknown")
+        state = str(service.get("state") or "unknown")
+        enabled = service.get("enabled")
+        enabled_text = "enabled" if enabled is True else "disabled"
+        if enabled is None:
+            enabled_text = "unknown"
+        state_class = "ok" if state == "active" else "bad"
+        items.append(
+            '<li class="service-row">'
+            f"<code>{escape(name)}</code>"
+            f'<span class="service-state service-{state_class}">{escape(state)}</span>'
+            f"<small>{escape(enabled_text)}</small>"
+            "</li>"
+        )
+    return f'<ul class="service-list">{"".join(items)}</ul>'
 
 
 def _timeline_section(runs: list[history.RunSummary], output_dir: Path) -> list[str]:
@@ -278,8 +332,12 @@ h1, h2, h3, p { margin-top: 0; }
 h1 { font-size: 32px; margin-bottom: 4px; }
 h2 { font-size: 20px; margin-bottom: 16px; }
 h3 { font-size: 16px; margin-bottom: 10px; }
+h4 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
 p, small, span, td, th, dd, dt { font-size: 14px; }
-.topbar p, .metric small, .timeline-row span, .server-card p { color: var(--muted); }
+.topbar p, .metric small, .timeline-row span, .server-card p, .muted { color: var(--muted); }
 .actions, .timeline-row nav {
   display: flex;
   flex-wrap: wrap;
@@ -343,6 +401,33 @@ a:hover { text-decoration: underline; }
   border-radius: 6px;
   padding: 8px;
 }
+.service-block {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+  margin: 12px 0;
+}
+.service-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.service-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+}
+.service-state {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.service-ok { background: #e8f5ee; color: var(--ok); }
+.service-bad { background: #fdecea; color: var(--critical); }
 dt {
   color: var(--muted);
   margin-bottom: 2px;
@@ -408,6 +493,10 @@ code {
 @media (max-width: 560px) {
   .summary-grid, .server-facts {
     grid-template-columns: 1fr;
+  }
+  .service-row {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
   th, td {
     padding: 8px 6px;

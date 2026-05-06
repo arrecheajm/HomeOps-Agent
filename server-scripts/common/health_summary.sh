@@ -96,7 +96,7 @@ if [ -f /var/run/reboot-required ]; then
   reboot_required=true
 fi
 
-service_names="${HOMEOPS_SERVICES:-ssh sshd docker openvpn openvpn-server@server openvpnas agent-dvr}"
+service_names="${HOMEOPS_SERVICES:-ssh sshd docker openvpn openvpn-server@server openvpnas AgentDVR agent-dvr}"
 services_json=""
 for service in $service_names; do
   if systemctl list-unit-files "$service.service" >/dev/null 2>&1 || systemctl status "$service" >/dev/null 2>&1; then

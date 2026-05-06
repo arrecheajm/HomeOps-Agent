@@ -18,6 +18,7 @@ class HtmlReportWriterTests(unittest.TestCase):
         self.assertIn("Run Timeline", html)
         self.assertIn("reboot_required", html)
         self.assertIn("openvpn-server", html)
+        self.assertIn("openvpnas", html)
 
     def test_write_dashboard_creates_index_html(self):
         output_dir = Path("tests/.tmp/html-dashboard")
@@ -58,6 +59,10 @@ class HtmlReportWriterTests(unittest.TestCase):
                     "role": "openvpn_server",
                     "hostname": "vpnserver",
                     "updates": {"pending_total": 48, "reboot_required": True},
+                    "services": [
+                        {"name": "ssh", "state": "active", "enabled": False},
+                        {"name": "openvpnas", "state": "active", "enabled": True},
+                    ],
                 }
             ],
             collection_errors=[],

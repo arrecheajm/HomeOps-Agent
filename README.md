@@ -79,6 +79,7 @@ Later, this repo can add explicit deployment and maintenance commands that copy 
 - [Codex Operating Guide](docs/codex-operating-guide.md)
 - [Data Schema](docs/data-schema.md)
 - [Reporting](docs/reporting.md)
+- [Active Operations Plan](docs/active-operations-plan.md)
 - [Implementation Roadmap](docs/implementation-roadmap.md)
 - [Server Setup Walkthrough](docs/server-setup-walkthrough.md)
 - [Decision Log](docs/decision-log.md)

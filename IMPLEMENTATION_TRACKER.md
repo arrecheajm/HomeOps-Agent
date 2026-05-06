@@ -124,6 +124,12 @@ Forbidden actions:
 
 Bring `container-host` online and add it to the same read-only collection path. After all servers collect cleanly, decide whether to implement approval-gated maintenance actions.
 
+Current operations are tracked in:
+
+```text
+docs/active-operations-plan.md
+```
+
 Connection readiness:
 
 - [x] Harden controller trust boundary before live SSH collection.
