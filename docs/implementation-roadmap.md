@@ -39,6 +39,7 @@ Goal: collect read-only health JSON from configured servers.
 - add `config/servers.example.yaml`
 - add inventory loader
 - add SSH client wrapper with timeout handling
+- support optional identity files for dedicated controller SSH keys
 - reject unapproved remote health commands
 - run one approved collection command per server
 - save raw collection results under `history/runs/`

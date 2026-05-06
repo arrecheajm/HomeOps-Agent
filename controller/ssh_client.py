@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import time
 from dataclasses import dataclass
+from os.path import expanduser, expandvars
 
 from .inventory import ServerInventoryItem, is_allowed_remote_health_command
 
@@ -28,7 +29,7 @@ def build_ssh_command(server: ServerInventoryItem) -> list[str]:
             f"Remote health command is not approved: {server.remote_health_command}"
         )
 
-    return [
+    command = [
         "ssh",
         "-p",
         str(server.port),
@@ -40,9 +41,12 @@ def build_ssh_command(server: ServerInventoryItem) -> list[str]:
         "ServerAliveInterval=5",
         "-o",
         "ServerAliveCountMax=2",
-        server.ssh_target,
-        server.remote_health_command,
     ]
+    if server.identity_file:
+        command.extend(["-i", expanduser(expandvars(server.identity_file))])
+
+    command.extend([server.ssh_target, server.remote_health_command])
+    return command
 
 
 def run_remote_command(server: ServerInventoryItem) -> RemoteCommandResult:

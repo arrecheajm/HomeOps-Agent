@@ -66,9 +66,20 @@ Edit:
 - `user`
 - `port`
 - `role`
+- `identity_file`
 - `remote_health_command`
 
 The example file uses JSON-compatible YAML so the controller can parse it without extra Python dependencies.
+
+If using a dedicated controller SSH key, set `identity_file` to the local private key path. Environment variables and `~` are expanded by the controller before running SSH.
+
+Windows example:
+
+```json
+"identity_file": "%USERPROFILE%\\.ssh\\homeops_ed25519"
+```
+
+Leave `identity_file` as `null` when relying on the default SSH key or an SSH config entry.
 
 For v1, `remote_health_command` must be the approved read-only script path:
 
@@ -82,6 +93,7 @@ The controller rejects other command strings before building or running SSH comm
 
 - [ ] `config/servers.yaml` exists and has correct hostnames or IP addresses.
 - [ ] SSH key authentication works from the controller machine to each server.
+- [ ] `identity_file` is set when a non-default SSH key is required.
 - [ ] The configured SSH user can run the remote health command.
 - [ ] `health_summary.sh` exists on each server and is executable.
 - [ ] Running the health script directly on each server prints valid JSON.

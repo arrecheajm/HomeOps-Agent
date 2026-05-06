@@ -9,6 +9,7 @@
       "enabled": true,
       "connect_timeout_seconds": 10,
       "command_timeout_seconds": 30,
+      "identity_file": null,
       "remote_health_command": "/opt/homeops-agent/server-scripts/common/health_summary.sh"
     },
     {
@@ -20,6 +21,7 @@
       "enabled": true,
       "connect_timeout_seconds": 10,
       "command_timeout_seconds": 30,
+      "identity_file": null,
       "remote_health_command": "/opt/homeops-agent/server-scripts/common/health_summary.sh"
     },
     {
@@ -31,6 +33,7 @@
       "enabled": true,
       "connect_timeout_seconds": 10,
       "command_timeout_seconds": 30,
+      "identity_file": null,
       "remote_health_command": "/opt/homeops-agent/server-scripts/common/health_summary.sh"
     }
   ]

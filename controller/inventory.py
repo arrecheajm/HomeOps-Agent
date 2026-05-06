@@ -26,6 +26,7 @@ class ServerInventoryItem:
     connect_timeout_seconds: int = 10
     command_timeout_seconds: int = 30
     remote_health_command: str = DEFAULT_REMOTE_HEALTH_COMMAND
+    identity_file: str | None = None
 
     @property
     def ssh_target(self) -> str:
@@ -103,6 +104,9 @@ def _server_from_mapping(index: int, value: Any) -> ServerInventoryItem:
         connect_timeout_seconds=int(value.get("connect_timeout_seconds", 10)),
         command_timeout_seconds=int(value.get("command_timeout_seconds", 30)),
         remote_health_command=remote_health_command,
+        identity_file=(
+            str(value["identity_file"]) if value.get("identity_file") else None
+        ),
     )
 
 

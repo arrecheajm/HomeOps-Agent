@@ -11,6 +11,7 @@ Live status:
 - Fixture-based reports work.
 - Inventory loading works.
 - SSH command dry-run works.
+- SSH inventory supports optional identity files for dedicated controller keys.
 - Collector code writes raw results and `fleet-health.json`.
 - Controller validates collected server health shapes before normalization.
 - Inventory and SSH command building reject unapproved remote health commands.
@@ -34,6 +35,7 @@ Current operating model:
 - [x] Generate a Markdown report from fixture data.
 - [x] Add SSH inventory loading.
 - [x] Add SSH collection wrapper with timeouts.
+- [x] Add optional SSH identity file support.
 - [x] Add `server-scripts/common/health_summary.sh`.
 - [x] Save raw run artifacts under `history/runs/<timestamp>/`.
 - [x] Normalize server outputs into `fleet-health.json`.

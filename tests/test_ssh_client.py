@@ -27,6 +27,20 @@ class SshClientTests(unittest.TestCase):
             command[-1], "/opt/homeops-agent/server-scripts/common/health_summary.sh"
         )
 
+    def test_build_ssh_command_includes_identity_file_when_configured(self):
+        server = ServerInventoryItem(
+            server_id="container-host",
+            role="container_host",
+            host="container-host.local",
+            user="homeops",
+            identity_file="~/.ssh/homeops_ed25519",
+        )
+
+        command = build_ssh_command(server)
+
+        self.assertIn("-i", command)
+        self.assertIn("homeops_ed25519", command[command.index("-i") + 1])
+
     def test_build_ssh_command_rejects_unapproved_command(self):
         server = ServerInventoryItem(
             server_id="container-host",

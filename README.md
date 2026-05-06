@@ -78,5 +78,6 @@ Later, this repo can add an explicit deployment command that copies scripts over
 - [Data Schema](docs/data-schema.md)
 - [Implementation Roadmap](docs/implementation-roadmap.md)
 - [Server Setup](docs/server-setup.md)
+- [Server Setup Walkthrough](docs/server-setup-walkthrough.md)
 - [Decision Log](docs/decision-log.md)
 - [Implementation Tracker](IMPLEMENTATION_TRACKER.md)
