@@ -16,7 +16,8 @@ Live status:
 - Controller validates collected server health shapes before normalization.
 - Inventory and SSH command building reject unapproved remote health commands.
 - Local rule thresholds are loaded from `config/policy.yaml`.
-- No real server collection has been run yet.
+- First real read-only collection succeeded for `openvpn-server` and `ispy-server`.
+- `container-host` is temporarily disabled in local inventory while offline.
 
 Current operating model:
 
@@ -129,10 +130,10 @@ Connection readiness:
 
 - [x] Harden controller trust boundary before live SSH collection.
 - [ ] Create local `config/servers.yaml`.
-- [ ] Install `health_summary.sh` on `openvpn-server`.
-- [ ] Install `health_summary.sh` on `ispy-server`.
+- [x] Install `health_summary.sh` on `openvpn-server`.
+- [x] Install `health_summary.sh` on `ispy-server`.
 - [ ] Install `health_summary.sh` on `container-host`.
-- [ ] Validate script JSON output locally on each server.
-- [ ] Confirm SSH key authentication from controller to each server.
-- [ ] Run `python -m controller.main collect --dry-run`.
-- [ ] Run first real `python -m controller.main collect`.
+- [x] Validate script JSON output locally on each enabled server.
+- [x] Confirm SSH key authentication from controller to each enabled server.
+- [x] Run `python -m controller.main collect --dry-run`.
+- [x] Run first real `python -m controller.main collect` for enabled servers.

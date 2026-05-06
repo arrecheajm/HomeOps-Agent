@@ -68,7 +68,7 @@ swap_used_percent="$(awk '
 ' /proc/meminfo 2>/dev/null)"
 
 disk_json="$(
-  df -P -BG -x tmpfs -x devtmpfs -x squashfs 2>/dev/null | awk '
+  df -P -BG -x tmpfs -x devtmpfs -x squashfs -x efivarfs 2>/dev/null | awk '
     NR > 1 {
       mount=$6
       used=$5
@@ -96,7 +96,7 @@ if [ -f /var/run/reboot-required ]; then
   reboot_required=true
 fi
 
-service_names="${HOMEOPS_SERVICES:-ssh sshd docker openvpn openvpn-server@server agent-dvr}"
+service_names="${HOMEOPS_SERVICES:-ssh sshd docker openvpn openvpn-server@server openvpnas agent-dvr}"
 services_json=""
 for service in $service_names; do
   if systemctl list-unit-files "$service.service" >/dev/null 2>&1 || systemctl status "$service" >/dev/null 2>&1; then
