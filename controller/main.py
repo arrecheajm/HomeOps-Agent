@@ -8,7 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from . import action_registry, collector, config, inventory, policy, rules
+from . import action_registry, collector, config, history, inventory, policy, rules
+from .html_report_writer import write_dashboard
 from .report_writer import write_report
 from .ssh_client import build_ssh_command
 
@@ -111,12 +112,14 @@ def command_collect(args: argparse.Namespace) -> int:
     report_path = None
     if not args.no_report:
         report_path = write_report(fleet, config.GENERATED_REPORTS_DIR)
+    dashboard_path = write_dashboard(history.discover_run_summaries())
 
     counts = rules.count_by_severity(fleet.get("findings") or [])
     print(f"Run directory: {run_dir}")
     print(f"Wrote fleet health: {fleet_path}")
     if report_path:
         print(f"Wrote report: {report_path}")
+    print(f"Wrote dashboard: {dashboard_path}")
     print(
         "Findings: "
         f"{counts['critical']} critical, "
@@ -135,6 +138,16 @@ def command_actions_list(_args: argparse.Namespace) -> int:
             f"| `{action['action_id']}` | {action['risk']} | "
             f"{implemented} | {action['description']} |"
         )
+    return 0
+
+
+def command_dashboard(args: argparse.Namespace) -> int:
+    runs_dir = Path(args.runs_dir) if args.runs_dir else config.RUNS_DIR
+    output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
+    runs = history.discover_run_summaries(runs_dir, output_dir)
+    dashboard_path = write_dashboard(runs, output_dir)
+    print(f"Wrote dashboard: {dashboard_path}")
+    print(f"Runs included: {len(runs)}")
     return 0
 
 
@@ -186,6 +199,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Alias for --input kept for fixture-driven local testing.",
     )
     check_parser.set_defaults(func=command_check)
+
+    dashboard_parser = subparsers.add_parser(
+        "dashboard", help="Generate an HTML dashboard from run history"
+    )
+    dashboard_parser.add_argument(
+        "--runs-dir",
+        help="History runs directory. Defaults to history/runs.",
+    )
+    dashboard_parser.add_argument(
+        "--output-dir",
+        help="Directory for generated dashboard. Defaults to reports/generated.",
+    )
+    dashboard_parser.set_defaults(func=command_dashboard)
 
     actions_parser = subparsers.add_parser("actions", help="Inspect or run actions")
     actions_subparsers = actions_parser.add_subparsers(

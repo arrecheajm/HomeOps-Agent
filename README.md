@@ -47,6 +47,7 @@ python -m controller.main report --input history/runs/<timestamp>/fleet-health.j
 python -m controller.main check
 python -m controller.main check --input history/runs/<timestamp>/fleet-health.json
 python -m controller.main actions list
+python -m controller.main dashboard
 python -m controller.main collect --dry-run --inventory config/servers.example.yaml
 python -m controller.main collect
 python -m unittest discover -s tests
@@ -76,6 +77,7 @@ Later, this repo can add an explicit deployment command that copies scripts over
 - [Command Safety](docs/command-safety.md)
 - [Codex Operating Guide](docs/codex-operating-guide.md)
 - [Data Schema](docs/data-schema.md)
+- [Reporting](docs/reporting.md)
 - [Implementation Roadmap](docs/implementation-roadmap.md)
 - [Server Setup](docs/server-setup.md)
 - [Server Setup Walkthrough](docs/server-setup-walkthrough.md)

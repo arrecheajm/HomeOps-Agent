@@ -18,6 +18,7 @@ Live status:
 - Local rule thresholds are loaded from `config/policy.yaml`.
 - First real read-only collection succeeded for `openvpn-server` and `ispy-server`.
 - `container-host` is temporarily disabled in local inventory while offline.
+- HTML dashboard generation is implemented for grouped run history.
 
 Current operating model:
 
@@ -42,6 +43,7 @@ Current operating model:
 - [x] Normalize server outputs into `fleet-health.json`.
 - [x] Add local rules for disk, updates, services, Docker, and SSH login summaries.
 - [x] Write generated report to `reports/generated/`.
+- [x] Write generated HTML dashboard to `reports/generated/index.html`.
 - [x] Add action registry skeleton.
 - [x] Add `actions list` command.
 - [x] Keep mutating actions disabled until read-only collection is reliable.
@@ -60,6 +62,8 @@ Current operating model:
 | `controller/rules.py` | local issue detection | Implemented |
 | `controller/policy.py` | policy loading and thresholds | Implemented |
 | `controller/report_writer.py` | Markdown report generation | Implemented |
+| `controller/html_report_writer.py` | HTML dashboard generation | Implemented |
+| `controller/history.py` | run history loading and grouping | Implemented |
 | `controller/action_registry.py` | allowed action definitions | Implemented |
 | `controller/approvals.py` | approval checks and prompts | Planned |
 | `controller/schemas.py` | schema loading and validation helpers | Implemented |
@@ -137,3 +141,9 @@ Connection readiness:
 - [x] Confirm SSH key authentication from controller to each enabled server.
 - [x] Run `python -m controller.main collect --dry-run`.
 - [x] Run first real `python -m controller.main collect` for enabled servers.
+
+Reporting readiness:
+
+- [x] Group run history by practical operating periods.
+- [x] Generate HTML dashboard from structured run history.
+- [x] Refresh HTML dashboard after collection.

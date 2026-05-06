@@ -87,6 +87,17 @@ Goal: generate readable evidence for humans and Codex.
 - include recommended action IDs
 - include actions taken from history
 
+## Phase 6b: HTML Dashboard
+
+Goal: make run history easier to scan visually.
+
+- load structured run history from `history/runs/`
+- group runs by today, this week, earlier this month, and monthly archive
+- render latest server status cards
+- render latest findings by severity
+- link dashboard entries to Markdown reports and fleet JSON
+- refresh dashboard after collection
+
 ## Phase 7: Action Registry and Approval Flow
 
 Goal: allow safe, predefined maintenance actions.
