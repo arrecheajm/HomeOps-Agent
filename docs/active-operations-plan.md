@@ -96,12 +96,14 @@ Recommended order:
 3. Reboot only after confirming users and service impact.
 4. Wait for the server to return.
 5. Re-run HomeOps collection before moving to the next server.
-6. Then handle `openvpn-server` during a VPN-safe maintenance window.
+6. Then handle `openvpn-server` only during a VPN-safe maintenance window, ideally while local to the server network.
 
 VPN caution:
 
 - rebooting `openvpn-server` can drop VPN clients
 - confirm whether remote access depends on it before rebooting
+- if your current access path depends on the VPN server, rebooting or breaking `openvpn-server` can cut off access to all managed servers
+- only perform VPN-impacting maintenance when you are on the same LAN as the servers or have a separate recovery path
 
 iSpy caution:
 

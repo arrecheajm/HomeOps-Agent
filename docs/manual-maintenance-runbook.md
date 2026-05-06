@@ -16,6 +16,8 @@ Reasoning:
 - Both servers have pending package updates and kernel-triggered reboot-required state.
 - `ispy-server` maintenance can interrupt camera recording or monitoring.
 - `openvpn-server` maintenance can disconnect VPN clients, so handle it when VPN interruption is acceptable.
+- If your current access path to the servers depends on `openvpn-server`, rebooting or breaking it can cut off access to the whole fleet.
+- Prefer doing `openvpn-server` maintenance while physically on the same LAN or with a separate recovery path.
 - Do not update or reboot both servers at the same time.
 
 ## Pre-Maintenance Checks
@@ -68,6 +70,7 @@ Proceed only when:
 - no unexpected users are logged in
 - the role-specific service is active before maintenance
 - you are comfortable with the outage window
+- for `openvpn-server`, you have confirmed whether you are currently relying on VPN for access
 
 ## Update One Server
 
@@ -103,6 +106,8 @@ For `openvpn-server`:
 ```powershell
 ssh -i $env:USERPROFILE\.ssh\homeops_ed25519 vpnserver@192.168.86.25 uptime
 ```
+
+If this command fails after reboot and you were connected through VPN, stop and use your out-of-band or local network access path. Do not continue with other server maintenance until VPN access is restored.
 
 ## Post-Reboot Server Checks
 
@@ -181,5 +186,6 @@ Stop and reassess if:
 - `apt upgrade` proposes unexpected removals
 - HomeOps collection reports a collection error
 - VPN access is needed before rebooting `openvpn-server`
+- you are not on the local server network and have no independent recovery path for `openvpn-server`
 
 Record findings in `docs/active-operations-plan.md` before continuing.
