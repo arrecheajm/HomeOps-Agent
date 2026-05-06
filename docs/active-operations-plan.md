@@ -81,6 +81,12 @@ Current follow-up:
 
 ## Step 3: Perform Manual Maintenance One Server At A Time
 
+Use the maintenance runbook:
+
+```text
+docs/manual-maintenance-runbook.md
+```
+
 Do not update and reboot both enabled servers at the same time.
 
 Recommended order:

@@ -130,6 +130,12 @@ Current operations are tracked in:
 docs/active-operations-plan.md
 ```
 
+Manual update/reboot workflow is tracked in:
+
+```text
+docs/manual-maintenance-runbook.md
+```
+
 Connection readiness:
 
 - [x] Harden controller trust boundary before live SSH collection.
