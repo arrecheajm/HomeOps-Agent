@@ -1,9 +1,8 @@
 # Reporting
 
-HomeOps writes two report formats from the same run history:
+HomeOps writes one generated report surface from run history:
 
-- Markdown snapshots for detailed reading.
-- An HTML dashboard for scanning current status and recent trends.
+- An HTML dashboard for current status, action history, and recent trends.
 
 ## Source Of Truth
 
@@ -14,7 +13,7 @@ history/runs/<timestamp>/fleet-health.json
 history/actions/<timestamp>-<server_id>-<action_id>.json
 ```
 
-Markdown-only reports without a matching `fleet-health.json` are legacy artifacts and are not included in the HTML dashboard timeline.
+Legacy Markdown reports are not generated anymore and are not included in the HTML dashboard timeline.
 
 ## HTML Dashboard
 
@@ -44,7 +43,7 @@ Open that file in a browser to review:
 - recent action attempts from action history
 - historical charts for findings, pending updates, reboot-required state, and Docker issues
 - grouped run timeline
-- links to Markdown reports, fleet JSON, and action record JSON
+- links to fleet JSON and action record JSON
 
 `reports/generated/` is ignored by git. Regenerate the dashboard locally whenever needed instead of committing generated HTML.
 
@@ -70,7 +69,7 @@ The dashboard renders historical charts directly from structured run JSON:
 - Docker issue counts
 
 Charts intentionally use `history/runs/<timestamp>/fleet-health.json` rather
-than parsing Markdown reports.
+than parsing legacy Markdown reports.
 
 ## Action History
 
@@ -81,17 +80,17 @@ a JSON record under:
 history/actions/
 ```
 
-The dashboard and Markdown reports load these records and show the most recent
-action attempts with server ID, action ID, status, dry-run state, and arguments.
+The dashboard loads these records and shows the most recent action attempts with
+server ID, action ID, status, dry-run state, and arguments.
 This keeps mutating operations auditable even after the controller grows beyond
 read-only collection.
 
 ## Report Files
 
-Per-run Markdown reports use:
+The generated HTML report is:
 
 ```text
-reports/generated/homeops-report-<timestamp>.md
+reports/generated/index.html
 ```
 
-The dashboard links to a Markdown report when one exists for the run.
+The controller no longer writes `homeops-report-<timestamp>.md` files.

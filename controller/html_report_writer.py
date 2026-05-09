@@ -8,7 +8,15 @@ from pathlib import Path
 from typing import Any
 
 from . import config, history, rules
-from .report_writer import ROLE_LABELS
+
+
+ROLE_LABELS = {
+    "openvpn_server": "VPN",
+    "vpn": "VPN",
+    "ispy_server": "Security Cameras",
+    "security_camera": "Security Cameras",
+    "container_host": "Containers",
+}
 
 
 def write_dashboard(
@@ -102,10 +110,7 @@ def _dashboard_nav() -> list[str]:
 def _latest_link(run: history.RunSummary | None, output_dir: Path) -> str:
     if not run:
         return ""
-    links = [_link("Fleet JSON", run.fleet_path, output_dir)]
-    if run.report_path:
-        links.insert(0, _link("Markdown Report", run.report_path, output_dir))
-    return f'<nav class="actions">{"".join(links)}</nav>'
+    return f'<nav class="actions">{_link("Fleet JSON", run.fleet_path, output_dir)}</nav>'
 
 
 def _summary_cards(run: history.RunSummary) -> list[str]:
@@ -341,8 +346,6 @@ def _timeline_section(runs: list[history.RunSummary], output_dir: Path) -> list[
         lines.extend([f"<h3>{escape(label)}</h3>", '<div class="timeline">'])
         for run in grouped_runs:
             links = [_link("JSON", run.fleet_path, output_dir)]
-            if run.report_path:
-                links.insert(0, _link("Markdown", run.report_path, output_dir))
             lines.append(
                 '<article class="timeline-row">'
                 "<div>"

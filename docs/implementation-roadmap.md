@@ -2,7 +2,7 @@
 
 ## Current Status
 
-The controller can generate Markdown reports and an HTML dashboard, load inventory with optional SSH identity files, validate approved remote health commands, dry-run collection, validate collected server health shapes, normalize inventory identity, and run collector logic under tests.
+The controller can generate an HTML dashboard, load inventory with optional SSH identity files, validate approved remote health commands, dry-run collection, validate collected server health shapes, normalize inventory identity, and run collector logic under tests.
 
 The first real read-only collection has succeeded for all three servers: `openvpn-server`, `ispy-server`, and `container-host`. `container-host` is online at `192.168.86.58`, local inventory uses `containerserver@192.168.86.58`, SSH key authentication works, and the approved read-only health script is installed.
 
@@ -78,11 +78,10 @@ Goal: detect common issues without Codex.
 - detect unhealthy Docker containers
 - detect suspicious SSH login spikes
 
-## Phase 6: Markdown Reports
+## Phase 6: HTML Reporting
 
-Goal: generate readable evidence for humans and Codex.
+Goal: generate readable evidence for humans and Codex without Markdown report artifacts.
 
-- add report writer
 - include fleet summary table
 - include findings by severity
 - include per-server details
@@ -99,7 +98,7 @@ Goal: make run history easier to scan visually.
 - render latest findings by severity
 - render recent action attempts from `history/actions/`
 - render historical charts from structured run JSON
-- link dashboard entries to Markdown reports and fleet JSON
+- link dashboard entries to fleet JSON
 - refresh dashboard after collection
 
 ## Phase 7: Action Registry and Approval Flow
@@ -142,9 +141,8 @@ python -m controller.main report
 And produces:
 
 ```text
-history/runs/<timestamp>/fleet-health.json
-reports/generated/homeops-report-<timestamp>.md
 reports/generated/index.html
+history/runs/<timestamp>/fleet-health.json
 ```
 
 MVP constraints:
@@ -153,4 +151,4 @@ MVP constraints:
 - no OpenAI API integration
 - no automated risky actions
 - local rule findings included in report
-- report and dashboard clear enough for Codex to analyze from VS Code
+- HTML dashboard clear enough for Codex to analyze from VS Code

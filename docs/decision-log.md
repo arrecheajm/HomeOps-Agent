@@ -104,7 +104,7 @@ The HTML dashboard will be generated from `history/runs/<timestamp>/fleet-health
 Reasoning:
 
 - Fleet JSON contains normalized server IDs, roles, counts, findings, and collection errors.
-- Markdown reports are human-readable snapshots and may exist without matching structured run data.
+- Legacy Markdown reports may exist without matching structured run data.
 - Grouping by today, this week, earlier this month, and monthly archives is more useful than a flat report list.
 
 Consequences:
@@ -112,3 +112,25 @@ Consequences:
 - `reports/generated/index.html` is regenerated locally and ignored by git.
 - Markdown-only legacy reports are not included in dashboard trends.
 - New report visualizations should read structured run history first.
+
+## 0006: Generated Reports Are HTML Only
+
+Status: accepted
+
+Date: 2026-05-09
+
+Decision:
+
+The controller will no longer generate Markdown report files. Generated reports are HTML-only, currently centered on `reports/generated/index.html`.
+
+Reasoning:
+
+- One report surface avoids duplicated content and stale report paths.
+- The HTML dashboard already includes current state, trends, and action history.
+- Fleet JSON and action JSON remain the structured source of truth for automation and review.
+
+Consequences:
+
+- `python -m controller.main collect` refreshes the HTML dashboard and does not write `homeops-report-<timestamp>.md`.
+- `python -m controller.main report` writes an HTML report view.
+- Existing generated Markdown files are legacy artifacts and should not be linked or regenerated.

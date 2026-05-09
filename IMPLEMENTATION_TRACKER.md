@@ -39,7 +39,7 @@ Current operating model:
 - [x] Add CLI entrypoint at `controller/main.py`.
 - [x] Add `config/servers.example.yaml`.
 - [x] Add fixture data for one fake fleet run.
-- [x] Generate a Markdown report from fixture data.
+- [x] Generate an HTML report/dashboard from fixture data.
 - [x] Add SSH inventory loading.
 - [x] Add SSH collection wrapper with timeouts.
 - [x] Add optional SSH identity file support.
@@ -66,7 +66,6 @@ Current operating model:
 | `controller/normalizer.py` | common fleet model | Implemented |
 | `controller/rules.py` | local issue detection | Implemented |
 | `controller/policy.py` | policy loading and thresholds | Implemented |
-| `controller/report_writer.py` | Markdown report generation | Implemented |
 | `controller/html_report_writer.py` | HTML dashboard generation | Implemented |
 | `controller/history.py` | run history loading and grouping | Implemented |
 | `controller/action_registry.py` | allowed action definitions | Implemented |
@@ -164,6 +163,6 @@ Reporting readiness:
 
 - [x] Group run history by practical operating periods.
 - [x] Generate HTML dashboard from structured run history.
-- [x] Show action history in Markdown reports and the HTML dashboard.
+- [x] Show action history in the HTML dashboard.
 - [x] Show historical dashboard charts for findings, updates, reboots, and Docker issues.
 - [x] Refresh HTML dashboard after collection.

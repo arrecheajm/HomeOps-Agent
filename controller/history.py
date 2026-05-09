@@ -17,7 +17,6 @@ class RunSummary:
     generated_at: str
     generated_dt: datetime
     fleet_path: Path
-    report_path: Path | None
     servers_checked: int
     servers_failed: int
     counts: dict[str, int]
@@ -43,13 +42,10 @@ class ActionSummary:
     message: str
 
 
-def discover_run_summaries(
-    runs_dir: Path | None = None, reports_dir: Path | None = None
-) -> list[RunSummary]:
+def discover_run_summaries(runs_dir: Path | None = None) -> list[RunSummary]:
     """Load fleet-health summaries from history run directories."""
 
     root = runs_dir or config.RUNS_DIR
-    output_reports_dir = reports_dir or config.GENERATED_REPORTS_DIR
     if not root.exists():
         return []
 
@@ -57,7 +53,7 @@ def discover_run_summaries(
     for run_dir in root.iterdir():
         if not run_dir.is_dir():
             continue
-        summary = load_run_summary(run_dir, output_reports_dir)
+        summary = load_run_summary(run_dir)
         if summary:
             summaries.append(summary)
 
@@ -113,7 +109,7 @@ def load_action_summary(path: Path) -> ActionSummary | None:
     )
 
 
-def load_run_summary(run_dir: Path, reports_dir: Path) -> RunSummary | None:
+def load_run_summary(run_dir: Path) -> RunSummary | None:
     """Load one run summary from a history run directory."""
 
     fleet_path = run_dir / "fleet-health.json"
@@ -128,18 +124,27 @@ def load_run_summary(run_dir: Path, reports_dir: Path) -> RunSummary | None:
     if not isinstance(fleet, dict):
         return None
 
-    generated_at = str(fleet.get("generated_at") or run_dir.name)
-    generated_dt = parse_timestamp(generated_at)
-    findings = list(fleet.get("findings") or [])
-    report_name = f"homeops-report-{config.safe_timestamp(generated_at)}.md"
-    report_path = reports_dir / report_name
-
-    return RunSummary(
-        run_id=run_dir.name,
-        generated_at=generated_at,
-        generated_dt=generated_dt,
+    return run_summary_from_fleet(
+        fleet,
         fleet_path=fleet_path,
-        report_path=report_path if report_path.exists() else None,
+        run_id=run_dir.name,
+    )
+
+
+def run_summary_from_fleet(
+    fleet: dict[str, Any],
+    fleet_path: Path,
+    run_id: str | None = None,
+) -> RunSummary:
+    """Build a run summary from an already loaded fleet object."""
+
+    generated_at = str(fleet.get("generated_at") or run_id or config.utc_now_iso())
+    findings = list(fleet.get("findings") or [])
+    return RunSummary(
+        run_id=run_id or config.safe_timestamp(generated_at),
+        generated_at=generated_at,
+        generated_dt=parse_timestamp(generated_at),
+        fleet_path=fleet_path,
         servers_checked=_as_int(fleet.get("servers_checked")),
         servers_failed=_as_int(fleet.get("servers_failed")),
         counts=rules.count_by_severity(findings),

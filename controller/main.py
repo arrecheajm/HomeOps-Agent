@@ -20,7 +20,6 @@ from . import (
     rules,
 )
 from .html_report_writer import write_dashboard
-from .report_writer import write_report
 from .ssh_client import build_ssh_command
 
 
@@ -66,12 +65,18 @@ def resolve_input_path(args: argparse.Namespace) -> Path:
 
 
 def command_report(args: argparse.Namespace) -> int:
-    fleet = apply_local_rules(load_json(resolve_input_path(args)))
+    input_path = resolve_input_path(args)
+    fleet = apply_local_rules(load_json(input_path))
     output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
-    report_path = write_report(fleet, output_dir, history.discover_action_summaries())
+    run_summary = history.run_summary_from_fleet(fleet, input_path)
+    dashboard_path = write_dashboard(
+        [run_summary],
+        output_dir,
+        history.discover_action_summaries(),
+    )
 
     counts = rules.count_by_severity(fleet.get("findings") or [])
-    print(f"Wrote report: {report_path}")
+    print(f"Wrote HTML report: {dashboard_path}")
     print(
         "Findings: "
         f"{counts['critical']} critical, "
@@ -119,13 +124,6 @@ def command_collect(args: argparse.Namespace) -> int:
     fleet = apply_local_rules(fleet)
     fleet_path = collector.save_fleet_health(fleet, run_dir)
 
-    report_path = None
-    if not args.no_report:
-        report_path = write_report(
-            fleet,
-            config.GENERATED_REPORTS_DIR,
-            history.discover_action_summaries(),
-        )
     dashboard_path = write_dashboard(
         history.discover_run_summaries(),
         actions=history.discover_action_summaries(),
@@ -134,9 +132,7 @@ def command_collect(args: argparse.Namespace) -> int:
     counts = rules.count_by_severity(fleet.get("findings") or [])
     print(f"Run directory: {run_dir}")
     print(f"Wrote fleet health: {fleet_path}")
-    if report_path:
-        print(f"Wrote report: {report_path}")
-    print(f"Wrote dashboard: {dashboard_path}")
+    print(f"Wrote HTML dashboard: {dashboard_path}")
     print(
         "Findings: "
         f"{counts['critical']} critical, "
@@ -206,7 +202,7 @@ def command_actions_run(args: argparse.Namespace) -> int:
 def command_dashboard(args: argparse.Namespace) -> int:
     runs_dir = Path(args.runs_dir) if args.runs_dir else config.RUNS_DIR
     output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
-    runs = history.discover_run_summaries(runs_dir, output_dir)
+    runs = history.discover_run_summaries(runs_dir)
     dashboard_path = write_dashboard(runs, output_dir, history.discover_action_summaries())
     print(f"Wrote dashboard: {dashboard_path}")
     print(f"Runs included: {len(runs)}")
@@ -217,7 +213,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="HomeOps controller")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    report_parser = subparsers.add_parser("report", help="Generate a Markdown report")
+    report_parser = subparsers.add_parser("report", help="Generate an HTML report")
     report_parser.add_argument(
         "--input",
         help="Fleet health JSON to render. Defaults to tests/fixtures/fleet-health.json.",
@@ -243,11 +239,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         help="Show SSH commands that would run without connecting.",
-    )
-    collect_parser.add_argument(
-        "--no-report",
-        action="store_true",
-        help="Collect and write fleet JSON without writing a Markdown report.",
     )
     collect_parser.set_defaults(func=command_collect)
 

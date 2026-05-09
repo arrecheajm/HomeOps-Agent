@@ -129,7 +129,6 @@ Then review:
 ```text
 reports/generated/index.html
 history/runs/<timestamp>/fleet-health.json
-reports/generated/homeops-report-<timestamp>.md
 ```
 
 Expected result after maintenance:

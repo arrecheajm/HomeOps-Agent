@@ -27,7 +27,7 @@ Codex is the analyst. The controller is the deterministic evidence collector. A 
 
 ```text
 1. Run collection or dashboard command.
-2. Inspect generated HTML, Markdown, and JSON artifacts.
+2. Inspect generated HTML and JSON artifacts.
 3. Summarize issues.
 4. Map any recommendation to an action_id.
 5. Run action dry-runs first when an implemented action may apply.
@@ -54,9 +54,8 @@ Prefer evidence in this order:
 
 1. Generated fleet health JSON
 2. Generated HTML dashboard
-3. Generated Markdown report
-4. Server script source
-5. Direct read-only inspection commands approved by the user
+3. Server script source
+4. Direct read-only inspection commands approved by the user
 
 Direct server mutation commands are not part of normal operation. Use controller
 action IDs and action history for supported mutations.

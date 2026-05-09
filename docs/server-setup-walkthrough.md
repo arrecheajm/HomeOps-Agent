@@ -191,7 +191,6 @@ Review the generated artifacts:
 
 ```text
 history/runs/<timestamp>/fleet-health.json
-reports/generated/homeops-report-<timestamp>.md
 reports/generated/index.html
 ```
 

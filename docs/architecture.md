@@ -18,8 +18,7 @@ The controller runs from the main machine and owns:
 - JSON parsing and schema validation
 - normalization into a fleet health model
 - local rule-based issue detection
-- Markdown report generation
-- HTML dashboard generation
+- HTML report and dashboard generation
 - action registry definitions
 - approval workflow for supported actions
 - history of reports and action attempts
@@ -40,7 +39,7 @@ The servers do not run autonomous agents and do not store any OpenAI API key.
 
 Codex acts as the analyst and operator assistant:
 
-- reads the latest HTML dashboard or Markdown report
+- reads the latest HTML dashboard
 - reads matching JSON evidence when more detail is needed
 - explains issues and tradeoffs
 - recommends predefined action IDs
@@ -79,7 +78,6 @@ HomeOps-Agent/
     rules.py
     policy.py
     history.py
-    report_writer.py
     html_report_writer.py
     approvals.py
     action_runner.py
@@ -121,7 +119,6 @@ HomeOps-Agent/
     archive/
 
   reports/
-    EXAMPLE_REPORT.md
     generated/
       index.html
 

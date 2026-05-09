@@ -77,9 +77,6 @@ class HtmlReportWriterTests(unittest.TestCase):
             generated_at=generated_at,
             generated_dt=datetime.fromisoformat(generated_at.replace("Z", "+00:00")),
             fleet_path=Path(f"history/runs/{run_id}/fleet-health.json"),
-            report_path=Path(
-                f"reports/generated/homeops-report-{run_id}.md"
-            ),
             servers_checked=1,
             servers_failed=0,
             counts={"critical": 0, "warning": warnings, "info": 0},

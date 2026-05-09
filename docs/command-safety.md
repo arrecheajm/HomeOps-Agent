@@ -130,9 +130,8 @@ Action records are stored under:
 history/actions/
 ```
 
-The Markdown report and HTML dashboard load these records so dry-runs,
-approval denials, completed actions, and failed actions remain visible during
-normal review.
+The HTML dashboard loads these records so dry-runs, approval denials, completed
+actions, and failed actions remain visible during normal review.
 
 ## Script Deployment
 

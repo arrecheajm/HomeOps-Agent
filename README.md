@@ -2,7 +2,7 @@
 
 HomeOps Agent is a local-first home server management helper for a small Ubuntu server fleet.
 
-The controller is not a GPT application. It is a deterministic Python tool that collects structured evidence over SSH, runs local rule checks, and writes JSON, Markdown, and HTML reports. It registers predefined action IDs and includes a narrow approval-gated action runner for supported maintenance actions.
+The controller is not a GPT application. It is a deterministic Python tool that collects structured evidence over SSH, runs local rule checks, and writes JSON plus HTML reports. It registers predefined action IDs and includes a narrow approval-gated action runner for supported maintenance actions.
 
 Codex in VS Code acts as the human-facing analyst by reading the generated reports and files in this repository. The home servers do not run autonomous GPT agents and never receive an OpenAI API key.
 
@@ -32,7 +32,7 @@ Codex or user in VS Code
   -> controller runs approved read-only scripts
   -> controller validates and normalizes JSON
   -> controller applies local rules using policy thresholds
-  -> controller writes Markdown, HTML, JSON, and history artifacts
+  -> controller writes JSON, HTML, and history artifacts
   -> Codex reads those artifacts and explains next steps
   -> supported risky actions require exact human approval and write action history
 ```
