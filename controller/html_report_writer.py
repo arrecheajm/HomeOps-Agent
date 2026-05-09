@@ -72,12 +72,26 @@ def render_dashboard(
         )
         return "\n".join(body) + "\n"
 
+    body.extend(_dashboard_nav())
+    body.append('<section id="overview" class="view-section">')
     body.extend(_summary_cards(latest))
     body.extend(_server_section(latest))
     body.extend(_findings_section(latest))
+    body.append("</section>")
+    body.extend(_history_section(sorted_runs))
     body.extend(_timeline_section(sorted_runs, actual_output_dir))
     body.extend(["</main>", "</body>", "</html>"])
     return "\n".join(body) + "\n"
+
+
+def _dashboard_nav() -> list[str]:
+    return [
+        '<nav class="tabbar" aria-label="Dashboard views">',
+        '<a href="#overview">Overview</a>',
+        '<a href="#history">Historical Data</a>',
+        '<a href="#runs">Run Timeline</a>',
+        "</nav>",
+    ]
 
 
 def _latest_link(run: history.RunSummary | None, output_dir: Path) -> str:
@@ -241,8 +255,49 @@ def _service_list(services: list[dict[str, Any]]) -> str:
     return f'<ul class="service-list">{"".join(items)}</ul>'
 
 
+def _history_section(runs: list[history.RunSummary]) -> list[str]:
+    chart_runs = list(reversed(runs[:12]))
+    run_label = "1 run" if len(chart_runs) == 1 else f"{len(chart_runs)} runs"
+    lines = [
+        '<section id="history" class="panel view-section">',
+        '<div class="section-heading">',
+        "<h2>Historical Data</h2>",
+        f'<span>{escape(run_label)}</span>',
+        "</div>",
+        '<div class="chart-grid">',
+        '<section class="chart-block chart-block-wide">',
+        "<h3>Finding Trend</h3>",
+        _finding_trend_chart(chart_runs),
+        _chart_legend(
+            [
+                ("Critical", "#b42318"),
+                ("Warnings", "#9a5b00"),
+                ("Info", "#2d6cdf"),
+            ]
+        ),
+        "</section>",
+        '<section class="chart-block chart-block-wide">',
+        "<h3>Pending Updates</h3>",
+        _updates_chart(chart_runs),
+        "</section>",
+        '<section class="chart-block chart-block-wide">',
+        "<h3>Reboot And Docker Watch</h3>",
+        _operations_chart(chart_runs),
+        _chart_legend(
+            [
+                ("Reboot required", "#9a5b00"),
+                ("Docker issues", "#31686f"),
+            ]
+        ),
+        "</section>",
+        "</div>",
+        "</section>",
+    ]
+    return lines
+
+
 def _timeline_section(runs: list[history.RunSummary], output_dir: Path) -> list[str]:
-    lines = ['<section class="panel">', "<h2>Run Timeline</h2>"]
+    lines = ['<section id="runs" class="panel view-section">', "<h2>Run Timeline</h2>"]
     for label, grouped_runs in history.group_runs_by_period(runs):
         lines.extend([f"<h3>{escape(label)}</h3>", '<div class="timeline">'])
         for run in grouped_runs:
@@ -264,6 +319,331 @@ def _timeline_section(runs: list[history.RunSummary], output_dir: Path) -> list[
         lines.append("</div>")
     lines.append("</section>")
     return lines
+
+
+def _finding_trend_chart(runs: list[history.RunSummary]) -> str:
+    metrics = [_run_metrics(run) for run in runs]
+    max_value = max(
+        1,
+        *[
+            item["critical"] + item["warning"] + item["info"]
+            for item in metrics
+        ],
+    )
+    width, height = 760, 260
+    left, right, top, bottom = 44, 18, 14, 46
+    chart_width = width - left - right
+    chart_height = height - top - bottom
+    bars: list[str] = []
+    count = max(1, len(metrics))
+    step = chart_width / count
+    bar_width = max(12, min(34, step * 0.62))
+    colors = (("info", "#2d6cdf"), ("warning", "#9a5b00"), ("critical", "#b42318"))
+
+    for index, item in enumerate(metrics):
+        x = left + (index * step) + ((step - bar_width) / 2)
+        y_cursor = top + chart_height
+        for key, color in colors:
+            value = item[key]
+            if value <= 0:
+                continue
+            bar_height = (value / max_value) * chart_height
+            y_cursor -= bar_height
+            bars.append(
+                f'<rect x="{x:.1f}" y="{y_cursor:.1f}" width="{bar_width:.1f}" '
+                f'height="{bar_height:.1f}" fill="{color}" rx="3">'
+                f"<title>{escape(item['label'])}: {value} {key}</title>"
+                "</rect>"
+            )
+
+    return _svg_chart(
+        width,
+        height,
+        _grid_lines(max_value, left, top, chart_width, chart_height)
+        + bars
+        + _bar_x_labels(metrics, left, top, chart_width, chart_height)
+        + _axis_line(left, top, chart_width, chart_height),
+    )
+
+
+def _updates_chart(runs: list[history.RunSummary]) -> str:
+    metrics = [_run_metrics(run) for run in runs]
+    server_ids = _ordered_server_ids(runs)
+    values = [
+        item["updates_by_server"].get(server_id)
+        for item in metrics
+        for server_id in server_ids
+        if item["updates_by_server"].get(server_id) is not None
+    ]
+    max_value = max(1, *values) if values else 1
+    width, height = 760, 280
+    left, right, top, bottom = 44, 28, 14, 58
+    chart_width = width - left - right
+    chart_height = height - top - bottom
+    palette = ("#2d6cdf", "#1f7a4d", "#9a5b00", "#b42318", "#31686f")
+    series: list[str] = []
+
+    for index, server_id in enumerate(server_ids):
+        color = palette[index % len(palette)]
+        points: list[tuple[float, float, int, str]] = []
+        for run_index, item in enumerate(metrics):
+            value = item["updates_by_server"].get(server_id)
+            if value is None:
+                continue
+            x = _x_position(run_index, len(metrics), left, chart_width)
+            y = _y_position(value, max_value, top, chart_height)
+            points.append((x, y, value, item["label"]))
+
+        for path in _line_paths(points):
+            series.append(
+                f'<path d="{path}" fill="none" stroke="{color}" '
+                'stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />'
+            )
+        for x, y, value, label in points:
+            series.append(
+                f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="{color}">'
+                f"<title>{escape(server_id)} {escape(label)}: {value} updates</title>"
+                "</circle>"
+            )
+
+    legend = _chart_legend(
+        [(server_id, palette[index % len(palette)]) for index, server_id in enumerate(server_ids)]
+    )
+    return (
+        _svg_chart(
+            width,
+            height,
+            _grid_lines(max_value, left, top, chart_width, chart_height)
+            + series
+            + _x_labels(metrics, left, top, chart_width, chart_height)
+            + _axis_line(left, top, chart_width, chart_height),
+        )
+        + legend
+    )
+
+
+def _operations_chart(runs: list[history.RunSummary]) -> str:
+    metrics = [_run_metrics(run) for run in runs]
+    max_value = max(
+        1,
+        *[
+            max(item["reboot_required"], item["docker_issues"])
+            for item in metrics
+        ],
+    )
+    width, height = 760, 260
+    left, right, top, bottom = 44, 18, 14, 46
+    chart_width = width - left - right
+    chart_height = height - top - bottom
+    count = max(1, len(metrics))
+    step = chart_width / count
+    bar_width = max(8, min(18, step * 0.28))
+    bars: list[str] = []
+
+    for index, item in enumerate(metrics):
+        center = left + (index * step) + (step / 2)
+        for offset, key, color in (
+            (-bar_width * 0.6, "reboot_required", "#9a5b00"),
+            (bar_width * 0.6, "docker_issues", "#31686f"),
+        ):
+            value = item[key]
+            if value <= 0:
+                continue
+            height_value = (value / max_value) * chart_height
+            x = center + offset - (bar_width / 2)
+            y = top + chart_height - height_value
+            bars.append(
+                f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_width:.1f}" '
+                f'height="{height_value:.1f}" fill="{color}" rx="3">'
+                f"<title>{escape(item['label'])}: {value} {key.replace('_', ' ')}</title>"
+                "</rect>"
+            )
+
+    return _svg_chart(
+        width,
+        height,
+        _grid_lines(max_value, left, top, chart_width, chart_height)
+        + bars
+        + _bar_x_labels(metrics, left, top, chart_width, chart_height)
+        + _axis_line(left, top, chart_width, chart_height),
+    )
+
+
+def _run_metrics(run: history.RunSummary) -> dict[str, Any]:
+    updates_by_server: dict[str, int] = {}
+    reboot_required = 0
+    docker_issues = 0
+
+    for server in run.servers:
+        if not isinstance(server, dict):
+            continue
+        server_id = str(server.get("server_id") or server.get("hostname") or "unknown")
+        updates = server.get("updates") if isinstance(server.get("updates"), dict) else {}
+        updates_by_server[server_id] = _as_int(updates.get("pending_total"))
+        if updates.get("reboot_required"):
+            reboot_required += 1
+
+        docker = server.get("docker") if isinstance(server.get("docker"), dict) else {}
+        unhealthy = docker.get("unhealthy") if isinstance(docker.get("unhealthy"), list) else []
+        expected_stopped = (
+            docker.get("expected_stopped")
+            if isinstance(docker.get("expected_stopped"), list)
+            else []
+        )
+        docker_issues += len(unhealthy) + len(expected_stopped)
+
+    return {
+        "label": run.generated_dt.astimezone().strftime("%m-%d %H:%M"),
+        "critical": run.counts.get("critical", 0),
+        "warning": run.counts.get("warning", 0),
+        "info": run.counts.get("info", 0),
+        "updates_by_server": updates_by_server,
+        "reboot_required": reboot_required,
+        "docker_issues": docker_issues,
+    }
+
+
+def _ordered_server_ids(runs: list[history.RunSummary]) -> list[str]:
+    ordered: list[str] = []
+    for run in reversed(runs):
+        for server in run.servers:
+            if not isinstance(server, dict):
+                continue
+            server_id = str(server.get("server_id") or server.get("hostname") or "unknown")
+            if server_id not in ordered:
+                ordered.append(server_id)
+    return ordered
+
+
+def _svg_chart(width: int, height: int, content: list[str]) -> str:
+    return (
+        '<div class="chart">'
+        f'<svg role="img" viewBox="0 0 {width} {height}" '
+        'xmlns="http://www.w3.org/2000/svg">'
+        + "".join(content)
+        + "</svg>"
+        "</div>"
+    )
+
+
+def _grid_lines(
+    max_value: int, left: int, top: int, chart_width: int, chart_height: int
+) -> list[str]:
+    lines: list[str] = []
+    for tick in _axis_ticks(max_value):
+        y = _y_position(tick, max_value, top, chart_height)
+        lines.append(
+            f'<line class="grid-line" x1="{left}" y1="{y:.1f}" '
+            f'x2="{left + chart_width}" y2="{y:.1f}" />'
+        )
+        lines.append(
+            f'<text class="axis-label" x="{left - 10}" y="{y + 4:.1f}" '
+            f'text-anchor="end">{tick}</text>'
+        )
+    return lines
+
+
+def _axis_line(left: int, top: int, chart_width: int, chart_height: int) -> list[str]:
+    return [
+        f'<line class="axis-line" x1="{left}" y1="{top + chart_height}" '
+        f'x2="{left + chart_width}" y2="{top + chart_height}" />'
+    ]
+
+
+def _x_labels(
+    metrics: list[dict[str, Any]],
+    left: int,
+    top: int,
+    chart_width: int,
+    chart_height: int,
+) -> list[str]:
+    labels: list[str] = []
+    count = len(metrics)
+    if count == 0:
+        return labels
+    label_every = 1 if count <= 7 else 2
+    for index, item in enumerate(metrics):
+        if index % label_every != 0 and index != count - 1:
+            continue
+        x = _x_position(index, count, left, chart_width)
+        labels.append(
+            f'<text class="axis-label" x="{x:.1f}" y="{top + chart_height + 22}" '
+            f'text-anchor="middle">{escape(str(item["label"]))}</text>'
+        )
+    return labels
+
+
+def _bar_x_labels(
+    metrics: list[dict[str, Any]],
+    left: int,
+    top: int,
+    chart_width: int,
+    chart_height: int,
+) -> list[str]:
+    labels: list[str] = []
+    count = len(metrics)
+    if count == 0:
+        return labels
+    step = chart_width / count
+    label_every = 1 if count <= 7 else 2
+    for index, item in enumerate(metrics):
+        if index % label_every != 0 and index != count - 1:
+            continue
+        x = left + (index * step) + (step / 2)
+        labels.append(
+            f'<text class="axis-label" x="{x:.1f}" y="{top + chart_height + 22}" '
+            f'text-anchor="middle">{escape(str(item["label"]))}</text>'
+        )
+    return labels
+
+
+def _chart_legend(items: list[tuple[str, str]]) -> str:
+    entries = []
+    for label, color in items:
+        entries.append(
+            '<span class="legend-item">'
+            f'<span style="background:{escape(color)}"></span>'
+            f"{escape(label)}"
+            "</span>"
+        )
+    return f'<div class="legend">{"".join(entries)}</div>'
+
+
+def _line_paths(points: list[tuple[float, float, int, str]]) -> list[str]:
+    if not points:
+        return []
+    if len(points) == 1:
+        x, y, _value, _label = points[0]
+        return [f"M {x:.1f} {y:.1f}"]
+    path = " ".join(
+        f"{'M' if index == 0 else 'L'} {x:.1f} {y:.1f}"
+        for index, (x, y, _value, _label) in enumerate(points)
+    )
+    return [path]
+
+
+def _axis_ticks(max_value: int) -> list[int]:
+    if max_value <= 4:
+        return list(range(0, max_value + 1))
+    midpoint = max(1, round(max_value / 2))
+    return sorted({0, midpoint, max_value})
+
+
+def _x_position(index: int, count: int, left: int, chart_width: int) -> float:
+    if count <= 1:
+        return left + (chart_width / 2)
+    return left + (index * (chart_width / (count - 1)))
+
+
+def _y_position(value: int, max_value: int, top: int, chart_height: int) -> float:
+    return top + chart_height - ((value / max_value) * chart_height)
+
+
+def _as_int(value: Any) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _server_status(findings: list[dict[str, Any]]) -> str:
@@ -354,6 +734,28 @@ a:hover { text-decoration: underline; }
   border-radius: 6px;
   padding: 7px 10px;
   background: var(--panel);
+}
+.tabbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+  border-bottom: 1px solid var(--border);
+}
+.tabbar a {
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  padding: 9px 12px;
+  background: #eef4f6;
+  color: var(--text);
+}
+.tabbar a:hover {
+  background: var(--panel);
+  text-decoration: none;
+}
+.view-section {
+  scroll-margin-top: 16px;
 }
 .summary-grid {
   display: grid;
@@ -459,6 +861,74 @@ th {
 .badge-critical { background: #fdecea; color: var(--critical); }
 .badge-warning { background: #fff4db; color: var(--warning); }
 .badge-info { background: #eaf1ff; color: var(--info); }
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.section-heading h2 {
+  margin-bottom: 0;
+}
+.section-heading span {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.chart-block {
+  min-width: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.chart-block-wide {
+  grid-column: 1 / -1;
+}
+.chart-block h3 {
+  margin-bottom: 8px;
+}
+.chart {
+  width: 100%;
+  min-height: 210px;
+}
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.grid-line {
+  stroke: #dfe6ef;
+  stroke-width: 1;
+}
+.axis-line {
+  stroke: #98a2b3;
+  stroke-width: 1.2;
+}
+.axis-label {
+  fill: var(--muted);
+  font-size: 12px;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.legend-item span {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
 .timeline {
   display: grid;
   gap: 10px;
@@ -489,10 +959,16 @@ code {
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 560px) {
   .summary-grid, .server-facts {
     grid-template-columns: 1fr;
+  }
+  .section-heading {
+    display: block;
   }
   .service-row {
     grid-template-columns: 1fr;

@@ -40,6 +40,7 @@ Open that file in a browser to review:
 - latest run summary
 - server status cards
 - latest findings by severity
+- historical charts for findings, pending updates, reboot-required state, and Docker issues
 - grouped run timeline
 - links to Markdown reports and fleet JSON
 
@@ -56,6 +57,18 @@ The dashboard groups run history into operating periods:
 - older monthly archives
 
 Runs are sorted newest first inside each group.
+
+## Historical Charts
+
+The dashboard renders historical charts directly from structured run JSON:
+
+- finding severity counts over recent runs
+- pending package updates by server
+- reboot-required server counts
+- Docker issue counts
+
+Charts intentionally use `history/runs/<timestamp>/fleet-health.json` rather
+than parsing Markdown reports.
 
 ## Report Files
 

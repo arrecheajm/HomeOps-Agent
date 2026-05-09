@@ -20,7 +20,8 @@ Live status:
   and `container-host`.
 - `container-host` is online at `192.168.86.58`, reachable as
   `containerserver@192.168.86.58`, and included in normal collection.
-- HTML dashboard generation is implemented for grouped run history.
+- HTML dashboard generation is implemented for latest status, historical charts,
+  and grouped run history.
 
 Current operating model:
 
@@ -156,4 +157,5 @@ Reporting readiness:
 
 - [x] Group run history by practical operating periods.
 - [x] Generate HTML dashboard from structured run history.
+- [x] Show historical dashboard charts for findings, updates, reboots, and Docker issues.
 - [x] Refresh HTML dashboard after collection.
