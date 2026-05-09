@@ -144,10 +144,15 @@ Expected result after maintenance:
 After VPN and iSpy are stable:
 
 1. Review the `watchtower` container restart loop.
-2. Decide whether to manually restart or inspect the container during a safe
-   maintenance window.
-3. Keep `container-host` enabled in local `config/servers.yaml`.
-4. Refresh collection after any manual container maintenance:
+2. Dry-run the approved action if a restart is the intended next step:
+
+```powershell
+python -m controller.main actions run restart_docker_container --server container-host --container watchtower --dry-run
+```
+
+3. Execute only after the user approves the exact phrase printed by the dry-run.
+4. Keep `container-host` enabled in local `config/servers.yaml`.
+5. Refresh collection after any manual container maintenance:
 
 ```powershell
 python -m controller.main collect
@@ -157,5 +162,5 @@ python -m controller.main collect
 
 - Add iSpy service detection once the real unit name is known.
 - Consider role-specific scripts for OpenVPN, iSpy, and Docker.
-- Decide whether to implement approval-gated actions such as `reboot_server`.
-- Add action history only when mutating controller actions are implemented.
+- Decide whether to implement additional approval-gated actions such as
+  `reboot_server`.

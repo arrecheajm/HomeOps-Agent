@@ -1,0 +1,120 @@
+from pathlib import Path
+import json
+import shutil
+import subprocess
+import unittest
+from unittest.mock import patch
+
+from controller import approvals
+from controller.action_runner import ActionError, run_action
+from controller.inventory import ServerInventoryItem
+
+
+class ActionRunnerTests(unittest.TestCase):
+    def setUp(self):
+        self.actions_dir = Path("tests/.tmp/action-history")
+        if self.actions_dir.exists():
+            shutil.rmtree(self.actions_dir)
+        self.actions_dir.mkdir(parents=True)
+
+    def test_restart_docker_container_dry_run_writes_history(self):
+        attempt = run_action(
+            "restart_docker_container",
+            "container-host",
+            [self._container_server()],
+            {"container": "watchtower"},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        self.assertTrue(attempt.record_path.exists())
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(record["exit_code"], None)
+        self.assertEqual(record["arguments"], {"container": "watchtower"})
+        self.assertEqual(record["command"][-3:], ["docker", "restart", "watchtower"])
+        self.assertIn("Approve action restart_docker_container", record["expected_approval"])
+
+    def test_restart_docker_container_requires_exact_approval(self):
+        with self.assertRaisesRegex(ActionError, "requires exact approval"):
+            run_action(
+                "restart_docker_container",
+                "container-host",
+                [self._container_server()],
+                {"container": "watchtower"},
+                actions_dir=self.actions_dir,
+            )
+
+        records = list(self.actions_dir.glob("*.json"))
+        self.assertEqual(len(records), 1)
+        record = json.loads(records[0].read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "denied")
+        self.assertEqual(record["approval_source"], "missing_or_invalid")
+
+    def test_restart_docker_container_executes_after_approval(self):
+        args = {"container": "watchtower"}
+        approval = approvals.approval_phrase(
+            "restart_docker_container", "container-host", args
+        )
+        completed = subprocess.CompletedProcess(
+            args=["ssh"],
+            returncode=0,
+            stdout="watchtower\n",
+            stderr="",
+        )
+
+        with patch("controller.action_runner.subprocess.run", return_value=completed):
+            attempt = run_action(
+                "restart_docker_container",
+                "container-host",
+                [self._container_server()],
+                args,
+                approval_text=approval,
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(attempt.record["exit_code"], 0)
+        self.assertEqual(attempt.record["stdout"], "watchtower")
+
+    def test_restart_docker_container_rejects_unsafe_container_name(self):
+        with self.assertRaisesRegex(ActionError, "Container name is required"):
+            run_action(
+                "restart_docker_container",
+                "container-host",
+                [self._container_server()],
+                {"container": "watchtower;rm"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_action_role_restriction_is_enforced(self):
+        with self.assertRaisesRegex(ActionError, "not allowed for role"):
+            run_action(
+                "restart_docker_container",
+                "openvpn-server",
+                [
+                    ServerInventoryItem(
+                        server_id="openvpn-server",
+                        role="openvpn_server",
+                        host="openvpn-server.local",
+                        user="homeops",
+                    )
+                ],
+                {"container": "watchtower"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def _container_server(self) -> ServerInventoryItem:
+        return ServerInventoryItem(
+            server_id="container-host",
+            role="container_host",
+            host="container-host.local",
+            user="homeops",
+            identity_file="~/.ssh/homeops_ed25519",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

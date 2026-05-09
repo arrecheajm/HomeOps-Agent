@@ -13,7 +13,7 @@
 
 ## Allowed Execution Model
 
-Mutating server-side commands must be represented by predefined action IDs in the controller action registry. Action execution is not implemented yet.
+Mutating server-side commands must be represented by predefined action IDs in the controller action registry. Action execution is implemented only for explicitly supported actions.
 
 An LLM or Codex may recommend an action, but executable actions must map to a local controller definition:
 
@@ -94,6 +94,19 @@ Example:
 
 ```text
 Approve action restart_docker_container on container-host for container homepage.
+```
+
+The controller also supports exact approval phrases for implemented actions. A
+dry run prints the phrase that must be supplied before execution:
+
+```powershell
+python -m controller.main actions run restart_docker_container --server container-host --container watchtower --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action restart_docker_container on container-host with container watchtower
 ```
 
 ## Audit Trail

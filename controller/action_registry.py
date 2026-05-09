@@ -1,9 +1,4 @@
-"""Predefined HomeOps action registry.
-
-The registry is intentionally data-only for the first implementation pass.
-Execution support should be added only after read-only collection and reports are
-working reliably.
-"""
+"""Predefined HomeOps action registry."""
 
 from __future__ import annotations
 
@@ -65,7 +60,7 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "risk": "approval_required",
         "description": "Restart one named Docker container.",
         "server_roles": ["container_host"],
-        "implemented": False,
+        "implemented": True,
     },
     {
         "action_id": "restart_service",
@@ -95,3 +90,12 @@ def list_actions() -> tuple[dict[str, Any], ...]:
     """Return all registered actions."""
 
     return ACTIONS
+
+
+def get_action(action_id: str) -> dict[str, Any] | None:
+    """Return one registered action definition by ID."""
+
+    for action in ACTIONS:
+        if action.get("action_id") == action_id:
+            return action
+    return None

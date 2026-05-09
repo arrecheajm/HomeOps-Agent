@@ -8,7 +8,17 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from . import action_registry, collector, config, history, inventory, policy, rules
+from . import (
+    action_registry,
+    action_runner,
+    approvals,
+    collector,
+    config,
+    history,
+    inventory,
+    policy,
+    rules,
+)
 from .html_report_writer import write_dashboard
 from .report_writer import write_report
 from .ssh_client import build_ssh_command
@@ -141,6 +151,51 @@ def command_actions_list(_args: argparse.Namespace) -> int:
     return 0
 
 
+def command_actions_run(args: argparse.Namespace) -> int:
+    inventory_path = Path(args.inventory) if args.inventory else config.DEFAULT_INVENTORY_PATH
+
+    try:
+        servers = inventory.load_inventory(inventory_path)
+    except (FileNotFoundError, ValueError) as exc:
+        raise SystemExit(str(exc)) from exc
+
+    arguments: dict[str, Any] = {}
+    if args.container:
+        arguments["container"] = args.container
+
+    approval_text = args.approval
+    if not args.dry_run and approval_text is None and sys.stdin.isatty():
+        expected = approvals.approval_phrase(args.action_id, args.server, arguments)
+        print("Approval required. Type this exact phrase to continue:")
+        print(expected)
+        approval_text = input("> ")
+
+    try:
+        attempt = action_runner.run_action(
+            args.action_id,
+            args.server,
+            servers,
+            arguments,
+            approval_text=approval_text,
+            dry_run=args.dry_run,
+        )
+    except action_runner.ActionError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    record = attempt.record
+    status = record.get("status", "unknown")
+    print(f"Action status: {status}")
+    print(f"Action ID: {record['action_id']}")
+    print(f"Server: {record['server_id']}")
+    print(f"Command: {' '.join(record['command'])}")
+    if args.dry_run:
+        print(f"Approval phrase: {record['expected_approval']}")
+    else:
+        print(f"Exit code: {record.get('exit_code')}")
+    print(f"Wrote action record: {attempt.record_path}")
+    return 0 if status in {"dry_run", "completed"} else 1
+
+
 def command_dashboard(args: argparse.Namespace) -> int:
     runs_dir = Path(args.runs_dir) if args.runs_dir else config.RUNS_DIR
     output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
@@ -221,6 +276,34 @@ def build_parser() -> argparse.ArgumentParser:
         "list", help="List registered action IDs"
     )
     actions_list_parser.set_defaults(func=command_actions_list)
+
+    actions_run_parser = actions_subparsers.add_parser(
+        "run", help="Run one predefined action with approval"
+    )
+    actions_run_parser.add_argument("action_id", help="Registered action ID to run.")
+    actions_run_parser.add_argument(
+        "--server",
+        required=True,
+        help="Inventory server_id to target.",
+    )
+    actions_run_parser.add_argument(
+        "--container",
+        help="Docker container name for restart_docker_container.",
+    )
+    actions_run_parser.add_argument(
+        "--approval",
+        help="Exact approval phrase for non-dry-run approval-required actions.",
+    )
+    actions_run_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate and record the action without executing it.",
+    )
+    actions_run_parser.add_argument(
+        "--inventory",
+        help="Inventory path. Defaults to config/servers.yaml.",
+    )
+    actions_run_parser.set_defaults(func=command_actions_run)
 
     return parser
 

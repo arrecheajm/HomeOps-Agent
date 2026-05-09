@@ -29,6 +29,14 @@ def build_ssh_command(server: ServerInventoryItem) -> list[str]:
             f"Remote health command is not approved: {server.remote_health_command}"
         )
 
+    command = build_ssh_base_command(server)
+    command.extend([server.ssh_target, server.remote_health_command])
+    return command
+
+
+def build_ssh_base_command(server: ServerInventoryItem) -> list[str]:
+    """Build common SSH options for one inventory item."""
+
     command = [
         "ssh",
         "-p",
@@ -44,8 +52,6 @@ def build_ssh_command(server: ServerInventoryItem) -> list[str]:
     ]
     if server.identity_file:
         command.extend(["-i", expanduser(expandvars(server.identity_file))])
-
-    command.extend([server.ssh_target, server.remote_health_command])
     return command
 
 

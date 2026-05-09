@@ -21,8 +21,8 @@ The controller runs from the main machine and owns:
 - Markdown report generation
 - HTML dashboard generation
 - action registry definitions
-- future approval workflow
-- history of reports
+- approval workflow for supported actions
+- history of reports and action attempts
 
 ### Managed Servers
 
@@ -61,7 +61,7 @@ Codex must not invent direct server maintenance commands when an action registry
 8. Normalize per-server data into one fleet health bundle using inventory identity as the source of truth.
 9. Run local rules for common issues using policy thresholds.
 10. Write raw data, normalized data, findings, and report artifacts.
-11. Future action execution will run only predefined actions after approval.
+11. Supported action execution runs only predefined actions after exact approval.
 ```
 
 ## Recommended Folder Structure
@@ -82,6 +82,7 @@ HomeOps-Agent/
     report_writer.py
     html_report_writer.py
     approvals.py
+    action_runner.py
     action_registry.py
     schemas.py
 
@@ -126,7 +127,7 @@ HomeOps-Agent/
 
   history/
     runs/
-    actions/   # planned for future action execution
+    actions/
 
   tests/
     fixtures/
@@ -139,6 +140,6 @@ HomeOps-Agent/
 
 ## First Implementation Boundary
 
-The current version collects and reports only. Risky server-side changes should not be implemented until collection, validation, reports, dashboard review, and local rule checks are reliable across the fleet.
+The current version collects, reports, and supports narrowly scoped approval-gated actions. Risky server-side changes must stay behind predefined action IDs, exact approval, policy checks, and action history.
 
 Inventory identity is authoritative for `server_id` and `role`. If a remote script reports a different identity, the controller preserves it as reported metadata but keeps findings and reports keyed to the inventory entry.

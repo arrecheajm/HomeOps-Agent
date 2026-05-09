@@ -2,7 +2,7 @@
 
 This repository is intended to be opened and operated from VS Code with Codex.
 
-Codex is the analyst. The controller is the deterministic evidence collector. Approved action execution is planned but not implemented yet.
+Codex is the analyst. The controller is the deterministic evidence collector. A narrow approval-gated action runner exists for supported actions.
 
 ## When Reviewing Server Health
 
@@ -10,8 +10,8 @@ Codex is the analyst. The controller is the deterministic evidence collector. Ap
 2. If more detail is needed, read the matching run directory in `history/runs/`.
 3. Use normalized fleet JSON as the source of truth for server IDs and roles.
 4. Explain findings by severity and operational impact.
-5. Recommend only predefined action IDs when a future executable action is appropriate.
-6. Do not run mutating actions until controller action execution and approval checks are implemented.
+5. Recommend only predefined action IDs when an executable action is appropriate.
+6. Do not run mutating actions unless the user gives exact approval for a supported action.
 
 ## What Codex Must Not Do
 
@@ -30,8 +30,9 @@ Codex is the analyst. The controller is the deterministic evidence collector. Ap
 2. Inspect generated HTML, Markdown, and JSON artifacts.
 3. Summarize issues.
 4. Map any recommendation to an action_id.
-5. Ask the user for approval before any manual server mutation.
-6. Re-run collection to verify results after approved manual maintenance.
+5. Run action dry-runs first when an implemented action may apply.
+6. Ask the user for exact approval before any server mutation.
+7. Re-run collection to verify results after approved maintenance.
 ```
 
 ## Preferred Findings Format
@@ -57,4 +58,5 @@ Prefer evidence in this order:
 4. Server script source
 5. Direct read-only inspection commands approved by the user
 
-Direct server mutation commands are not part of normal operation.
+Direct server mutation commands are not part of normal operation. Use controller
+action IDs and action history for supported mutations.

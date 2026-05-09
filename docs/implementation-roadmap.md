@@ -6,7 +6,7 @@ The controller can generate Markdown reports and an HTML dashboard, load invento
 
 The first real read-only collection has succeeded for all three servers: `openvpn-server`, `ispy-server`, and `container-host`. `container-host` is online at `192.168.86.58`, local inventory uses `containerserver@192.168.86.58`, SSH key authentication works, and the approved read-only health script is installed.
 
-The next milestone is reviewing the current findings, especially the restarting `watchtower` container on `container-host`, and then deciding whether to implement approval-gated maintenance actions.
+The next milestone is reviewing the current findings, especially the restarting `watchtower` container on `container-host`, and using the new approval-gated action runner only after explicit approval.
 
 ## Phase 1: Documentation and Project Shape
 
@@ -112,7 +112,9 @@ Goal: allow safe, predefined maintenance actions.
 - write action history
 - keep destructive or config-changing operations out of scope
 
-Status: planned. The registry exists and `actions list` works, but action execution is intentionally not implemented.
+Status: in progress. The registry exists, `actions list` works, and
+`restart_docker_container` has dry-run, exact approval, execution, and action
+history support. Other approval-required actions remain unimplemented.
 
 ## Phase 8: Hardening
 

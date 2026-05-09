@@ -22,6 +22,8 @@ Live status:
   `containerserver@192.168.86.58`, and included in normal collection.
 - HTML dashboard generation is implemented for latest status, historical charts,
   and grouped run history.
+- `restart_docker_container` supports dry-run, exact approval, SSH execution,
+  and action history.
 
 Current operating model:
 
@@ -68,7 +70,8 @@ Current operating model:
 | `controller/html_report_writer.py` | HTML dashboard generation | Implemented |
 | `controller/history.py` | run history loading and grouping | Implemented |
 | `controller/action_registry.py` | allowed action definitions | Implemented |
-| `controller/approvals.py` | approval checks and prompts | Planned |
+| `controller/approvals.py` | approval checks and prompts | Implemented |
+| `controller/action_runner.py` | action execution and history | Implemented |
 | `controller/schemas.py` | schema loading and validation helpers | Implemented |
 
 ## First Server Scripts
@@ -108,7 +111,8 @@ Read-only action IDs are registered. Execution is still pending.
 - [x] `collect_openvpn`
 - [x] `collect_ispy`
 
-Approval-required action IDs are registered but not executable.
+Approval-required action IDs are registered. `restart_docker_container` is
+executable after exact approval; the other actions are not executable yet.
 
 - [x] `restart_service`
 - [x] `restart_docker_container`
@@ -125,9 +129,12 @@ Forbidden actions:
 
 ## Next Implementation Step
 
-Review the current fleet findings, especially the restarting `watchtower`
-container on `container-host`, then decide whether to implement approval-gated
-maintenance actions.
+Use `actions run ... --dry-run` to review the `watchtower` restart action, then
+execute it only if the user approves the exact phrase. After that, re-run
+collection to verify the container state.
+
+Future implementation work can add similarly bounded support for `reboot_server`
+or `restart_service`.
 
 Current operations are tracked in:
 
