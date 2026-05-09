@@ -97,6 +97,7 @@ Goal: make run history easier to scan visually.
 - group runs by today, this week, earlier this month, and monthly archive
 - render latest server status cards
 - render latest findings by severity
+- render recent action attempts from `history/actions/`
 - render historical charts from structured run JSON
 - link dashboard entries to Markdown reports and fleet JSON
 - refresh dashboard after collection

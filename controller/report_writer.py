@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from . import config, rules
+from . import config, history, rules
 
 
 ROLE_LABELS = {
@@ -17,18 +17,24 @@ ROLE_LABELS = {
 }
 
 
-def write_report(fleet: dict[str, Any], output_dir: Path) -> Path:
+def write_report(
+    fleet: dict[str, Any],
+    output_dir: Path,
+    actions: list[history.ActionSummary] | None = None,
+) -> Path:
     """Render and write a Markdown report."""
 
     output_dir.mkdir(parents=True, exist_ok=True)
     generated_at = str(fleet.get("generated_at") or config.utc_now_iso())
     filename = f"homeops-report-{config.safe_timestamp(generated_at)}.md"
     report_path = output_dir / filename
-    report_path.write_text(render_report(fleet), encoding="utf-8")
+    report_path.write_text(render_report(fleet, actions), encoding="utf-8")
     return report_path
 
 
-def render_report(fleet: dict[str, Any]) -> str:
+def render_report(
+    fleet: dict[str, Any], actions: list[history.ActionSummary] | None = None
+) -> str:
     generated_at = str(fleet.get("generated_at") or config.utc_now_iso())
     findings = list(fleet.get("findings") or [])
     counts = rules.count_by_severity(findings)
@@ -59,7 +65,7 @@ def render_report(fleet: dict[str, Any]) -> str:
     lines.append("")
     lines.extend(_next_steps(findings))
     lines.append("")
-    lines.extend(["## Actions Taken", "", "No actions executed."])
+    lines.extend(_actions_section(actions or []))
 
     return "\n".join(lines) + "\n"
 
@@ -89,6 +95,33 @@ def _server_table(fleet: dict[str, Any], findings: list[dict[str, Any]]) -> list
     if not fleet.get("servers"):
         lines.append("| none | none | Unknown | No server data available |")
 
+    return lines
+
+
+def _actions_section(actions: list[history.ActionSummary]) -> list[str]:
+    lines = ["## Actions Taken", ""]
+    recent_actions = sorted(actions, key=lambda action: action.timestamp_dt, reverse=True)[
+        :10
+    ]
+    if not recent_actions:
+        lines.append("No action attempts recorded.")
+        return lines
+
+    lines.extend(
+        [
+            "| Time | Server | Action | Status | Dry Run | Arguments |",
+            "|---|---|---|---|---:|---|",
+        ]
+    )
+    for action in recent_actions:
+        lines.append(
+            f"| {_escape(action.timestamp)} "
+            f"| `{_escape(action.server_id)}` "
+            f"| `{_escape(action.action_id)}` "
+            f"| {_escape(action.status)} "
+            f"| {_escape('yes' if action.dry_run else 'no')} "
+            f"| {_escape(_format_arguments(action.arguments))} |"
+        )
     return lines
 
 
@@ -163,6 +196,14 @@ def _server_note(findings: list[dict[str, Any]]) -> str:
 
 def _escape(value: str) -> str:
     return value.replace("|", "\\|").replace("\n", " ")
+
+
+def _format_arguments(arguments: dict[str, Any]) -> str:
+    if not arguments:
+        return "none"
+    return ", ".join(
+        f"{key}={arguments[key]}" for key in sorted(arguments) if arguments[key] is not None
+    )
 
 
 def _plural(count: int, label: str) -> str:

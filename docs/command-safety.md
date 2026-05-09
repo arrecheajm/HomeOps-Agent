@@ -124,6 +124,16 @@ Every action attempt should write an action history record containing:
 - stdout summary
 - stderr summary
 
+Action records are stored under:
+
+```text
+history/actions/
+```
+
+The Markdown report and HTML dashboard load these records so dry-runs,
+approval denials, completed actions, and failed actions remain visible during
+normal review.
+
 ## Script Deployment
 
 The current implementation expects server scripts to already be installed on each server at the configured remote path.

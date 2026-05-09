@@ -12,7 +12,9 @@ from .report_writer import ROLE_LABELS
 
 
 def write_dashboard(
-    runs: list[history.RunSummary], output_dir: Path | None = None
+    runs: list[history.RunSummary],
+    output_dir: Path | None = None,
+    actions: list[history.ActionSummary] | None = None,
 ) -> Path:
     """Render and write the HTML dashboard."""
 
@@ -20,14 +22,16 @@ def write_dashboard(
     actual_output_dir.mkdir(parents=True, exist_ok=True)
     dashboard_path = actual_output_dir / "index.html"
     dashboard_path.write_text(
-        render_dashboard(runs, actual_output_dir),
+        render_dashboard(runs, actual_output_dir, actions),
         encoding="utf-8",
     )
     return dashboard_path
 
 
 def render_dashboard(
-    runs: list[history.RunSummary], output_dir: Path | None = None
+    runs: list[history.RunSummary],
+    output_dir: Path | None = None,
+    actions: list[history.ActionSummary] | None = None,
 ) -> str:
     """Render an HTML dashboard for the available run history."""
 
@@ -77,6 +81,7 @@ def render_dashboard(
     body.extend(_summary_cards(latest))
     body.extend(_server_section(latest))
     body.extend(_findings_section(latest))
+    body.extend(_actions_section(actions or [], actual_output_dir))
     body.append("</section>")
     body.extend(_history_section(sorted_runs))
     body.extend(_timeline_section(sorted_runs, actual_output_dir))
@@ -200,6 +205,40 @@ def _findings_section(run: history.RunSummary) -> list[str]:
             f"<td><code>{escape(str(finding.get('code', 'unknown')))}</code></td>"
             f"<td>{escape(str(finding.get('message', '')))}</td>"
             f"<td>{escape(actions)}</td>"
+            "</tr>"
+        )
+    lines.extend(["</tbody>", "</table>", "</section>"])
+    return lines
+
+
+def _actions_section(
+    actions: list[history.ActionSummary], output_dir: Path
+) -> list[str]:
+    lines = ['<section class="panel">', "<h2>Action History</h2>"]
+    recent_actions = sorted(actions, key=lambda action: action.timestamp_dt, reverse=True)[
+        :10
+    ]
+    if not recent_actions:
+        lines.extend(["<p>No action attempts recorded.</p>", "</section>"])
+        return lines
+
+    lines.extend(
+        [
+            '<table class="actions-table">',
+            "<thead><tr><th>Time</th><th>Server</th><th>Action</th><th>Status</th><th>Arguments</th><th>Record</th></tr></thead>",
+            "<tbody>",
+        ]
+    )
+    for action in recent_actions:
+        status = _action_status_label(action)
+        lines.append(
+            "<tr>"
+            f"<td>{escape(_display_action_time(action))}</td>"
+            f"<td>{escape(action.server_id)}</td>"
+            f"<td><code>{escape(action.action_id)}</code></td>"
+            f'<td><span class="badge badge-action-{escape(status)}">{escape(status)}</span></td>'
+            f"<td>{escape(_format_arguments(action.arguments))}</td>"
+            f"<td>{_link('JSON', action.record_path, output_dir)}</td>"
             "</tr>"
         )
     lines.extend(["</tbody>", "</table>", "</section>"])
@@ -668,6 +707,24 @@ def _display_time(run: history.RunSummary) -> str:
     return run.generated_dt.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z").strip()
 
 
+def _display_action_time(action: history.ActionSummary) -> str:
+    return action.timestamp_dt.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z").strip()
+
+
+def _action_status_label(action: history.ActionSummary) -> str:
+    if action.dry_run:
+        return "dry-run"
+    return action.status.lower().replace("_", "-")
+
+
+def _format_arguments(arguments: dict[str, Any]) -> str:
+    if not arguments:
+        return "none"
+    return ", ".join(
+        f"{key}={arguments[key]}" for key in sorted(arguments) if arguments[key] is not None
+    )
+
+
 def _link(label: str, path: Path, output_dir: Path) -> str:
     href = os.path.relpath(path, output_dir).replace("\\", "/")
     return f'<a href="{escape(href)}">{escape(label)}</a>'
@@ -838,7 +895,7 @@ dd {
   margin: 0;
   font-weight: 700;
 }
-.findings-table {
+.findings-table, .actions-table {
   width: 100%;
   border-collapse: collapse;
 }
@@ -861,6 +918,11 @@ th {
 .badge-critical { background: #fdecea; color: var(--critical); }
 .badge-warning { background: #fff4db; color: var(--warning); }
 .badge-info { background: #eaf1ff; color: var(--info); }
+.badge-action-completed { background: #e8f5ee; color: var(--ok); }
+.badge-action-dry-run { background: #eaf1ff; color: var(--info); }
+.badge-action-denied { background: #fff4db; color: var(--warning); }
+.badge-action-failed { background: #fdecea; color: var(--critical); }
+.badge-action-unknown { background: #eef2f7; color: var(--muted); }
 .section-heading {
   display: flex;
   justify-content: space-between;

@@ -68,7 +68,7 @@ def resolve_input_path(args: argparse.Namespace) -> Path:
 def command_report(args: argparse.Namespace) -> int:
     fleet = apply_local_rules(load_json(resolve_input_path(args)))
     output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
-    report_path = write_report(fleet, output_dir)
+    report_path = write_report(fleet, output_dir, history.discover_action_summaries())
 
     counts = rules.count_by_severity(fleet.get("findings") or [])
     print(f"Wrote report: {report_path}")
@@ -121,8 +121,15 @@ def command_collect(args: argparse.Namespace) -> int:
 
     report_path = None
     if not args.no_report:
-        report_path = write_report(fleet, config.GENERATED_REPORTS_DIR)
-    dashboard_path = write_dashboard(history.discover_run_summaries())
+        report_path = write_report(
+            fleet,
+            config.GENERATED_REPORTS_DIR,
+            history.discover_action_summaries(),
+        )
+    dashboard_path = write_dashboard(
+        history.discover_run_summaries(),
+        actions=history.discover_action_summaries(),
+    )
 
     counts = rules.count_by_severity(fleet.get("findings") or [])
     print(f"Run directory: {run_dir}")
@@ -200,7 +207,7 @@ def command_dashboard(args: argparse.Namespace) -> int:
     runs_dir = Path(args.runs_dir) if args.runs_dir else config.RUNS_DIR
     output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
     runs = history.discover_run_summaries(runs_dir, output_dir)
-    dashboard_path = write_dashboard(runs, output_dir)
+    dashboard_path = write_dashboard(runs, output_dir, history.discover_action_summaries())
     print(f"Wrote dashboard: {dashboard_path}")
     print(f"Runs included: {len(runs)}")
     return 0

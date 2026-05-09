@@ -4,7 +4,7 @@ import shutil
 import unittest
 from datetime import datetime, timezone
 
-from controller.history import discover_run_summaries, group_runs_by_period
+from controller.history import discover_action_summaries, discover_run_summaries, group_runs_by_period
 
 
 class HistoryTests(unittest.TestCase):
@@ -61,6 +61,35 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(len(runs), 1)
         self.assertEqual(runs[0].counts["warning"], 1)
         self.assertEqual(runs[0].counts["info"], 1)
+
+    def test_discover_action_summaries_loads_action_records(self):
+        root = Path("tests/.tmp/action-summary-history")
+        if root.exists():
+            shutil.rmtree(root)
+        root.mkdir(parents=True)
+
+        record = {
+            "timestamp": "2026-05-09T18:49:56Z",
+            "server_id": "container-host",
+            "action_id": "restart_docker_container",
+            "status": "dry_run",
+            "risk": "approval_required",
+            "dry_run": True,
+            "arguments": {"container": "watchtower"},
+            "approval_source": "dry_run",
+            "command": ["ssh", "container-host", "docker", "restart", "watchtower"],
+            "exit_code": None,
+            "message": "Action was validated but not executed.",
+        }
+        (root / "record.json").write_text(json.dumps(record), encoding="utf-8")
+
+        actions = discover_action_summaries(root)
+
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].server_id, "container-host")
+        self.assertEqual(actions[0].action_id, "restart_docker_container")
+        self.assertTrue(actions[0].dry_run)
+        self.assertEqual(actions[0].arguments["container"], "watchtower")
 
     def _write_run(
         self,

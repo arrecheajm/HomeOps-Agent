@@ -11,6 +11,7 @@ Structured reporting uses:
 
 ```text
 history/runs/<timestamp>/fleet-health.json
+history/actions/<timestamp>-<server_id>-<action_id>.json
 ```
 
 Markdown-only reports without a matching `fleet-health.json` are legacy artifacts and are not included in the HTML dashboard timeline.
@@ -40,9 +41,10 @@ Open that file in a browser to review:
 - latest run summary
 - server status cards
 - latest findings by severity
+- recent action attempts from action history
 - historical charts for findings, pending updates, reboot-required state, and Docker issues
 - grouped run timeline
-- links to Markdown reports and fleet JSON
+- links to Markdown reports, fleet JSON, and action record JSON
 
 `reports/generated/` is ignored by git. Regenerate the dashboard locally whenever needed instead of committing generated HTML.
 
@@ -69,6 +71,20 @@ The dashboard renders historical charts directly from structured run JSON:
 
 Charts intentionally use `history/runs/<timestamp>/fleet-health.json` rather
 than parsing Markdown reports.
+
+## Action History
+
+Every action dry-run, denied approval, completed action, or failed action writes
+a JSON record under:
+
+```text
+history/actions/
+```
+
+The dashboard and Markdown reports load these records and show the most recent
+action attempts with server ID, action ID, status, dry-run state, and arguments.
+This keeps mutating operations auditable even after the controller grows beyond
+read-only collection.
 
 ## Report Files
 

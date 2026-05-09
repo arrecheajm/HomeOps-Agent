@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 import unittest
 
-from controller.history import RunSummary
+from controller.history import ActionSummary, RunSummary
 from controller.html_report_writer import render_dashboard, write_dashboard
 
 
@@ -18,7 +18,11 @@ class HtmlReportWriterTests(unittest.TestCase):
             reboot_required=False,
         )
 
-        html = render_dashboard([run, earlier_run], Path("reports/generated"))
+        html = render_dashboard(
+            [run, earlier_run],
+            Path("reports/generated"),
+            [self._action_summary()],
+        )
 
         self.assertIn("HomeOps Dashboard", html)
         self.assertIn("Latest Server State", html)
@@ -26,6 +30,9 @@ class HtmlReportWriterTests(unittest.TestCase):
         self.assertIn("Finding Trend", html)
         self.assertIn("Pending Updates", html)
         self.assertIn("Reboot And Docker Watch", html)
+        self.assertIn("Action History", html)
+        self.assertIn("restart_docker_container", html)
+        self.assertIn("watchtower", html)
         self.assertIn("Run Timeline", html)
         self.assertIn("reboot_required", html)
         self.assertIn("openvpn-server", html)
@@ -93,6 +100,23 @@ class HtmlReportWriterTests(unittest.TestCase):
                 }
             ],
             collection_errors=[],
+        )
+
+    def _action_summary(self) -> ActionSummary:
+        return ActionSummary(
+            timestamp="2026-05-09T18:49:56Z",
+            timestamp_dt=datetime(2026, 5, 9, 18, 49, 56, tzinfo=timezone.utc),
+            record_path=Path("history/actions/action.json"),
+            server_id="container-host",
+            action_id="restart_docker_container",
+            status="dry_run",
+            risk="approval_required",
+            dry_run=True,
+            arguments={"container": "watchtower"},
+            approval_source="dry_run",
+            command=["ssh", "container-host", "docker", "restart", "watchtower"],
+            exit_code=None,
+            message="Action was validated but not executed.",
         )
 
 

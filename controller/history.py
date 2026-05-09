@@ -26,6 +26,23 @@ class RunSummary:
     collection_errors: list[dict[str, Any]]
 
 
+@dataclass(frozen=True)
+class ActionSummary:
+    timestamp: str
+    timestamp_dt: datetime
+    record_path: Path
+    server_id: str
+    action_id: str
+    status: str
+    risk: str
+    dry_run: bool
+    arguments: dict[str, Any]
+    approval_source: str
+    command: list[str]
+    exit_code: int | None
+    message: str
+
+
 def discover_run_summaries(
     runs_dir: Path | None = None, reports_dir: Path | None = None
 ) -> list[RunSummary]:
@@ -45,6 +62,55 @@ def discover_run_summaries(
             summaries.append(summary)
 
     return sorted(summaries, key=lambda run: run.generated_dt, reverse=True)
+
+
+def discover_action_summaries(
+    actions_dir: Path | None = None,
+) -> list[ActionSummary]:
+    """Load action attempt summaries from action history records."""
+
+    root = actions_dir or config.ACTIONS_DIR
+    if not root.exists():
+        return []
+
+    summaries: list[ActionSummary] = []
+    for path in root.glob("*.json"):
+        summary = load_action_summary(path)
+        if summary:
+            summaries.append(summary)
+
+    return sorted(summaries, key=lambda action: action.timestamp_dt, reverse=True)
+
+
+def load_action_summary(path: Path) -> ActionSummary | None:
+    """Load one action history record."""
+
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+
+    if not isinstance(record, dict):
+        return None
+
+    timestamp = str(record.get("timestamp") or path.stem)
+    arguments = record.get("arguments")
+    command = record.get("command")
+    return ActionSummary(
+        timestamp=timestamp,
+        timestamp_dt=parse_timestamp(timestamp),
+        record_path=path,
+        server_id=str(record.get("server_id") or "unknown"),
+        action_id=str(record.get("action_id") or "unknown"),
+        status=str(record.get("status") or "unknown"),
+        risk=str(record.get("risk") or "unknown"),
+        dry_run=bool(record.get("dry_run")),
+        arguments=arguments if isinstance(arguments, dict) else {},
+        approval_source=str(record.get("approval_source") or "unknown"),
+        command=[str(part) for part in command] if isinstance(command, list) else [],
+        exit_code=_optional_int(record.get("exit_code")),
+        message=str(record.get("message") or ""),
+    )
 
 
 def load_run_summary(run_dir: Path, reports_dir: Path) -> RunSummary | None:
@@ -142,3 +208,12 @@ def _as_int(value: Any) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
