@@ -8,15 +8,21 @@ Enabled servers:
 
 - `openvpn-server`
 - `ispy-server`
+- `container-host`
 
-Temporarily disabled:
+Connection state:
 
-- `container-host`, because it is currently offline
+- `container-host` is back online at `192.168.86.58`
+- local inventory uses `containerserver@192.168.86.58`
+- SSH key authentication works
+- the approved read-only health script is installed
+- full controller collection now succeeds for all three servers
 
 Latest known findings:
 
-- `openvpn-server`: reboot required, pending package updates
+- `openvpn-server`: pending package updates
 - `ispy-server`: reboot required, pending package updates
+- `container-host`: reboot required, `watchtower` container restarting
 - no critical findings
 - no collection errors
 
@@ -133,18 +139,17 @@ Expected result after maintenance:
 - no collection errors appear
 - role-specific service remains active
 
-## Step 5: Bring Container Host Back Into Scope
+## Step 5: Monitor Container Host
 
 After VPN and iSpy are stable:
 
-1. Power on or repair `container-host`.
-2. Confirm SSH key authentication.
-3. Install `health_summary.sh`.
-4. Enable it in local `config/servers.yaml`.
-5. Run:
+1. Review the `watchtower` container restart loop.
+2. Decide whether to manually restart or inspect the container during a safe
+   maintenance window.
+3. Keep `container-host` enabled in local `config/servers.yaml`.
+4. Refresh collection after any manual container maintenance:
 
 ```powershell
-python -m controller.main collect --dry-run
 python -m controller.main collect
 ```
 

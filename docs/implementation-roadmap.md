@@ -4,9 +4,9 @@
 
 The controller can generate Markdown reports and an HTML dashboard, load inventory with optional SSH identity files, validate approved remote health commands, dry-run collection, validate collected server health shapes, normalize inventory identity, and run collector logic under tests.
 
-The first real read-only collection has succeeded for `openvpn-server` and `ispy-server`. `container-host` is temporarily disabled in local inventory while that server is offline.
+The first real read-only collection has succeeded for all three servers: `openvpn-server`, `ispy-server`, and `container-host`. `container-host` is online at `192.168.86.58`, local inventory uses `containerserver@192.168.86.58`, SSH key authentication works, and the approved read-only health script is installed.
 
-The next milestone is bringing `container-host` online, installing the read-only health script there, and then deciding whether to implement approval-gated maintenance actions.
+The next milestone is reviewing the current findings, especially the restarting `watchtower` container on `container-host`, and then deciding whether to implement approval-gated maintenance actions.
 
 ## Phase 1: Documentation and Project Shape
 

@@ -4,7 +4,7 @@ This tracker records the implementation state for HomeOps Agent.
 
 ## Current Status
 
-Project stage: read-only collection and reporting are live for enabled servers.
+Project stage: read-only collection and reporting are live for all configured servers.
 
 Live status:
 
@@ -16,8 +16,10 @@ Live status:
 - Controller validates collected server health shapes before normalization.
 - Inventory and SSH command building reject unapproved remote health commands.
 - Local rule thresholds are loaded from `config/policy.yaml`.
-- First real read-only collection succeeded for `openvpn-server` and `ispy-server`.
-- `container-host` is temporarily disabled in local inventory while offline.
+- First real read-only collection succeeded for `openvpn-server`, `ispy-server`,
+  and `container-host`.
+- `container-host` is online at `192.168.86.58`, reachable as
+  `containerserver@192.168.86.58`, and included in normal collection.
 - HTML dashboard generation is implemented for grouped run history.
 
 Current operating model:
@@ -122,7 +124,9 @@ Forbidden actions:
 
 ## Next Implementation Step
 
-Bring `container-host` online and add it to the same read-only collection path. After all servers collect cleanly, decide whether to implement approval-gated maintenance actions.
+Review the current fleet findings, especially the restarting `watchtower`
+container on `container-host`, then decide whether to implement approval-gated
+maintenance actions.
 
 Current operations are tracked in:
 
@@ -142,11 +146,11 @@ Connection readiness:
 - [x] Create local `config/servers.yaml` for enabled servers.
 - [x] Install `health_summary.sh` on `openvpn-server`.
 - [x] Install `health_summary.sh` on `ispy-server`.
-- [ ] Install `health_summary.sh` on `container-host`.
-- [x] Validate script JSON output locally on each enabled server.
-- [x] Confirm SSH key authentication from controller to each enabled server.
+- [x] Install `health_summary.sh` on `container-host`.
+- [x] Validate script JSON output locally on each configured server.
+- [x] Confirm SSH key authentication from controller to each configured server.
 - [x] Run `python -m controller.main collect --dry-run`.
-- [x] Run first real `python -m controller.main collect` for enabled servers.
+- [x] Run first real `python -m controller.main collect` for all configured servers.
 
 Reporting readiness:
 

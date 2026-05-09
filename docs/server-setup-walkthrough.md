@@ -23,9 +23,11 @@ Do not add mutating action support during this setup. This pass is read-only col
 |---|---|---:|---:|---:|---:|---:|
 | `openvpn-server` | yes | yes | yes | yes | yes | yes |
 | `ispy-server` | yes | yes | yes | yes | yes | yes |
-| `container-host` | pending | no | no | no | no | no |
+| `container-host` | yes | yes | yes | yes | yes | yes |
 
-Current local inventory has `container-host` disabled while that server is offline.
+Current local inventory points `container-host` at `192.168.86.58` with user
+`containerserver`. SSH key authentication works, the read-only health script is
+installed, and controller collection has succeeded.
 
 ## Step 1: Create Local Inventory
 
@@ -158,6 +160,7 @@ Current enabled-server examples:
 ```powershell
 ssh -i $env:USERPROFILE\.ssh\homeops_ed25519 vpnserver@192.168.86.25 /opt/homeops-agent/server-scripts/common/health_summary.sh
 ssh -i $env:USERPROFILE\.ssh\homeops_ed25519 spy@192.168.86.27 /opt/homeops-agent/server-scripts/common/health_summary.sh
+ssh -i $env:USERPROFILE\.ssh\homeops_ed25519 containerserver@192.168.86.58 /opt/homeops-agent/server-scripts/common/health_summary.sh
 ```
 
 ## Step 7: Dry-Run The Controller
