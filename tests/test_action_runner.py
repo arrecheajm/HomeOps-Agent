@@ -130,6 +130,54 @@ class ActionRunnerTests(unittest.TestCase):
                 actions_dir=self.actions_dir,
             )
 
+    def test_deploy_health_script_dry_run_writes_command_sequence(self):
+        attempt = run_action(
+            "deploy_health_script",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(record["arguments"], {})
+        self.assertEqual(len(record["commands"]), 2)
+        self.assertEqual(record["commands"][0][0], "scp")
+        self.assertIn("health_summary.sh", record["commands"][0][-2])
+        self.assertEqual(record["commands"][1][-3:], ["chmod", "755", "/opt/homeops-agent/server-scripts/common/health_summary.sh"])
+        self.assertIn("Approve action deploy_health_script", record["expected_approval"])
+
+    def test_deploy_health_script_executes_sequence_after_approval(self):
+        args = {}
+        approval = approvals.approval_phrase(
+            "deploy_health_script", "container-host", args
+        )
+        completed = subprocess.CompletedProcess(
+            args=["scp"],
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+
+        with patch(
+            "controller.action_runner.subprocess.run",
+            side_effect=[completed, completed],
+        ) as subprocess_run:
+            attempt = run_action(
+                "deploy_health_script",
+                "container-host",
+                [self._container_server()],
+                args,
+                approval_text=approval,
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(attempt.record["exit_code"], 0)
+        self.assertEqual(subprocess_run.call_count, 2)
+
     def test_action_role_restriction_is_enforced(self):
         with self.assertRaisesRegex(ActionError, "not allowed for role"):
             run_action(

@@ -26,8 +26,8 @@ Live status:
   agent/action history, and grouped run history.
 - Fleet capability catalog generation is implemented for tracked repo knowledge
   and separate HTML reporting.
-- `restart_docker_container` and `restart_service` support dry-run, exact
-  approval, SSH execution, and action history.
+- `deploy_health_script`, `restart_docker_container`, and `restart_service`
+  support dry-run, exact approval, execution, and action history.
 
 Current operating model:
 
@@ -116,9 +116,11 @@ Read-only action IDs are registered. Execution is still pending.
 - [x] `collect_ispy`
 
 Approval-required action IDs are registered. `restart_docker_container` and
-`restart_service` are executable after exact approval; update and reboot actions
-are not executable yet.
+`restart_service` are executable after exact approval. `deploy_health_script`
+can deploy the known read-only health script after exact approval. Update and
+reboot actions are not executable yet.
 
+- [x] `deploy_health_script`
 - [x] `restart_service`
 - [x] `restart_docker_container`
 - [x] `apply_security_updates`
@@ -134,9 +136,9 @@ Forbidden actions:
 
 ## Next Implementation Step
 
-Use `actions run ... --dry-run` to review the `watchtower` restart action or an
-approved service restart, then execute only if the user approves the exact
-phrase. After that, re-run collection to verify the server state.
+Use `actions run deploy_health_script --dry-run` to review script deployment for
+each server, then execute only if the user approves the exact phrase. After
+deployment, re-run collection so the catalog can capture richer hardware data.
 
 Future implementation work can add similarly bounded support for `reboot_server`.
 

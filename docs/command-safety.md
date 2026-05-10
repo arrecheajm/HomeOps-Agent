@@ -61,6 +61,7 @@ Requires explicit human approval every time.
 
 Examples:
 
+- deploy the approved health script
 - restart a service
 - restart a Docker container
 - apply security updates
@@ -121,6 +122,19 @@ python -m controller.main actions run restart_service --server container-host --
 The controller normalizes approved aliases such as `openvpnas` to
 `openvpnas.service`, but it does not accept arbitrary service names.
 
+Health script deployment is also approval-gated and only copies the known
+repository script to the approved remote path:
+
+```powershell
+python -m controller.main actions run deploy_health_script --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action deploy_health_script on container-host
+```
+
 ## Audit Trail
 
 Every action attempt should write an action history record containing:
@@ -147,6 +161,13 @@ actions, and failed actions remain visible during normal review.
 
 ## Script Deployment
 
-The current implementation expects server scripts to already be installed on each server at the configured remote path.
+The current implementation can deploy the approved health script through the
+`deploy_health_script` action. The action:
 
-Future deployment support must be explicit and approval-based. A deployment command may copy known repository scripts to a configured directory, but it must not copy arbitrary generated commands or mutate system configuration.
+- copies only `server-scripts/common/health_summary.sh`
+- targets only `/opt/homeops-agent/server-scripts/common/health_summary.sh`
+- sets executable mode with `chmod 755`
+- writes action history
+- requires exact approval before execution
+
+It must not copy arbitrary generated commands or mutate system configuration.

@@ -7,11 +7,12 @@ import re
 import subprocess
 import time
 from dataclasses import dataclass
+from os.path import expanduser, expandvars
 from pathlib import Path
 from typing import Any
 
 from . import action_registry, approvals, config, policy
-from .inventory import ServerInventoryItem
+from .inventory import DEFAULT_REMOTE_HEALTH_COMMAND, ServerInventoryItem
 from .ssh_client import build_ssh_base_command
 
 
@@ -31,6 +32,10 @@ APPROVED_SERVICE_RESTARTS = {
         "docker.service": "docker.service",
     },
 }
+LOCAL_HEALTH_SCRIPT_PATH = (
+    config.BASE_DIR / "server-scripts" / "common" / "health_summary.sh"
+)
+REMOTE_HEALTH_SCRIPT_PATH = DEFAULT_REMOTE_HEALTH_COMMAND
 
 
 class ActionError(RuntimeError):
@@ -60,8 +65,10 @@ def run_action(
     action = _action_or_raise(action_id)
     server = _server_or_raise(server_id, servers)
     _validate_action_for_server(action, server)
-    command = build_action_command(action_id, server, arguments)
-    _validate_policy(action, command, active_policy)
+    commands = build_action_commands(action_id, server, arguments)
+    command = commands[0]
+    for item in commands:
+        _validate_policy(action, item, active_policy)
 
     expected_approval = approvals.approval_phrase(action_id, server_id, arguments)
     risk = str(action.get("risk", "approval_required"))
@@ -83,7 +90,7 @@ def run_action(
             server,
             arguments,
             risk,
-            command,
+            commands,
             approval_source,
             dry_run,
             expected_approval,
@@ -102,7 +109,7 @@ def run_action(
         server,
         arguments,
         risk,
-        command,
+        commands,
         approval_source,
         dry_run,
         expected_approval,
@@ -114,7 +121,7 @@ def run_action(
         record_path = write_action_record(record, actions_dir)
         return ActionAttempt(record=record, record_path=record_path)
 
-    result = _run_command(command, server)
+    result = _run_commands(commands, server)
     record.update(
         {
             "status": "completed" if result["exit_code"] == 0 else "failed",
@@ -133,6 +140,14 @@ def build_action_command(
 ) -> list[str]:
     """Build a deterministic SSH command for one implemented action."""
 
+    return build_action_commands(action_id, server, arguments)[0]
+
+
+def build_action_commands(
+    action_id: str, server: ServerInventoryItem, arguments: dict[str, Any]
+) -> list[list[str]]:
+    """Build deterministic local commands for one implemented action."""
+
     if action_id == "restart_docker_container":
         container = str(arguments.get("container") or "")
         if not CONTAINER_NAME_RE.fullmatch(container):
@@ -140,26 +155,67 @@ def build_action_command(
                 "Container name is required and may contain only letters, digits, "
                 "periods, underscores, and dashes."
             )
-        return build_ssh_base_command(server) + [
-            server.ssh_target,
-            "docker",
-            "restart",
-            container,
+        return [
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                "docker",
+                "restart",
+                container,
+            ]
         ]
 
     if action_id == "restart_service":
         service = _approved_service_name(server, arguments)
-        return build_ssh_base_command(server) + [
-            server.ssh_target,
-            "sudo",
-            "-n",
-            "systemctl",
-            "restart",
-            "--",
-            service,
+        return [
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                "sudo",
+                "-n",
+                "systemctl",
+                "restart",
+                "--",
+                service,
+            ]
         ]
 
+    if action_id == "deploy_health_script":
+        return _deploy_health_script_commands(server)
+
     raise ActionError(f"Action is not implemented: {action_id}")
+
+
+def _deploy_health_script_commands(server: ServerInventoryItem) -> list[list[str]]:
+    if not LOCAL_HEALTH_SCRIPT_PATH.exists():
+        raise ActionError(f"Local health script not found: {LOCAL_HEALTH_SCRIPT_PATH}")
+
+    remote_target = f"{server.ssh_target}:{REMOTE_HEALTH_SCRIPT_PATH}"
+    return [
+        _build_scp_base_command(server) + [str(LOCAL_HEALTH_SCRIPT_PATH), remote_target],
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            "chmod",
+            "755",
+            REMOTE_HEALTH_SCRIPT_PATH,
+        ],
+    ]
+
+
+def _build_scp_base_command(server: ServerInventoryItem) -> list[str]:
+    command = [
+        "scp",
+        "-P",
+        str(server.port),
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        f"ConnectTimeout={server.connect_timeout_seconds}",
+    ]
+    if server.identity_file:
+        command.extend(["-i", expanduser(expandvars(server.identity_file))])
+    return command
 
 
 def _approved_service_name(
@@ -249,11 +305,12 @@ def _base_record(
     server: ServerInventoryItem,
     arguments: dict[str, Any],
     risk: str,
-    command: list[str],
+    commands: list[list[str]],
     approval_source: str,
     dry_run: bool,
     expected_approval: str,
 ) -> dict[str, Any]:
+    command = commands[0]
     return {
         "timestamp": config.utc_now_iso(),
         "server_id": server.server_id,
@@ -264,9 +321,40 @@ def _base_record(
         "expected_approval": expected_approval,
         "dry_run": dry_run,
         "command": command,
+        "commands": commands,
         "exit_code": None,
         "stdout": "",
         "stderr": "",
+    }
+
+
+def _run_commands(commands: list[list[str]], server: ServerInventoryItem) -> dict[str, Any]:
+    if len(commands) == 1:
+        return _run_command(commands[0], server)
+
+    started = time.monotonic()
+    stdout_parts: list[str] = []
+    stderr_parts: list[str] = []
+
+    for index, command in enumerate(commands, start=1):
+        result = _run_command(command, server)
+        if result["stdout"]:
+            stdout_parts.append(f"command {index}: {result['stdout']}")
+        if result["stderr"]:
+            stderr_parts.append(f"command {index}: {result['stderr']}")
+        if result["exit_code"] != 0:
+            return {
+                "exit_code": result["exit_code"],
+                "stdout": "\n".join(stdout_parts),
+                "stderr": "\n".join(stderr_parts),
+                "duration_seconds": round(time.monotonic() - started, 3),
+            }
+
+    return {
+        "exit_code": 0,
+        "stdout": "\n".join(stdout_parts),
+        "stderr": "\n".join(stderr_parts),
+        "duration_seconds": round(time.monotonic() - started, 3),
     }
 
 

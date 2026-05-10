@@ -70,6 +70,13 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "implemented": True,
     },
     {
+        "action_id": "deploy_health_script",
+        "risk": "approval_required",
+        "description": "Deploy the approved read-only health summary script.",
+        "server_roles": ["openvpn_server", "ispy_server", "container_host"],
+        "implemented": True,
+    },
+    {
         "action_id": "apply_security_updates",
         "risk": "approval_required",
         "description": "Apply available security updates.",

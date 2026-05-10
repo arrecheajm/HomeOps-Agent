@@ -78,6 +78,9 @@ latest run. The catalog captures:
 The tracked JSON is the durable repo knowledge. The HTML file is generated and
 ignored by git like the dashboard.
 
+If hardware fields show as `unknown`, deploy the latest approved health script
+with `deploy_health_script`, then run collection and regenerate the catalog.
+
 ## Run Grouping
 
 The dashboard groups run history into operating periods:

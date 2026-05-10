@@ -125,9 +125,9 @@ Goal: allow safe, predefined maintenance actions.
 - keep destructive or config-changing operations out of scope
 
 Status: in progress. The registry exists, `actions list` works, and
-`restart_docker_container` plus `restart_service` have dry-run, exact approval,
-execution, and action history support. Update and reboot actions remain
-unimplemented.
+`deploy_health_script`, `restart_docker_container`, and `restart_service` have
+dry-run, exact approval, execution, and action history support. Update and
+reboot actions remain unimplemented.
 
 ## Phase 8: Hardening
 

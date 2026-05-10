@@ -205,7 +205,14 @@ def command_actions_run(args: argparse.Namespace) -> int:
     print(f"Action status: {status}")
     print(f"Action ID: {record['action_id']}")
     print(f"Server: {record['server_id']}")
-    print(f"Command: {' '.join(record['command'])}")
+    commands = record.get("commands")
+    if isinstance(commands, list) and len(commands) > 1:
+        print("Commands:")
+        for index, command in enumerate(commands, start=1):
+            if isinstance(command, list):
+                print(f"{index}. {' '.join(str(part) for part in command)}")
+    else:
+        print(f"Command: {' '.join(record['command'])}")
     if args.dry_run:
         print(f"Approval phrase: {record['expected_approval']}")
     else:

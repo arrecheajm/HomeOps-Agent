@@ -15,6 +15,7 @@ DEFAULT_POLICY: dict[str, Any] = {
     "approval_required_actions": [
         "restart_service",
         "restart_docker_container",
+        "deploy_health_script",
         "apply_security_updates",
         "reboot_server",
     ],

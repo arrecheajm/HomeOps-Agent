@@ -48,6 +48,7 @@ python -m controller.main check
 python -m controller.main check --input history/runs/<timestamp>/fleet-health.json
 python -m controller.main catalog
 python -m controller.main actions list
+python -m controller.main actions run deploy_health_script --server container-host --dry-run
 python -m controller.main actions run restart_docker_container --server container-host --container watchtower --dry-run
 python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --dry-run
 python -m controller.main dashboard
@@ -61,6 +62,7 @@ This command shape is approval-required and should be used only after reviewing 
 ```bash
 python -m controller.main actions run restart_docker_container --server container-host --container watchtower --approval "Approve action restart_docker_container on container-host with container watchtower"
 python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --approval "Approve action restart_service on ispy-server with service AgentDVR.service"
+python -m controller.main actions run deploy_health_script --server container-host --approval "Approve action deploy_health_script on container-host"
 ```
 
 ## Server Script Installation
@@ -73,7 +75,9 @@ The current approved remote health command path is:
 /opt/homeops-agent/server-scripts/common/health_summary.sh
 ```
 
-Later, this repo can add explicit deployment and maintenance commands that copy scripts or perform approved actions over SSH, verify paths or checksums, and require approval before writing to a server.
+The `deploy_health_script` action can copy the known repository
+`server-scripts/common/health_summary.sh` to the approved remote path after
+exact approval. It does not deploy arbitrary files.
 
 ## Fleet Knowledge
 

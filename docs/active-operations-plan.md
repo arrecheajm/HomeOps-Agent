@@ -19,6 +19,8 @@ Connection state:
 - full controller collection now succeeds for all three servers
 - role-aware collection was verified on May 10, 2026, with inventory
   `server_id` and `role` passed into the health script
+- the controller can now dry-run and approval-gate deployment of the known
+  `health_summary.sh` script
 
 Latest known findings:
 
@@ -93,6 +95,8 @@ Current follow-up:
 - Monitor `AgentDVR.service` in collection. The controller now passes the
   inventory role into `health_summary.sh`, so service checks are selected by
   server role.
+- Deploy the updated `health_summary.sh` with `deploy_health_script` only after
+  reviewing a dry-run and approving the exact phrase for each server.
 - Use `restart_service` only for approved units such as `AgentDVR.service`,
   `openvpnas.service`, or `docker.service`, and only after reviewing a dry-run.
 - Treat failed `ispy.service` as a manual cleanup candidate after updates/reboot, because it appears to duplicate the active AgentDVR service and has been failed since February 13, 2026.
@@ -171,6 +175,7 @@ python -m controller.main collect
 
 ## Backlog After Current Maintenance
 
+- Deploy the updated health script to populate catalog hardware fields.
 - Consider role-specific scripts for OpenVPN, iSpy, and Docker.
 - Decide whether to implement additional approval-gated actions such as
   `reboot_server`.
