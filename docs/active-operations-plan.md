@@ -25,7 +25,8 @@ Connection state:
 Latest known findings:
 
 - `openvpn-server`: pending package updates
-- `ispy-server`: reboot required, pending package updates
+- `ispy-server`: reboot required, pending package updates, failed legacy `ispy`
+  service
 - `container-host`: reboot required, `watchtower` container restarting
 - no critical findings
 - no collection errors
@@ -37,6 +38,8 @@ Read-only detail gathered:
 - `ispy-server` reboot is tied to multiple kernel image packages.
 - `ispy-server` role-aware service collection reports `ssh` and `AgentDVR`.
 - `container-host` role-aware service collection reports `ssh` and `docker`.
+- fleet catalog hardware details now include architecture, CPU model, memory
+  total, virtualization, and disk sizes.
 - neither enabled server reported active `who` sessions during inspection.
 - `ispy-server` uses `AgentDVR.service` as the active camera service.
 - `ispy-server` also has an enabled but failed legacy-looking `ispy.service` unit pointing at `/home/spy/AgentDVR/start_agent.sh`.

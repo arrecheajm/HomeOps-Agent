@@ -23,6 +23,9 @@ class FleetCatalogTests(unittest.TestCase):
             "Prefer this host for new Docker-backed applications.",
             container["placement_guidance"],
         )
+        self.assertEqual(container["hardware"]["virtualization"], "none")
+        self.assertEqual(container["services"][1]["state"], "failed")
+        self.assertIn("Service issue: docker", container["constraints"])
 
     def test_render_fleet_catalog_includes_server_cards(self):
         catalog = build_fleet_catalog(self._run_summary())
@@ -91,6 +94,12 @@ class FleetCatalogTests(unittest.TestCase):
                         "version": "24.04",
                         "kernel": "6.8.0-111-generic",
                     },
+                    "hardware": {
+                        "architecture": "x86_64",
+                        "cpu_model": "Intel CPU",
+                        "memory_total_mb": 8192,
+                        "virtualization": "none\nnone",
+                    },
                     "uptime_seconds": 178581,
                     "resources": {
                         "cpu_count": 2,
@@ -122,6 +131,12 @@ class FleetCatalogTests(unittest.TestCase):
                         "version": "24.04",
                         "kernel": "6.8.0-101-generic",
                     },
+                    "hardware": {
+                        "architecture": "x86_64",
+                        "cpu_model": "Intel CPU",
+                        "memory_total_mb": 8192,
+                        "virtualization": "none\nnone",
+                    },
                     "uptime_seconds": 259051,
                     "resources": {
                         "cpu_count": 4,
@@ -139,7 +154,7 @@ class FleetCatalogTests(unittest.TestCase):
                     },
                     "services": [
                         {"name": "ssh", "state": "active", "enabled": False},
-                        {"name": "docker", "state": "active", "enabled": True},
+                        {"name": "docker", "state": "failed\nunknown", "enabled": True},
                     ],
                     "docker": {
                         "installed": True,

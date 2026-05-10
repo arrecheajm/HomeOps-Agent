@@ -125,10 +125,10 @@ def _server_catalog(
             "kernel": str(os_info.get("kernel") or "unknown"),
         },
         "hardware": {
-            "architecture": str(hardware.get("architecture") or "unknown"),
-            "cpu_model": str(hardware.get("cpu_model") or "unknown"),
+            "architecture": _clean_text(hardware.get("architecture"), "unknown"),
+            "cpu_model": _clean_text(hardware.get("cpu_model"), "unknown"),
             "memory_total_mb": _as_int(hardware.get("memory_total_mb")),
-            "virtualization": str(hardware.get("virtualization") or "unknown"),
+            "virtualization": _clean_virtualization(hardware.get("virtualization")),
         },
         "resources": {
             "cpu_count": _as_int(resources.get("cpu_count")),
@@ -151,7 +151,7 @@ def _server_catalog(
             "unhealthy": [
                 {
                     "name": str(item.get("name") or "unknown"),
-                    "status": str(item.get("status") or "unknown"),
+                    "status": _clean_text(item.get("status"), "unknown"),
                 }
                 for item in docker.get("unhealthy", [])
                 if isinstance(item, dict)
@@ -166,7 +166,7 @@ def _server_catalog(
             {
                 "severity": str(finding.get("severity") or "info"),
                 "code": str(finding.get("code") or "unknown"),
-                "message": str(finding.get("message") or ""),
+                "message": _clean_text(finding.get("message"), ""),
             }
             for finding in server_findings
         ],
@@ -242,6 +242,13 @@ def _constraints(server: dict[str, Any]) -> list[str]:
     if docker["unhealthy"]:
         names = ", ".join(item["name"] for item in docker["unhealthy"])
         constraints.append(f"Docker issue: {names}")
+    failed_services = [
+        service["name"]
+        for service in server["services"]
+        if service["state"] not in {"active", "unknown"}
+    ]
+    if failed_services:
+        constraints.append(f"Service issue: {', '.join(failed_services)}")
     if server["role"] == "openvpn_server":
         constraints.append("VPN availability affects remote access")
     if server["role"] == "ispy_server":
@@ -385,7 +392,7 @@ def _services(value: Any) -> list[dict[str, Any]]:
     return [
         {
             "name": str(item.get("name") or "unknown"),
-            "state": str(item.get("state") or "unknown"),
+            "state": _clean_service_state(item.get("state")),
             "enabled": bool(item.get("enabled")),
         }
         for item in value
@@ -406,6 +413,25 @@ def _memory_label(memory_total_mb: int) -> str:
     if memory_total_mb >= 1024:
         return f"{round(memory_total_mb / 1024, 1)} GB"
     return f"{memory_total_mb} MB"
+
+
+def _clean_text(value: Any, default: str) -> str:
+    cleaned = " ".join(str(value or "").split())
+    return cleaned or default
+
+
+def _clean_virtualization(value: Any) -> str:
+    cleaned = _clean_text(value, "unknown")
+    if cleaned == "none none":
+        return "none"
+    return cleaned
+
+
+def _clean_service_state(value: Any) -> str:
+    cleaned = _clean_text(value, "unknown")
+    if cleaned.endswith(" unknown"):
+        return cleaned.split()[0]
+    return cleaned
 
 
 def _as_int(value: Any) -> int:

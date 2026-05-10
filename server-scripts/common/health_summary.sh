@@ -39,7 +39,10 @@ if [ -z "$cpu_model" ]; then
 fi
 virtualization="unknown"
 if command_exists systemd-detect-virt; then
-  virtualization="$(systemd-detect-virt 2>/dev/null || printf 'none')"
+  virtualization="$(systemd-detect-virt 2>/dev/null)"
+  if [ -z "$virtualization" ]; then
+    virtualization="none"
+  fi
 fi
 
 os_name="Ubuntu"
@@ -132,8 +135,14 @@ fi
 services_json=""
 for service in $service_names; do
   if systemctl list-unit-files "$service.service" >/dev/null 2>&1 || systemctl status "$service" >/dev/null 2>&1; then
-    state="$(systemctl is-active "$service" 2>/dev/null || printf 'unknown')"
-    enabled_raw="$(systemctl is-enabled "$service" 2>/dev/null || printf 'false')"
+    state="$(systemctl is-active "$service" 2>/dev/null)"
+    if [ -z "$state" ]; then
+      state="unknown"
+    fi
+    enabled_raw="$(systemctl is-enabled "$service" 2>/dev/null)"
+    if [ -z "$enabled_raw" ]; then
+      enabled_raw="false"
+    fi
     enabled=false
     if [ "$enabled_raw" = "enabled" ]; then
       enabled=true
