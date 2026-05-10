@@ -15,6 +15,7 @@ def validate_server_health(health: dict[str, Any]) -> None:
     _optional_str(health, "hostname")
     _optional_number(health, "uptime_seconds")
     _optional_object(health, "os")
+    _optional_object(health, "hardware")
     _optional_object(health, "resources")
     _optional_object(health, "updates")
     _optional_object(health, "docker")
@@ -26,6 +27,14 @@ def validate_server_health(health: dict[str, Any]) -> None:
         _optional_str(disk, "mount", f"disk[{index}]")
         _optional_number(disk, "used_percent", f"disk[{index}]")
         _optional_number(disk, "free_gb", f"disk[{index}]")
+        _optional_number(disk, "size_gb", f"disk[{index}]")
+
+    hardware = health.get("hardware")
+    if isinstance(hardware, dict):
+        _optional_str(hardware, "architecture", "hardware")
+        _optional_str(hardware, "cpu_model", "hardware")
+        _optional_number(hardware, "memory_total_mb", "hardware")
+        _optional_str(hardware, "virtualization", "hardware")
 
     for index, service in enumerate(health.get("services") or []):
         _optional_str(service, "name", f"services[{index}]")

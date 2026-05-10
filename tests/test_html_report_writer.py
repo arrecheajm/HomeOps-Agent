@@ -25,6 +25,7 @@ class HtmlReportWriterTests(unittest.TestCase):
         )
 
         self.assertIn("HomeOps Dashboard", html)
+        self.assertIn("Fleet Catalog", html)
         self.assertIn("Latest Server State", html)
         self.assertIn("Historical Data", html)
         self.assertIn("Finding Trend", html)

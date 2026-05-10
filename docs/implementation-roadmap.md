@@ -102,6 +102,17 @@ Goal: make run history easier to scan visually.
 - link dashboard entries to fleet JSON
 - refresh dashboard after collection
 
+## Phase 6c: Fleet Capability Catalog
+
+Goal: keep durable server knowledge in the repo and render a separate catalog
+for workload placement decisions.
+
+- generate tracked `knowledge/fleet-catalog.json`
+- generate `reports/generated/fleet-catalog.html`
+- summarize roles, OS, services, CPU, memory, storage, Docker, and maintenance state
+- infer capabilities, constraints, and placement guidance
+- refresh the catalog after collection and dashboard generation
+
 ## Phase 7: Action Registry and Approval Flow
 
 Goal: allow safe, predefined maintenance actions.

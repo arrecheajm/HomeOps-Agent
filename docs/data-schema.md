@@ -18,6 +18,12 @@ Each server collection script should output a single JSON object:
     "version": "24.04",
     "kernel": "6.8.0"
   },
+  "hardware": {
+    "architecture": "x86_64",
+    "cpu_model": "Intel(R) Core(TM) ...",
+    "memory_total_mb": 8192,
+    "virtualization": "none"
+  },
   "uptime_seconds": 345992,
   "resources": {
     "load_1m": 0.42,
@@ -103,6 +109,43 @@ Collected per-server JSON is accepted only when key sections have the expected s
 - boolean state fields such as `updates.reboot_required` and `docker.installed` must be booleans.
 
 Invalid shapes are recorded as collection failures instead of being passed to local rules or report rendering.
+
+## Fleet Catalog JSON
+
+The repository keeps a tracked capability catalog at:
+
+```text
+knowledge/fleet-catalog.json
+```
+
+The catalog is generated from the latest fleet health JSON and includes:
+
+```json
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-05-10T20:00:00Z",
+  "source": {
+    "run_id": "2026-05-10T19-49-53Z",
+    "generated_at": "2026-05-10T19:49:53Z",
+    "fleet_path": "history/runs/2026-05-10T19-49-53Z/fleet-health.json"
+  },
+  "fleet_summary": {
+    "servers": 3,
+    "cpu_threads": 10,
+    "docker_hosts": 1,
+    "running_containers": 9,
+    "reboots_required": 2,
+    "pending_updates": 124
+  },
+  "recommendations": [],
+  "servers": []
+}
+```
+
+Server catalog entries intentionally omit login history and secrets. They keep
+role, hostname, OS, hardware, service, maintenance, storage, Docker, capability,
+constraint, and placement guidance fields. Older collection runs may not include
+hardware details; the catalog treats missing hardware fields as `unknown`.
 
 ## Finding Object
 

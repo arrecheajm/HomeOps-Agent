@@ -116,7 +116,11 @@ def _dashboard_nav() -> list[str]:
 def _latest_link(run: history.RunSummary | None, output_dir: Path) -> str:
     if not run:
         return ""
-    return f'<nav class="actions">{_link("Fleet JSON", run.fleet_path, output_dir)}</nav>'
+    links = [
+        _link("Fleet JSON", run.fleet_path, output_dir),
+        _link("Fleet Catalog", output_dir / "fleet-catalog.html", output_dir),
+    ]
+    return f'<nav class="actions">{"".join(links)}</nav>'
 
 
 def _summary_cards(run: history.RunSummary) -> list[str]:

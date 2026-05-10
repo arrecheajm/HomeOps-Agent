@@ -1,8 +1,9 @@
 # Reporting
 
-HomeOps writes one generated report surface from run history:
+HomeOps writes generated HTML report surfaces from structured history:
 
 - An HTML dashboard for current status, action history, and recent trends.
+- An HTML fleet catalog for server capabilities and workload placement guidance.
 
 ## Source Of Truth
 
@@ -11,6 +12,7 @@ Structured reporting uses:
 ```text
 history/runs/<timestamp>/fleet-health.json
 history/actions/<timestamp>-<server_id>-<action_id>.json
+knowledge/fleet-catalog.json
 ```
 
 Legacy Markdown reports are not generated anymore and are not included in the HTML dashboard timeline.
@@ -47,6 +49,34 @@ Open that file in a browser to review:
 - links to fleet JSON and action record JSON
 
 `reports/generated/` is ignored by git. Regenerate the dashboard locally whenever needed instead of committing generated HTML.
+
+## Fleet Catalog
+
+The fleet catalog keeps basic server knowledge in a tracked JSON file and renders
+a separate HTML report:
+
+```text
+knowledge/fleet-catalog.json
+reports/generated/fleet-catalog.html
+```
+
+Generate or refresh the catalog:
+
+```bash
+python -m controller.main catalog
+```
+
+Normal collection and dashboard generation also refresh the catalog from the
+latest run. The catalog captures:
+
+- server role, hostname, OS, kernel, hardware details, CPU thread count, load, memory use, uptime, and root disk free space
+- role-specific services
+- Docker capability and running container counts
+- maintenance state
+- inferred capabilities, constraints, and placement guidance
+
+The tracked JSON is the durable repo knowledge. The HTML file is generated and
+ignored by git like the dashboard.
 
 ## Run Grouping
 
@@ -102,6 +132,7 @@ The generated HTML report is:
 
 ```text
 reports/generated/index.html
+reports/generated/fleet-catalog.html
 ```
 
 The controller no longer writes `homeops-report-<timestamp>.md` files.

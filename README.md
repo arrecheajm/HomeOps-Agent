@@ -46,6 +46,7 @@ python -m controller.main report
 python -m controller.main report --input history/runs/<timestamp>/fleet-health.json
 python -m controller.main check
 python -m controller.main check --input history/runs/<timestamp>/fleet-health.json
+python -m controller.main catalog
 python -m controller.main actions list
 python -m controller.main actions run restart_docker_container --server container-host --container watchtower --dry-run
 python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --dry-run
@@ -73,6 +74,22 @@ The current approved remote health command path is:
 ```
 
 Later, this repo can add explicit deployment and maintenance commands that copy scripts or perform approved actions over SSH, verify paths or checksums, and require approval before writing to a server.
+
+## Fleet Knowledge
+
+The repo keeps a tracked fleet capability catalog at:
+
+```text
+knowledge/fleet-catalog.json
+```
+
+Generate the human-facing HTML catalog with:
+
+```bash
+python -m controller.main catalog
+```
+
+The HTML output is `reports/generated/fleet-catalog.html`.
 
 ## Documentation
 

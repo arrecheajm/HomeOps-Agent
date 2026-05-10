@@ -1,0 +1,316 @@
+{
+  "fleet_summary": {
+    "cpu_threads": 10,
+    "docker_hosts": 1,
+    "pending_updates": 124,
+    "reboots_required": 2,
+    "running_containers": 9,
+    "servers": 3
+  },
+  "generated_at": "2026-05-10T19:59:41Z",
+  "recommendations": [
+    "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
+    "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
+    "Use container-host as the default target for Docker applications after the current reboot and watchtower issues are resolved.",
+    "Clear reboot-required hosts before making placement changes.",
+    "Apply pending package maintenance before using current capacity numbers for long-term planning."
+  ],
+  "schema_version": "1.0",
+  "servers": [
+    {
+      "capabilities": [
+        "VPN access gateway",
+        "Low background workload",
+        "Small CPU footprint"
+      ],
+      "collected_at": "2026-05-10T19:49:58Z",
+      "constraints": [
+        "53 package updates pending",
+        "VPN availability affects remote access"
+      ],
+      "current_findings": [
+        {
+          "code": "updates_pending",
+          "message": "53 package updates are pending.",
+          "severity": "info"
+        }
+      ],
+      "docker": {
+        "containers_running": 0,
+        "containers_total": 0,
+        "installed": false,
+        "unhealthy": []
+      },
+      "hardware": {
+        "architecture": "unknown",
+        "cpu_model": "unknown",
+        "memory_total_mb": 0,
+        "virtualization": "unknown"
+      },
+      "hostname": "vpnserver",
+      "maintenance": {
+        "pending_security_updates": 0,
+        "pending_updates": 53,
+        "reboot_required": false
+      },
+      "os": {
+        "kernel": "6.8.0-111-generic",
+        "name": "Ubuntu",
+        "version": "24.04"
+      },
+      "placement_guidance": [
+        "Reserve for VPN and network access services.",
+        "Avoid CPU-heavy or experimental workloads."
+      ],
+      "resources": {
+        "cpu_count": 2,
+        "load_1m": 3.01,
+        "memory_used_percent": 19.8,
+        "swap_used_percent": 0.0,
+        "uptime_days": 2.1
+      },
+      "role": "openvpn_server",
+      "role_label": "VPN",
+      "server_id": "openvpn-server",
+      "services": [
+        {
+          "enabled": false,
+          "name": "ssh",
+          "state": "active"
+        },
+        {
+          "enabled": true,
+          "name": "openvpnas",
+          "state": "active"
+        }
+      ],
+      "storage": {
+        "disks": [
+          {
+            "free_gb": 85,
+            "mount": "/",
+            "size_gb": 0,
+            "used_percent": 9
+          },
+          {
+            "free_gb": 2,
+            "mount": "/boot",
+            "size_gb": 0,
+            "used_percent": 11
+          }
+        ],
+        "root_free_gb": 85,
+        "root_used_percent": 9,
+        "total_reported_free_gb": 87
+      }
+    },
+    {
+      "capabilities": [
+        "Security camera service host",
+        "AgentDVR workload",
+        "Moderate CPU headroom"
+      ],
+      "collected_at": "2026-05-10T19:50:01Z",
+      "constraints": [
+        "Reboot required",
+        "71 package updates pending",
+        "Camera recording interruption risk"
+      ],
+      "current_findings": [
+        {
+          "code": "reboot_required",
+          "message": "The server reports that a reboot is required.",
+          "severity": "warning"
+        },
+        {
+          "code": "updates_pending",
+          "message": "71 package updates are pending.",
+          "severity": "info"
+        }
+      ],
+      "docker": {
+        "containers_running": 0,
+        "containers_total": 0,
+        "installed": false,
+        "unhealthy": []
+      },
+      "hardware": {
+        "architecture": "unknown",
+        "cpu_model": "unknown",
+        "memory_total_mb": 0,
+        "virtualization": "unknown"
+      },
+      "hostname": "ispyserver",
+      "maintenance": {
+        "pending_security_updates": 0,
+        "pending_updates": 71,
+        "reboot_required": true
+      },
+      "os": {
+        "kernel": "6.8.0-100-generic",
+        "name": "Ubuntu",
+        "version": "24.04"
+      },
+      "placement_guidance": [
+        "Prioritize AgentDVR and camera reliability.",
+        "Only add light support services after maintenance is current."
+      ],
+      "resources": {
+        "cpu_count": 4,
+        "load_1m": 0.49,
+        "memory_used_percent": 10.3,
+        "swap_used_percent": 0.0,
+        "uptime_days": 86.0
+      },
+      "role": "ispy_server",
+      "role_label": "Security Cameras",
+      "server_id": "ispy-server",
+      "services": [
+        {
+          "enabled": false,
+          "name": "ssh",
+          "state": "active"
+        },
+        {
+          "enabled": true,
+          "name": "AgentDVR",
+          "state": "active"
+        }
+      ],
+      "storage": {
+        "disks": [
+          {
+            "free_gb": 82,
+            "mount": "/",
+            "size_gb": 0,
+            "used_percent": 12
+          },
+          {
+            "free_gb": 2,
+            "mount": "/boot",
+            "size_gb": 0,
+            "used_percent": 11
+          },
+          {
+            "free_gb": 2,
+            "mount": "/boot/efi",
+            "size_gb": 0,
+            "used_percent": 1
+          }
+        ],
+        "root_free_gb": 82,
+        "root_used_percent": 12,
+        "total_reported_free_gb": 86
+      }
+    },
+    {
+      "capabilities": [
+        "Docker application host",
+        "Container consolidation target",
+        "Moderate CPU headroom",
+        "Docker installed with 9 running containers"
+      ],
+      "collected_at": "2026-05-10T19:50:04Z",
+      "constraints": [
+        "Reboot required",
+        "Docker issue: watchtower"
+      ],
+      "current_findings": [
+        {
+          "code": "docker_unhealthy_container",
+          "message": "Container watchtower is reporting Restarting (1) Less than a second ago.",
+          "severity": "warning"
+        },
+        {
+          "code": "reboot_required",
+          "message": "The server reports that a reboot is required.",
+          "severity": "warning"
+        }
+      ],
+      "docker": {
+        "containers_running": 9,
+        "containers_total": 9,
+        "installed": true,
+        "unhealthy": [
+          {
+            "name": "watchtower",
+            "status": "Restarting (1) Less than a second ago"
+          }
+        ]
+      },
+      "hardware": {
+        "architecture": "unknown",
+        "cpu_model": "unknown",
+        "memory_total_mb": 0,
+        "virtualization": "unknown"
+      },
+      "hostname": "containerserver",
+      "maintenance": {
+        "pending_security_updates": 0,
+        "pending_updates": 0,
+        "reboot_required": true
+      },
+      "os": {
+        "kernel": "6.8.0-101-generic",
+        "name": "Ubuntu",
+        "version": "24.04"
+      },
+      "placement_guidance": [
+        "Prefer this host for new Docker-backed applications.",
+        "Fix unhealthy containers before increasing workload."
+      ],
+      "resources": {
+        "cpu_count": 4,
+        "load_1m": 0.3,
+        "memory_used_percent": 16.0,
+        "swap_used_percent": 0.0,
+        "uptime_days": 3.0
+      },
+      "role": "container_host",
+      "role_label": "Containers",
+      "server_id": "container-host",
+      "services": [
+        {
+          "enabled": false,
+          "name": "ssh",
+          "state": "active"
+        },
+        {
+          "enabled": true,
+          "name": "docker",
+          "state": "active"
+        }
+      ],
+      "storage": {
+        "disks": [
+          {
+            "free_gb": 81,
+            "mount": "/",
+            "size_gb": 0,
+            "used_percent": 14
+          },
+          {
+            "free_gb": 2,
+            "mount": "/boot",
+            "size_gb": 0,
+            "used_percent": 11
+          },
+          {
+            "free_gb": 2,
+            "mount": "/boot/efi",
+            "size_gb": 0,
+            "used_percent": 1
+          }
+        ],
+        "root_free_gb": 81,
+        "root_used_percent": 14,
+        "total_reported_free_gb": 85
+      }
+    }
+  ],
+  "source": {
+    "fleet_path": "history/runs/2026-05-10T19-49-53Z/fleet-health.json",
+    "generated_at": "2026-05-10T19:49:53Z",
+    "run_id": "2026-05-10T19-49-53Z"
+  }
+}

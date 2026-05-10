@@ -24,6 +24,8 @@ Live status:
   `containerserver@192.168.86.58`, and included in normal collection.
 - HTML dashboard generation is implemented for latest status, historical charts,
   agent/action history, and grouped run history.
+- Fleet capability catalog generation is implemented for tracked repo knowledge
+  and separate HTML reporting.
 - `restart_docker_container` and `restart_service` support dry-run, exact
   approval, SSH execution, and action history.
 
@@ -69,6 +71,7 @@ Current operating model:
 | `controller/rules.py` | local issue detection | Implemented |
 | `controller/policy.py` | policy loading and thresholds | Implemented |
 | `controller/html_report_writer.py` | HTML dashboard generation | Implemented |
+| `controller/fleet_catalog.py` | fleet capability catalog generation | Implemented |
 | `controller/history.py` | run history loading and grouping | Implemented |
 | `controller/action_registry.py` | allowed action definitions | Implemented |
 | `controller/approvals.py` | approval checks and prompts | Implemented |
@@ -170,3 +173,5 @@ Reporting readiness:
 - [x] Show historical dashboard charts for findings, updates, reboots, and Docker issues.
 - [x] Refresh HTML dashboard after collection.
 - [x] Refresh HTML dashboard after action attempts.
+- [x] Generate tracked fleet capability catalog JSON.
+- [x] Generate separate fleet catalog HTML report.

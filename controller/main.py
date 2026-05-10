@@ -19,6 +19,7 @@ from . import (
     policy,
     rules,
 )
+from .fleet_catalog import write_fleet_catalog
 from .html_report_writer import write_dashboard
 from .ssh_client import build_ssh_command
 
@@ -128,11 +129,15 @@ def command_collect(args: argparse.Namespace) -> int:
         history.discover_run_summaries(),
         actions=history.discover_action_summaries(),
     )
+    run_summary = history.run_summary_from_fleet(fleet, fleet_path, run_dir.name)
+    knowledge_path, catalog_path = write_fleet_catalog(run_summary)
 
     counts = rules.count_by_severity(fleet.get("findings") or [])
     print(f"Run directory: {run_dir}")
     print(f"Wrote fleet health: {fleet_path}")
     print(f"Wrote HTML dashboard: {dashboard_path}")
+    print(f"Wrote fleet catalog: {catalog_path}")
+    print(f"Wrote fleet knowledge: {knowledge_path}")
     print(
         "Findings: "
         f"{counts['critical']} critical, "
@@ -215,8 +220,38 @@ def command_dashboard(args: argparse.Namespace) -> int:
     output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
     runs = history.discover_run_summaries(runs_dir)
     dashboard_path = write_dashboard(runs, output_dir, history.discover_action_summaries())
+    if runs:
+        knowledge_path, catalog_path = write_fleet_catalog(runs[0], output_dir)
+        print(f"Wrote fleet catalog: {catalog_path}")
+        print(f"Wrote fleet knowledge: {knowledge_path}")
     print(f"Wrote dashboard: {dashboard_path}")
     print(f"Runs included: {len(runs)}")
+    return 0
+
+
+def command_catalog(args: argparse.Namespace) -> int:
+    output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
+    knowledge_path = (
+        Path(args.knowledge_path) if args.knowledge_path else config.FLEET_CATALOG_PATH
+    )
+    if args.input:
+        input_path = Path(args.input)
+        fleet = apply_local_rules(load_json(input_path))
+        run_summary = history.run_summary_from_fleet(fleet, input_path)
+    else:
+        runs = history.discover_run_summaries()
+        if not runs:
+            raise SystemExit("No run history found. Run collection before cataloging.")
+        run_summary = runs[0]
+
+    written_knowledge_path, catalog_path = write_fleet_catalog(
+        run_summary,
+        output_dir,
+        knowledge_path,
+    )
+    print(f"Wrote fleet catalog: {catalog_path}")
+    print(f"Wrote fleet knowledge: {written_knowledge_path}")
+    print(f"Source run: {run_summary.run_id}")
     return 0
 
 
@@ -276,6 +311,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory for generated dashboard. Defaults to reports/generated.",
     )
     dashboard_parser.set_defaults(func=command_dashboard)
+
+    catalog_parser = subparsers.add_parser(
+        "catalog", help="Generate fleet capability catalog HTML and tracked JSON"
+    )
+    catalog_parser.add_argument(
+        "--input",
+        help="Fleet health JSON to catalog. Defaults to latest run history.",
+    )
+    catalog_parser.add_argument(
+        "--output-dir",
+        help="Directory for generated catalog HTML. Defaults to reports/generated.",
+    )
+    catalog_parser.add_argument(
+        "--knowledge-path",
+        help="Tracked catalog JSON path. Defaults to knowledge/fleet-catalog.json.",
+    )
+    catalog_parser.set_defaults(func=command_catalog)
 
     actions_parser = subparsers.add_parser("actions", help="Inspect or run actions")
     actions_subparsers = actions_parser.add_subparsers(

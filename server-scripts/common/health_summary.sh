@@ -29,6 +29,18 @@ server_id="${HOMEOPS_SERVER_ID:-$(hostname -s 2>/dev/null || hostname)}"
 role="${HOMEOPS_ROLE:-unknown}"
 host_name="$(hostname -f 2>/dev/null || hostname)"
 kernel="$(uname -r)"
+architecture="$(uname -m 2>/dev/null || printf 'unknown')"
+cpu_model="$(awk -F: '/model name/ {gsub(/^ /, "", $2); print $2; exit}' /proc/cpuinfo 2>/dev/null)"
+if [ -z "$cpu_model" ] && command_exists lscpu; then
+  cpu_model="$(lscpu 2>/dev/null | awk -F: '/Model name/ {gsub(/^ /, "", $2); print $2; exit}')"
+fi
+if [ -z "$cpu_model" ]; then
+  cpu_model="unknown"
+fi
+virtualization="unknown"
+if command_exists systemd-detect-virt; then
+  virtualization="$(systemd-detect-virt 2>/dev/null || printf 'none')"
+fi
 
 os_name="Ubuntu"
 os_version="unknown"
@@ -42,6 +54,7 @@ fi
 uptime_seconds="$(cut -d. -f1 /proc/uptime 2>/dev/null || printf '0')"
 load_1m="$(awk '{print $1}' /proc/loadavg 2>/dev/null || printf '0')"
 cpu_count="$(nproc 2>/dev/null || printf '0')"
+memory_total_mb="$(awk '/MemTotal:/ { printf "%.0f", $2 / 1024 }' /proc/meminfo 2>/dev/null)"
 
 memory_used_percent="$(awk '
   /MemTotal:/ { total=$2 }
@@ -71,14 +84,16 @@ disk_json="$(
   df -P -BG -x tmpfs -x devtmpfs -x squashfs -x efivarfs 2>/dev/null | awk '
     NR > 1 {
       mount=$6
+      size=$2
       used=$5
       free=$4
       gsub("%", "", used)
       gsub("G", "", free)
+      gsub("G", "", size)
       if (count > 0) {
         printf ","
       }
-      printf "{\"mount\":\"%s\",\"used_percent\":%s,\"free_gb\":%s}", mount, used, free
+      printf "{\"mount\":\"%s\",\"used_percent\":%s,\"free_gb\":%s,\"size_gb\":%s}", mount, used, free, size
       count++
     }
   '
@@ -193,6 +208,12 @@ cat <<JSON
     "name": $(printf '%s' "$os_name" | json_string),
     "version": $(printf '%s' "$os_version" | json_string),
     "kernel": $(printf '%s' "$kernel" | json_string)
+  },
+  "hardware": {
+    "architecture": $(printf '%s' "$architecture" | json_string),
+    "cpu_model": $(printf '%s' "$cpu_model" | json_string),
+    "memory_total_mb": $(safe_number "$memory_total_mb"),
+    "virtualization": $(printf '%s' "$virtualization" | json_string)
   },
   "uptime_seconds": $(safe_number "$uptime_seconds"),
   "resources": {
