@@ -7,7 +7,7 @@
     "running_containers": 9,
     "servers": 3
   },
-  "generated_at": "2026-05-10T19:59:41Z",
+  "generated_at": "2026-05-10T19:49:53Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",

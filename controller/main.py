@@ -24,6 +24,45 @@ from .html_report_writer import write_dashboard
 from .ssh_client import build_ssh_command
 
 
+def refresh_html_reports(
+    runs_dir: Path | None = None,
+    output_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Refresh all generated HTML report surfaces from run and action history."""
+
+    actual_output_dir = output_dir or config.GENERATED_REPORTS_DIR
+    runs = history.discover_run_summaries(runs_dir)
+    dashboard_path = write_dashboard(
+        runs,
+        actual_output_dir,
+        history.discover_action_summaries(),
+    )
+    refreshed: dict[str, Any] = {
+        "dashboard_path": dashboard_path,
+        "runs": runs,
+        "run_count": len(runs),
+        "catalog_path": None,
+        "knowledge_path": None,
+    }
+    if runs:
+        knowledge_path, catalog_path = write_fleet_catalog(runs[0], actual_output_dir)
+        refreshed["catalog_path"] = catalog_path
+        refreshed["knowledge_path"] = knowledge_path
+    return refreshed
+
+
+def print_report_refresh(refreshed: dict[str, Any]) -> None:
+    """Print refreshed report paths."""
+
+    catalog_path = refreshed.get("catalog_path")
+    knowledge_path = refreshed.get("knowledge_path")
+    print(f"Wrote HTML dashboard: {refreshed['dashboard_path']}")
+    if catalog_path:
+        print(f"Wrote fleet catalog: {catalog_path}")
+    if knowledge_path:
+        print(f"Wrote fleet knowledge: {knowledge_path}")
+
+
 def load_json(path: Path) -> dict[str, Any]:
     """Load a JSON object from disk."""
 
@@ -124,20 +163,12 @@ def command_collect(args: argparse.Namespace) -> int:
     fleet, run_dir = collector.collect_fleet(servers)
     fleet = apply_local_rules(fleet)
     fleet_path = collector.save_fleet_health(fleet, run_dir)
-
-    dashboard_path = write_dashboard(
-        history.discover_run_summaries(),
-        actions=history.discover_action_summaries(),
-    )
-    run_summary = history.run_summary_from_fleet(fleet, fleet_path, run_dir.name)
-    knowledge_path, catalog_path = write_fleet_catalog(run_summary)
+    refreshed = refresh_html_reports()
 
     counts = rules.count_by_severity(fleet.get("findings") or [])
     print(f"Run directory: {run_dir}")
     print(f"Wrote fleet health: {fleet_path}")
-    print(f"Wrote HTML dashboard: {dashboard_path}")
-    print(f"Wrote fleet catalog: {catalog_path}")
-    print(f"Wrote fleet knowledge: {knowledge_path}")
+    print_report_refresh(refreshed)
     print(
         "Findings: "
         f"{counts['critical']} critical, "
@@ -190,18 +221,14 @@ def command_actions_run(args: argparse.Namespace) -> int:
             dry_run=args.dry_run,
         )
     except action_runner.ActionError as exc:
-        dashboard_path = write_dashboard(
-            history.discover_run_summaries(),
-            actions=history.discover_action_summaries(),
-        )
-        raise SystemExit(f"{exc}\nWrote HTML dashboard: {dashboard_path}") from exc
+        refreshed = refresh_html_reports()
+        raise SystemExit(
+            f"{exc}\nWrote HTML dashboard: {refreshed['dashboard_path']}"
+        ) from exc
 
     record = attempt.record
     status = record.get("status", "unknown")
-    dashboard_path = write_dashboard(
-        history.discover_run_summaries(),
-        actions=history.discover_action_summaries(),
-    )
+    refreshed = refresh_html_reports()
     print(f"Action status: {status}")
     print(f"Action ID: {record['action_id']}")
     print(f"Server: {record['server_id']}")
@@ -218,21 +245,16 @@ def command_actions_run(args: argparse.Namespace) -> int:
     else:
         print(f"Exit code: {record.get('exit_code')}")
     print(f"Wrote action record: {attempt.record_path}")
-    print(f"Updated HTML dashboard: {dashboard_path}")
+    print_report_refresh(refreshed)
     return 0 if status in {"dry_run", "completed"} else 1
 
 
 def command_dashboard(args: argparse.Namespace) -> int:
     runs_dir = Path(args.runs_dir) if args.runs_dir else config.RUNS_DIR
     output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
-    runs = history.discover_run_summaries(runs_dir)
-    dashboard_path = write_dashboard(runs, output_dir, history.discover_action_summaries())
-    if runs:
-        knowledge_path, catalog_path = write_fleet_catalog(runs[0], output_dir)
-        print(f"Wrote fleet catalog: {catalog_path}")
-        print(f"Wrote fleet knowledge: {knowledge_path}")
-    print(f"Wrote dashboard: {dashboard_path}")
-    print(f"Runs included: {len(runs)}")
+    refreshed = refresh_html_reports(runs_dir, output_dir)
+    print_report_refresh(refreshed)
+    print(f"Runs included: {refreshed['run_count']}")
     return 0
 
 

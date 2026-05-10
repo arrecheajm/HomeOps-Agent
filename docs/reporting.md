@@ -76,7 +76,9 @@ latest run. The catalog captures:
 - inferred capabilities, constraints, and placement guidance
 
 The tracked JSON is the durable repo knowledge. The HTML file is generated and
-ignored by git like the dashboard.
+ignored by git like the dashboard. The tracked catalog timestamp follows the
+source fleet run, so refreshing generated HTML without a new run does not
+create timestamp-only catalog churn.
 
 If hardware fields show as `unknown`, deploy the latest approved health script
 with `deploy_health_script`, then run collection and regenerate the catalog.

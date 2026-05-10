@@ -44,7 +44,7 @@ def build_fleet_catalog(run: history.RunSummary) -> dict[str, Any]:
     servers = [_server_catalog(server, run.findings) for server in run.servers]
     return {
         "schema_version": "1.0",
-        "generated_at": config.utc_now_iso(),
+        "generated_at": run.generated_at,
         "source": {
             "run_id": run.run_id,
             "generated_at": run.generated_at,

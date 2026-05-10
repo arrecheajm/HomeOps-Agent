@@ -12,6 +12,7 @@ class FleetCatalogTests(unittest.TestCase):
     def test_build_fleet_catalog_extracts_capability_guidance(self):
         catalog = build_fleet_catalog(self._run_summary())
 
+        self.assertEqual(catalog["generated_at"], "2026-05-10T19:49:53Z")
         self.assertEqual(catalog["fleet_summary"]["servers"], 2)
         self.assertEqual(catalog["fleet_summary"]["cpu_threads"], 6)
         self.assertEqual(catalog["fleet_summary"]["docker_hosts"], 1)
