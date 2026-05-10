@@ -45,6 +45,7 @@ def render_dashboard(
 
     actual_output_dir = output_dir or config.GENERATED_REPORTS_DIR
     sorted_runs = sorted(runs, key=lambda run: run.generated_dt, reverse=True)
+    action_summaries = actions or []
     latest = sorted_runs[0] if sorted_runs else None
     generated_at = config.utc_now_iso()
 
@@ -73,15 +74,18 @@ def render_dashboard(
     if not latest:
         body.extend(
             [
-                '<section class="empty">',
+                '<nav class="tabbar" aria-label="Dashboard views">',
+                '<a href="#overview">Overview</a>',
+                '<a href="#agent-history">Agent History</a>',
+                "</nav>",
+                '<section id="overview" class="empty view-section">',
                 "<h2>No Runs Found</h2>",
                 "<p>Run <code>python -m controller.main collect</code> to create the first dashboard entry.</p>",
                 "</section>",
-                "</main>",
-                "</body>",
-                "</html>",
             ]
         )
+        body.extend(_agent_history_section(action_summaries, actual_output_dir))
+        body.extend(["</main>", "</body>", "</html>"])
         return "\n".join(body) + "\n"
 
     body.extend(_dashboard_nav())
@@ -89,9 +93,10 @@ def render_dashboard(
     body.extend(_summary_cards(latest))
     body.extend(_server_section(latest))
     body.extend(_findings_section(latest))
-    body.extend(_actions_section(actions or [], actual_output_dir))
+    body.extend(_actions_section(action_summaries, actual_output_dir))
     body.append("</section>")
     body.extend(_history_section(sorted_runs))
+    body.extend(_agent_history_section(action_summaries, actual_output_dir))
     body.extend(_timeline_section(sorted_runs, actual_output_dir))
     body.extend(["</main>", "</body>", "</html>"])
     return "\n".join(body) + "\n"
@@ -102,6 +107,7 @@ def _dashboard_nav() -> list[str]:
         '<nav class="tabbar" aria-label="Dashboard views">',
         '<a href="#overview">Overview</a>',
         '<a href="#history">Historical Data</a>',
+        '<a href="#agent-history">Agent History</a>',
         '<a href="#runs">Run Timeline</a>',
         "</nav>",
     ]
@@ -361,6 +367,187 @@ def _timeline_section(runs: list[history.RunSummary], output_dir: Path) -> list[
         lines.append("</div>")
     lines.append("</section>")
     return lines
+
+
+def _agent_history_section(
+    actions: list[history.ActionSummary], output_dir: Path
+) -> list[str]:
+    sorted_actions = sorted(actions, key=lambda action: action.timestamp_dt, reverse=True)
+    action_label = (
+        "1 action attempt"
+        if len(sorted_actions) == 1
+        else f"{len(sorted_actions)} action attempts"
+    )
+    lines = [
+        '<section id="agent-history" class="panel view-section">',
+        '<div class="section-heading">',
+        "<h2>Agent History</h2>",
+        f"<span>{escape(action_label)}</span>",
+        "</div>",
+    ]
+
+    if not sorted_actions:
+        lines.extend(
+            [
+                "<p>No agent action attempts recorded.</p>",
+                "</section>",
+            ]
+        )
+        return lines
+
+    lines.extend(_action_history_cards(sorted_actions))
+    lines.extend(
+        [
+            '<div class="chart-grid">',
+            '<section class="chart-block chart-block-wide">',
+            "<h3>Agent Action Outcomes</h3>",
+            _action_status_history_chart(sorted_actions),
+            _chart_legend(
+                [
+                    ("Dry run", "#2d6cdf"),
+                    ("Completed", "#1f7a4d"),
+                    ("Denied", "#9a5b00"),
+                    ("Failed", "#b42318"),
+                    ("Unknown", "#667085"),
+                ]
+            ),
+            "</section>",
+            "</div>",
+            "<h3>Agent Action Timeline</h3>",
+            '<div class="table-scroll">',
+            '<table class="actions-table agent-history-table">',
+            "<thead><tr><th>Time</th><th>Server</th><th>Action</th><th>Status</th><th>Risk</th><th>Approval</th><th>Arguments</th><th>Exit</th><th>Record</th></tr></thead>",
+            "<tbody>",
+        ]
+    )
+    for action in sorted_actions[:25]:
+        status = _action_status_label(action)
+        exit_code = "" if action.exit_code is None else str(action.exit_code)
+        lines.append(
+            "<tr>"
+            f"<td>{escape(_display_action_time(action))}</td>"
+            f"<td>{escape(action.server_id)}</td>"
+            f"<td><code>{escape(action.action_id)}</code></td>"
+            f'<td><span class="badge badge-action-{escape(status)}">{escape(status)}</span></td>'
+            f"<td>{escape(action.risk)}</td>"
+            f"<td>{escape(action.approval_source)}</td>"
+            f"<td>{escape(_format_arguments(action.arguments))}</td>"
+            f"<td>{escape(exit_code)}</td>"
+            f"<td>{_link('JSON', action.record_path, output_dir)}</td>"
+            "</tr>"
+        )
+    lines.extend(["</tbody>", "</table>", "</div>", "</section>"])
+    return lines
+
+
+def _action_history_cards(actions: list[history.ActionSummary]) -> list[str]:
+    counts = _action_status_counts(actions)
+    latest = actions[0]
+    latest_detail = f"{latest.server_id} {latest.action_id}"
+    return [
+        '<div class="action-summary-grid">',
+        _metric_card("Agent Attempts", str(len(actions)), "recorded action history"),
+        _metric_card("Dry Runs", str(counts["dry-run"]), "validated only"),
+        _metric_card("Completed", str(counts["completed"]), "executed successfully"),
+        _metric_card(
+            "Needs Review",
+            str(counts["failed"] + counts["denied"]),
+            "failed or denied attempts",
+        ),
+        _metric_card("Latest Action", _display_compact_action_time(latest), latest_detail),
+        "</div>",
+    ]
+
+
+def _action_status_counts(actions: list[history.ActionSummary]) -> dict[str, int]:
+    counts = {
+        "dry-run": 0,
+        "completed": 0,
+        "denied": 0,
+        "failed": 0,
+        "unknown": 0,
+    }
+    for action in actions:
+        counts[_canonical_action_status(action)] += 1
+    return counts
+
+
+def _action_status_history_chart(actions: list[history.ActionSummary]) -> str:
+    metrics = _action_day_metrics(actions)
+    max_value = max(
+        1,
+        *[
+            item["dry-run"]
+            + item["completed"]
+            + item["denied"]
+            + item["failed"]
+            + item["unknown"]
+            for item in metrics
+        ],
+    )
+    width, height = 760, 260
+    left, right, top, bottom = 44, 18, 14, 46
+    chart_width = width - left - right
+    chart_height = height - top - bottom
+    bars: list[str] = []
+    count = max(1, len(metrics))
+    step = chart_width / count
+    bar_width = max(12, min(34, step * 0.62))
+    colors = (
+        ("dry-run", "#2d6cdf"),
+        ("completed", "#1f7a4d"),
+        ("denied", "#9a5b00"),
+        ("failed", "#b42318"),
+        ("unknown", "#667085"),
+    )
+
+    for index, item in enumerate(metrics):
+        x = left + (index * step) + ((step - bar_width) / 2)
+        y_cursor = top + chart_height
+        for key, color in colors:
+            value = item[key]
+            if value <= 0:
+                continue
+            bar_height = (value / max_value) * chart_height
+            y_cursor -= bar_height
+            bars.append(
+                f'<rect x="{x:.1f}" y="{y_cursor:.1f}" width="{bar_width:.1f}" '
+                f'height="{bar_height:.1f}" fill="{color}" rx="3">'
+                f"<title>{escape(item['label'])}: {value} {key}</title>"
+                "</rect>"
+            )
+
+    return _svg_chart(
+        width,
+        height,
+        _grid_lines(max_value, left, top, chart_width, chart_height)
+        + bars
+        + _bar_x_labels(metrics, left, top, chart_width, chart_height)
+        + _axis_line(left, top, chart_width, chart_height),
+    )
+
+
+def _action_day_metrics(actions: list[history.ActionSummary]) -> list[dict[str, Any]]:
+    by_day: dict[str, dict[str, Any]] = {}
+    ordered_days: list[str] = []
+
+    for action in sorted(actions, key=lambda item: item.timestamp_dt):
+        local_dt = action.timestamp_dt.astimezone()
+        key = local_dt.strftime("%Y-%m-%d")
+        label = local_dt.strftime("%m-%d")
+        if key not in by_day:
+            ordered_days.append(key)
+            by_day[key] = {
+                "label": label,
+                "dry-run": 0,
+                "completed": 0,
+                "denied": 0,
+                "failed": 0,
+                "unknown": 0,
+            }
+        by_day[key][_canonical_action_status(action)] += 1
+
+    return [by_day[key] for key in ordered_days[-14:]]
 
 
 def _finding_trend_chart(runs: list[history.RunSummary]) -> str:
@@ -714,10 +901,25 @@ def _display_action_time(action: history.ActionSummary) -> str:
     return action.timestamp_dt.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z").strip()
 
 
+def _display_compact_action_time(action: history.ActionSummary) -> str:
+    return action.timestamp_dt.astimezone().strftime("%m-%d %H:%M").strip()
+
+
 def _action_status_label(action: history.ActionSummary) -> str:
+    return _canonical_action_status(action)
+
+
+def _canonical_action_status(action: history.ActionSummary) -> str:
     if action.dry_run:
         return "dry-run"
-    return action.status.lower().replace("_", "-")
+    status = action.status.lower().replace("_", "-")
+    if status in {"completed", "dry-run", "denied", "failed"}:
+        return status
+    if "denied" in status:
+        return "denied"
+    if "fail" in status or "timeout" in status:
+        return "failed"
+    return "unknown"
 
 
 def _format_arguments(arguments: dict[str, Any]) -> str:
@@ -817,7 +1019,7 @@ a:hover { text-decoration: underline; }
 .view-section {
   scroll-margin-top: 16px;
 }
-.summary-grid {
+.summary-grid, .action-summary-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
@@ -898,9 +1100,15 @@ dd {
   margin: 0;
   font-weight: 700;
 }
+.table-scroll {
+  overflow-x: auto;
+}
 .findings-table, .actions-table {
   width: 100%;
   border-collapse: collapse;
+}
+.agent-history-table {
+  min-width: 980px;
 }
 th, td {
   border-bottom: 1px solid var(--border);
@@ -1024,12 +1232,15 @@ code {
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .action-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .chart-grid {
     grid-template-columns: 1fr;
   }
 }
 @media (max-width: 560px) {
-  .summary-grid, .server-facts {
+  .summary-grid, .action-summary-grid, .server-facts {
     grid-template-columns: 1fr;
   }
   .section-heading {

@@ -41,6 +41,7 @@ Open that file in a browser to review:
 - server status cards
 - latest findings by severity
 - recent action attempts from action history
+- agent/action history metrics, status chart, and action timeline
 - historical charts for findings, pending updates, reboot-required state, and Docker issues
 - grouped run timeline
 - links to fleet JSON and action record JSON
@@ -84,6 +85,16 @@ The dashboard loads these records and shows the most recent action attempts with
 server ID, action ID, status, dry-run state, and arguments.
 This keeps mutating operations auditable even after the controller grows beyond
 read-only collection.
+
+The `Agent History` dashboard view renders the same records as historical data:
+
+- total action attempts
+- dry-run, completed, denied, and failed counts
+- action outcome chart by day
+- action timeline with risk, approval source, arguments, exit code, and JSON link
+
+Running `python -m controller.main actions run ...` refreshes the HTML dashboard
+after the action record is written, including dry-runs and denied attempts.
 
 ## Report Files
 

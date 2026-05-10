@@ -33,6 +33,11 @@ class HtmlReportWriterTests(unittest.TestCase):
         self.assertIn("Action History", html)
         self.assertIn("restart_docker_container", html)
         self.assertIn("watchtower", html)
+        self.assertIn("Agent History", html)
+        self.assertIn("Agent Action Outcomes", html)
+        self.assertIn("Agent Action Timeline", html)
+        self.assertIn("approval_required", html)
+        self.assertIn("dry_run", html)
         self.assertIn("Run Timeline", html)
         self.assertIn("reboot_required", html)
         self.assertIn("openvpn-server", html)
@@ -51,6 +56,14 @@ class HtmlReportWriterTests(unittest.TestCase):
             "HomeOps Dashboard",
             path.read_text(encoding="utf-8"),
         )
+
+    def test_render_dashboard_includes_agent_history_without_runs(self):
+        html = render_dashboard([], Path("reports/generated"), [self._action_summary()])
+
+        self.assertIn("No Runs Found", html)
+        self.assertIn("Agent History", html)
+        self.assertIn("Agent Action Timeline", html)
+        self.assertIn("restart_docker_container", html)
 
     def _run_summary(
         self,

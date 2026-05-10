@@ -183,10 +183,18 @@ def command_actions_run(args: argparse.Namespace) -> int:
             dry_run=args.dry_run,
         )
     except action_runner.ActionError as exc:
-        raise SystemExit(str(exc)) from exc
+        dashboard_path = write_dashboard(
+            history.discover_run_summaries(),
+            actions=history.discover_action_summaries(),
+        )
+        raise SystemExit(f"{exc}\nWrote HTML dashboard: {dashboard_path}") from exc
 
     record = attempt.record
     status = record.get("status", "unknown")
+    dashboard_path = write_dashboard(
+        history.discover_run_summaries(),
+        actions=history.discover_action_summaries(),
+    )
     print(f"Action status: {status}")
     print(f"Action ID: {record['action_id']}")
     print(f"Server: {record['server_id']}")
@@ -196,6 +204,7 @@ def command_actions_run(args: argparse.Namespace) -> int:
     else:
         print(f"Exit code: {record.get('exit_code')}")
     print(f"Wrote action record: {attempt.record_path}")
+    print(f"Updated HTML dashboard: {dashboard_path}")
     return 0 if status in {"dry_run", "completed"} else 1
 
 

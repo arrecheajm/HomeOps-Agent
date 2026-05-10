@@ -21,7 +21,7 @@ Live status:
 - `container-host` is online at `192.168.86.58`, reachable as
   `containerserver@192.168.86.58`, and included in normal collection.
 - HTML dashboard generation is implemented for latest status, historical charts,
-  action history, and grouped run history.
+  agent/action history, and grouped run history.
 - `restart_docker_container` supports dry-run, exact approval, SSH execution,
   and action history.
 
@@ -164,5 +164,7 @@ Reporting readiness:
 - [x] Group run history by practical operating periods.
 - [x] Generate HTML dashboard from structured run history.
 - [x] Show action history in the HTML dashboard.
+- [x] Show agent/action history metrics, outcome chart, and timeline in the HTML dashboard.
 - [x] Show historical dashboard charts for findings, updates, reboots, and Docker issues.
 - [x] Refresh HTML dashboard after collection.
+- [x] Refresh HTML dashboard after action attempts.
