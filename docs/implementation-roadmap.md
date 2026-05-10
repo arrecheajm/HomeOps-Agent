@@ -2,7 +2,7 @@
 
 ## Current Status
 
-The controller can generate an HTML dashboard, load inventory with optional SSH identity files, validate approved remote health commands, dry-run collection, validate collected server health shapes, normalize inventory identity, and run collector logic under tests.
+The controller can generate an HTML dashboard, load inventory with optional SSH identity files, validate approved remote health commands, pass inventory identity into collection, dry-run collection, validate collected server health shapes, normalize inventory identity, and run collector logic under tests.
 
 The first real read-only collection has succeeded for all three servers: `openvpn-server`, `ispy-server`, and `container-host`. `container-host` is online at `192.168.86.58`, local inventory uses `containerserver@192.168.86.58`, SSH key authentication works, and the approved read-only health script is installed.
 
@@ -60,6 +60,7 @@ Goal: produce compact JSON from Ubuntu hosts.
 - add disk summary
 - add update summary
 - add service summary
+- add role-specific service selection from inventory role
 - add security summary
 - add role-specific scripts for Docker, OpenVPN, and iSpy
 
@@ -113,8 +114,9 @@ Goal: allow safe, predefined maintenance actions.
 - keep destructive or config-changing operations out of scope
 
 Status: in progress. The registry exists, `actions list` works, and
-`restart_docker_container` has dry-run, exact approval, execution, and action
-history support. Other approval-required actions remain unimplemented.
+`restart_docker_container` plus `restart_service` have dry-run, exact approval,
+execution, and action history support. Update and reboot actions remain
+unimplemented.
 
 ## Phase 8: Hardening
 

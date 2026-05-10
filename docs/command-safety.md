@@ -109,6 +109,18 @@ The corresponding approval phrase is:
 Approve action restart_docker_container on container-host with container watchtower
 ```
 
+Service restarts use the same exact approval model and accept only approved
+unit names for the target server role. Examples:
+
+```powershell
+python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --dry-run
+python -m controller.main actions run restart_service --server openvpn-server --service openvpnas.service --dry-run
+python -m controller.main actions run restart_service --server container-host --service docker.service --dry-run
+```
+
+The controller normalizes approved aliases such as `openvpnas` to
+`openvpnas.service`, but it does not accept arbitrary service names.
+
 ## Audit Trail
 
 Every action attempt should write an action history record containing:

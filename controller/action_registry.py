@@ -67,7 +67,7 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "risk": "approval_required",
         "description": "Restart one approved system service.",
         "server_roles": ["openvpn_server", "ispy_server", "container_host"],
-        "implemented": False,
+        "implemented": True,
     },
     {
         "action_id": "apply_security_updates",

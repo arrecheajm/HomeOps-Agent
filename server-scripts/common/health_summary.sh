@@ -96,7 +96,24 @@ if [ -f /var/run/reboot-required ]; then
   reboot_required=true
 fi
 
-service_names="${HOMEOPS_SERVICES:-ssh sshd docker openvpn openvpn-server@server openvpnas AgentDVR agent-dvr}"
+if [ -n "${HOMEOPS_SERVICES:-}" ]; then
+  service_names="$HOMEOPS_SERVICES"
+else
+  case "$role" in
+    openvpn_server)
+      service_names="ssh sshd openvpnas openvpn openvpn-server@server"
+      ;;
+    ispy_server)
+      service_names="ssh sshd AgentDVR agent-dvr ispy"
+      ;;
+    container_host)
+      service_names="ssh sshd docker"
+      ;;
+    *)
+      service_names="ssh sshd docker openvpn openvpn-server@server openvpnas AgentDVR agent-dvr"
+      ;;
+  esac
+fi
 services_json=""
 for service in $service_names; do
   if systemctl list-unit-files "$service.service" >/dev/null 2>&1 || systemctl status "$service" >/dev/null 2>&1; then

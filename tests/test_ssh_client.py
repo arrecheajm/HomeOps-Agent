@@ -23,8 +23,10 @@ class SshClientTests(unittest.TestCase):
         self.assertIn("2222", command)
         self.assertIn("ConnectTimeout=7", command)
         self.assertIn("homeops@container-host.local", command)
-        self.assertEqual(
-            command[-1], "/opt/homeops-agent/server-scripts/common/health_summary.sh"
+        self.assertIn("HOMEOPS_SERVER_ID=container-host", command[-1])
+        self.assertIn("HOMEOPS_ROLE=container_host", command[-1])
+        self.assertIn(
+            "/opt/homeops-agent/server-scripts/common/health_summary.sh", command[-1]
         )
 
     def test_build_ssh_command_includes_identity_file_when_configured(self):

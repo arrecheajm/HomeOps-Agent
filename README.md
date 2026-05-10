@@ -29,7 +29,7 @@ Codex in VS Code acts as the human-facing analyst by reading the generated repor
 Codex or user in VS Code
   -> runs the controller CLI
   -> controller SSHes into servers
-  -> controller runs approved read-only scripts
+  -> controller runs approved read-only scripts with inventory identity and role
   -> controller validates and normalizes JSON
   -> controller applies local rules using policy thresholds
   -> controller writes JSON, HTML, and history artifacts
@@ -48,6 +48,7 @@ python -m controller.main check
 python -m controller.main check --input history/runs/<timestamp>/fleet-health.json
 python -m controller.main actions list
 python -m controller.main actions run restart_docker_container --server container-host --container watchtower --dry-run
+python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --dry-run
 python -m controller.main dashboard
 python -m controller.main collect --dry-run --inventory config/servers.example.yaml
 python -m controller.main collect
@@ -58,6 +59,7 @@ This command shape is approval-required and should be used only after reviewing 
 
 ```bash
 python -m controller.main actions run restart_docker_container --server container-host --container watchtower --approval "Approve action restart_docker_container on container-host with container watchtower"
+python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --approval "Approve action restart_service on ispy-server with service AgentDVR.service"
 ```
 
 ## Server Script Installation

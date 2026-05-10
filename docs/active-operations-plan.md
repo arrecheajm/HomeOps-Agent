@@ -17,6 +17,8 @@ Connection state:
 - SSH key authentication works
 - the approved read-only health script is installed
 - full controller collection now succeeds for all three servers
+- role-aware collection was verified on May 10, 2026, with inventory
+  `server_id` and `role` passed into the health script
 
 Latest known findings:
 
@@ -29,7 +31,10 @@ Latest known findings:
 Read-only detail gathered:
 
 - `openvpn-server` reboot is tied to kernel packages and `linux-base`.
+- `openvpn-server` role-aware service collection reports `ssh` and `openvpnas`.
 - `ispy-server` reboot is tied to multiple kernel image packages.
+- `ispy-server` role-aware service collection reports `ssh` and `AgentDVR`.
+- `container-host` role-aware service collection reports `ssh` and `docker`.
 - neither enabled server reported active `who` sessions during inspection.
 - `ispy-server` uses `AgentDVR.service` as the active camera service.
 - `ispy-server` also has an enabled but failed legacy-looking `ispy.service` unit pointing at `/home/spy/AgentDVR/start_agent.sh`.
@@ -44,7 +49,10 @@ reports/generated/index.html
 
 Gather targeted read-only details, perform any needed maintenance manually, and re-run collection to confirm the findings clear.
 
-Mutating controller actions are still not implemented. Any update or reboot should be done manually after deciding the outage impact is acceptable.
+Only narrow approval-gated controller actions are implemented. `restart_docker_container`
+and `restart_service` require exact approval and write action history. Package
+updates and reboots should still be done manually after deciding the outage
+impact is acceptable.
 
 ## Step 1: Gather Reboot And Package Details
 
@@ -82,7 +90,11 @@ Purpose:
 
 Current follow-up:
 
-- Monitor `AgentDVR.service` in collection.
+- Monitor `AgentDVR.service` in collection. The controller now passes the
+  inventory role into `health_summary.sh`, so service checks are selected by
+  server role.
+- Use `restart_service` only for approved units such as `AgentDVR.service`,
+  `openvpnas.service`, or `docker.service`, and only after reviewing a dry-run.
 - Treat failed `ispy.service` as a manual cleanup candidate after updates/reboot, because it appears to duplicate the active AgentDVR service and has been failed since February 13, 2026.
 
 ## Step 3: Perform Manual Maintenance One Server At A Time
@@ -159,7 +171,6 @@ python -m controller.main collect
 
 ## Backlog After Current Maintenance
 
-- Add iSpy service detection once the real unit name is known.
 - Consider role-specific scripts for OpenVPN, iSpy, and Docker.
 - Decide whether to implement additional approval-gated actions such as
   `reboot_server`.

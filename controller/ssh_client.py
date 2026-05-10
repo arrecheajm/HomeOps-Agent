@@ -6,6 +6,7 @@ import subprocess
 import time
 from dataclasses import dataclass
 from os.path import expanduser, expandvars
+from shlex import quote
 
 from .inventory import ServerInventoryItem, is_allowed_remote_health_command
 
@@ -30,8 +31,26 @@ def build_ssh_command(server: ServerInventoryItem) -> list[str]:
         )
 
     command = build_ssh_base_command(server)
-    command.extend([server.ssh_target, server.remote_health_command])
+    command.extend([server.ssh_target, build_remote_health_command(server)])
     return command
+
+
+def build_remote_health_command(server: ServerInventoryItem) -> str:
+    """Build the allowlisted remote health command with inventory context."""
+
+    if not is_allowed_remote_health_command(server.remote_health_command):
+        raise ValueError(
+            f"Remote health command is not approved: {server.remote_health_command}"
+        )
+
+    assignments = {
+        "HOMEOPS_SERVER_ID": server.server_id,
+        "HOMEOPS_ROLE": server.role,
+    }
+    prefix = " ".join(
+        f"{name}={quote(str(value))}" for name, value in assignments.items()
+    )
+    return f"{prefix} {quote(server.remote_health_command)}"
 
 
 def build_ssh_base_command(server: ServerInventoryItem) -> list[str]:

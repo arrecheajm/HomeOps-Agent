@@ -165,6 +165,8 @@ def command_actions_run(args: argparse.Namespace) -> int:
     arguments: dict[str, Any] = {}
     if args.container:
         arguments["container"] = args.container
+    if args.service:
+        arguments["service"] = args.service
 
     approval_text = args.approval
     if not args.dry_run and approval_text is None and sys.stdin.isatty():
@@ -296,6 +298,10 @@ def build_parser() -> argparse.ArgumentParser:
     actions_run_parser.add_argument(
         "--container",
         help="Docker container name for restart_docker_container.",
+    )
+    actions_run_parser.add_argument(
+        "--service",
+        help="Approved system service name for restart_service.",
     )
     actions_run_parser.add_argument(
         "--approval",

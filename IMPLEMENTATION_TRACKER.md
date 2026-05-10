@@ -12,18 +12,20 @@ Live status:
 - Inventory loading works.
 - SSH command dry-run works.
 - SSH inventory supports optional identity files for dedicated controller keys.
+- SSH collection passes inventory `server_id` and `role` into the health script.
 - Collector code writes raw results and `fleet-health.json`.
 - Controller validates collected server health shapes before normalization.
 - Inventory and SSH command building reject unapproved remote health commands.
 - Local rule thresholds are loaded from `config/policy.yaml`.
 - First real read-only collection succeeded for `openvpn-server`, `ispy-server`,
   and `container-host`.
+- Role-aware read-only collection was verified on May 10, 2026.
 - `container-host` is online at `192.168.86.58`, reachable as
   `containerserver@192.168.86.58`, and included in normal collection.
 - HTML dashboard generation is implemented for latest status, historical charts,
   agent/action history, and grouped run history.
-- `restart_docker_container` supports dry-run, exact approval, SSH execution,
-  and action history.
+- `restart_docker_container` and `restart_service` support dry-run, exact
+  approval, SSH execution, and action history.
 
 Current operating model:
 
@@ -77,7 +79,7 @@ Current operating model:
 
 | Script | Purpose | Risk | Status |
 |---|---|---|---|
-| `server-scripts/common/health_summary.sh` | combined read-only host summary | read_only | Implemented |
+| `server-scripts/common/health_summary.sh` | combined read-only host summary with role-specific service selection | read_only | Implemented |
 | `server-scripts/common/disk_check.sh` | mount usage summary | read_only | Planned |
 | `server-scripts/common/update_check.sh` | apt update and reboot-required summary | read_only | Planned |
 | `server-scripts/common/service_check.sh` | approved service status summary | read_only | Planned |
@@ -110,8 +112,9 @@ Read-only action IDs are registered. Execution is still pending.
 - [x] `collect_openvpn`
 - [x] `collect_ispy`
 
-Approval-required action IDs are registered. `restart_docker_container` is
-executable after exact approval; the other actions are not executable yet.
+Approval-required action IDs are registered. `restart_docker_container` and
+`restart_service` are executable after exact approval; update and reboot actions
+are not executable yet.
 
 - [x] `restart_service`
 - [x] `restart_docker_container`
@@ -128,12 +131,11 @@ Forbidden actions:
 
 ## Next Implementation Step
 
-Use `actions run ... --dry-run` to review the `watchtower` restart action, then
-execute it only if the user approves the exact phrase. After that, re-run
-collection to verify the container state.
+Use `actions run ... --dry-run` to review the `watchtower` restart action or an
+approved service restart, then execute only if the user approves the exact
+phrase. After that, re-run collection to verify the server state.
 
-Future implementation work can add similarly bounded support for `reboot_server`
-or `restart_service`.
+Future implementation work can add similarly bounded support for `reboot_server`.
 
 Current operations are tracked in:
 

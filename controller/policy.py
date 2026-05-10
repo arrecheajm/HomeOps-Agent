@@ -25,7 +25,8 @@ DEFAULT_POLICY: dict[str, Any] = {
         "nft",
         "firewall-cmd",
         "sshd_config",
-        "openvpn",
+        "/etc/openvpn",
+        "openvpn --config",
         "dockerd",
     ],
     "thresholds": {

@@ -88,6 +88,48 @@ class ActionRunnerTests(unittest.TestCase):
                 actions_dir=self.actions_dir,
             )
 
+    def test_restart_service_dry_run_writes_history(self):
+        attempt = run_action(
+            "restart_service",
+            "ispy-server",
+            [self._ispy_server()],
+            {"service": "AgentDVR.service"},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(record["arguments"], {"service": "AgentDVR.service"})
+        self.assertEqual(
+            record["command"][-6:],
+            ["sudo", "-n", "systemctl", "restart", "--", "AgentDVR.service"],
+        )
+        self.assertIn("Approve action restart_service", record["expected_approval"])
+
+    def test_restart_service_normalizes_openvpnas_unit_name(self):
+        attempt = run_action(
+            "restart_service",
+            "openvpn-server",
+            [self._openvpn_server()],
+            {"service": "openvpnas"},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        self.assertEqual(attempt.record["command"][-1], "openvpnas.service")
+
+    def test_restart_service_rejects_unapproved_service_name(self):
+        with self.assertRaisesRegex(ActionError, "not approved for restart"):
+            run_action(
+                "restart_service",
+                "ispy-server",
+                [self._ispy_server()],
+                {"service": "ssh"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
     def test_action_role_restriction_is_enforced(self):
         with self.assertRaisesRegex(ActionError, "not allowed for role"):
             run_action(
@@ -111,6 +153,24 @@ class ActionRunnerTests(unittest.TestCase):
             server_id="container-host",
             role="container_host",
             host="container-host.local",
+            user="homeops",
+            identity_file="~/.ssh/homeops_ed25519",
+        )
+
+    def _ispy_server(self) -> ServerInventoryItem:
+        return ServerInventoryItem(
+            server_id="ispy-server",
+            role="ispy_server",
+            host="ispy-server.local",
+            user="homeops",
+            identity_file="~/.ssh/homeops_ed25519",
+        )
+
+    def _openvpn_server(self) -> ServerInventoryItem:
+        return ServerInventoryItem(
+            server_id="openvpn-server",
+            role="openvpn_server",
+            host="openvpn-server.local",
             user="homeops",
             identity_file="~/.ssh/homeops_ed25519",
         )

@@ -16,6 +16,21 @@ from .ssh_client import build_ssh_base_command
 
 
 CONTAINER_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+SERVICE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@-]*$")
+APPROVED_SERVICE_RESTARTS = {
+    "openvpn_server": {
+        "openvpnas": "openvpnas.service",
+        "openvpnas.service": "openvpnas.service",
+    },
+    "ispy_server": {
+        "AgentDVR": "AgentDVR.service",
+        "AgentDVR.service": "AgentDVR.service",
+    },
+    "container_host": {
+        "docker": "docker.service",
+        "docker.service": "docker.service",
+    },
+}
 
 
 class ActionError(RuntimeError):
@@ -132,7 +147,40 @@ def build_action_command(
             container,
         ]
 
+    if action_id == "restart_service":
+        service = _approved_service_name(server, arguments)
+        return build_ssh_base_command(server) + [
+            server.ssh_target,
+            "sudo",
+            "-n",
+            "systemctl",
+            "restart",
+            "--",
+            service,
+        ]
+
     raise ActionError(f"Action is not implemented: {action_id}")
+
+
+def _approved_service_name(
+    server: ServerInventoryItem, arguments: dict[str, Any]
+) -> str:
+    service = str(arguments.get("service") or "")
+    if not SERVICE_NAME_RE.fullmatch(service):
+        raise ActionError(
+            "Service name is required and may contain only letters, digits, "
+            "periods, underscores, at signs, and dashes."
+        )
+
+    allowed = APPROVED_SERVICE_RESTARTS.get(server.role, {})
+    normalized = allowed.get(service)
+    if not normalized:
+        approved_names = ", ".join(sorted(allowed)) or "none"
+        raise ActionError(
+            f"Service is not approved for restart on role {server.role}: {service}. "
+            f"Approved services: {approved_names}."
+        )
+    return normalized
 
 
 def write_action_record(record: dict[str, Any], actions_dir: Path | None = None) -> Path:
