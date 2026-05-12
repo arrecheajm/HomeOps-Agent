@@ -364,12 +364,12 @@ class ActionRunnerTests(unittest.TestCase):
                 actions_dir=self.actions_dir,
             )
 
-    def test_run_admin_command_rejects_forbidden_policy_pattern(self):
+    def test_run_admin_command_rejects_forbidden_policy_pattern_on_experimental(self):
         with self.assertRaisesRegex(ActionError, "forbidden policy pattern"):
             run_action(
                 "run_admin_command",
-                "container-host",
-                [self._container_server()],
+                "ispy-server",
+                [self._ispy_server()],
                 {
                     "command": "rm -rf /tmp/example",
                     "intent": "exercise forbidden policy",
@@ -378,12 +378,12 @@ class ActionRunnerTests(unittest.TestCase):
                 actions_dir=self.actions_dir,
             )
 
-    def test_run_admin_command_rejects_destructive_disk_pattern(self):
+    def test_run_admin_command_rejects_destructive_disk_pattern_on_experimental(self):
         with self.assertRaisesRegex(ActionError, "forbidden policy pattern"):
             run_action(
                 "run_admin_command",
-                "container-host",
-                [self._container_server()],
+                "ispy-server",
+                [self._ispy_server()],
                 {
                     "command": "mkfs.ext4 /dev/sda1",
                     "intent": "exercise rebuild guardrail",
@@ -391,6 +391,43 @@ class ActionRunnerTests(unittest.TestCase):
                 dry_run=True,
                 actions_dir=self.actions_dir,
             )
+
+    def test_run_admin_command_allows_full_sudo_pattern_on_lab(self):
+        attempt = run_action(
+            "run_admin_command",
+            "container-host",
+            [self._container_server()],
+            {
+                "command": "apt-get install -y htop",
+                "intent": "install package in Codex lab",
+            },
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        self.assertEqual(attempt.record["status"], "dry_run")
+        self.assertEqual(attempt.record["access_profile"], "lab")
+        self.assertEqual(
+            attempt.record["command"][-1],
+            "sudo -n /usr/bin/bash -lc 'apt-get install -y htop'",
+        )
+
+    def test_run_admin_command_allows_destructive_pattern_on_lab(self):
+        attempt = run_action(
+            "run_admin_command",
+            "container-host",
+            [self._container_server()],
+            {
+                "command": "mkfs.ext4 /dev/sda1",
+                "intent": "exercise full lab sudo authority",
+            },
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        self.assertEqual(attempt.record["status"], "dry_run")
+        self.assertEqual(attempt.record["access_profile"], "lab")
+        self.assertIn("mkfs.ext4", attempt.record["command"][-1])
 
     def test_action_role_restriction_is_enforced(self):
         with self.assertRaisesRegex(ActionError, "not allowed for role"):

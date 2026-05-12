@@ -250,6 +250,11 @@ def _preservation_targets(
 
 
 def _plan_phases(server: ServerInventoryItem, strategy: str) -> list[dict[str, Any]]:
+    destructive_execution_note = (
+        "Use run_admin_command only on the lab profile after exact approval."
+        if server.access_profile == "lab"
+        else "Do not run destructive disk commands through run_admin_command."
+    )
     return [
         {
             "name": "confirm access and scope",
@@ -272,7 +277,7 @@ def _plan_phases(server: ServerInventoryItem, strategy: str) -> list[dict[str, A
             "actions": [
                 "Use an out-of-band console or deliberate SSH session for destructive steps.",
                 "Keep this controller plan as the checklist and audit reference.",
-                "Do not run destructive disk commands through run_admin_command.",
+                destructive_execution_note,
             ],
         },
         {

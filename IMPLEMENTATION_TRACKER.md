@@ -45,8 +45,9 @@ Live status:
 - Inventory now distinguishes `guarded`, `experimental`, and `lab` access
   profiles, with rebuildability tracked separately.
 - The project operating model is a personal homelab agent controller:
-  `openvpn-server` stays guarded for access, `ispy-server` is experimental and
-  rebuildable, and `container-host` is a rebuildable lab box.
+  `openvpn-server` stays guarded for access, `ispy-server` is the intermediate
+  experimental/rebuildable box, and `container-host` is the Codex lab with full
+  logged sudo authority.
 
 Current operating model:
 
@@ -160,8 +161,9 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 ## Next Implementation Step
 
 Operationally, follow `docs/active-operations-plan.md`: install the right
-sudoers profile on each server, preserve VPN access on the guarded server, then
-use `ispy-server` and `container-host` for logged experimental work.
+sudoers profile on each server, preserve VPN access on the guarded server, use
+`ispy-server` for intermediate repair work, and use `container-host` as the
+full-sudo Codex lab.
 
 The next implementation item is an explicit rebuild execution design for
 rebuildable servers. It should stay separate from `run_admin_command`.

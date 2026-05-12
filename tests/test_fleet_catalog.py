@@ -20,7 +20,7 @@ class FleetCatalogTests(unittest.TestCase):
         self.assertIn("Docker application host", container["capabilities"])
         self.assertIn("Docker issue: watchtower", container["constraints"])
         self.assertIn(
-            "Prefer this host for new Docker-backed applications.",
+            "Prefer this host for Codex lab experiments and Docker-backed applications.",
             container["placement_guidance"],
         )
         self.assertEqual(container["hardware"]["virtualization"], "none")

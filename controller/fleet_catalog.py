@@ -198,7 +198,7 @@ def _fleet_recommendations(servers: list[dict[str, Any]]) -> list[str]:
     recommendations = [
         "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
         "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
-        "Use container-host as the default target for Docker applications after the current reboot and watchtower issues are resolved.",
+        "Use container-host as the Codex lab and default Docker experiment target after the current reboot and watchtower issues are resolved.",
     ]
     if any(server["maintenance"]["reboot_required"] for server in servers):
         recommendations.append(
@@ -221,7 +221,9 @@ def _capabilities(server: dict[str, Any]) -> list[str]:
     elif role == "ispy_server":
         capabilities.extend(["Security camera service host", "AgentDVR workload"])
     elif role == "container_host":
-        capabilities.extend(["Docker application host", "Container consolidation target"])
+        capabilities.extend(
+            ["Codex lab host", "Docker application host", "Container consolidation target"]
+        )
     if cpu_count >= 4:
         capabilities.append("Moderate CPU headroom")
     elif cpu_count:
@@ -266,7 +268,7 @@ def _placement_guidance(server: dict[str, Any]) -> list[str]:
         guidance.append("Prioritize AgentDVR and camera reliability.")
         guidance.append("Only add light support services after maintenance is current.")
     elif role == "container_host":
-        guidance.append("Prefer this host for new Docker-backed applications.")
+        guidance.append("Prefer this host for Codex lab experiments and Docker-backed applications.")
         guidance.append("Fix unhealthy containers before increasing workload.")
     return guidance
 

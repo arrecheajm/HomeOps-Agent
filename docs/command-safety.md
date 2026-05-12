@@ -23,14 +23,17 @@ recommendation -> action_id -> registry lookup -> policy check -> approval check
 
 Free-form commands from an LLM response are advisory text only unless the user
 intentionally routes one through `run_admin_command`, reviews the dry-run, and
-provides the exact approval phrase. That action is blocked on `guarded` servers
-and writes action history.
+provides the exact approval phrase. That action is blocked on `guarded` servers,
+policy-guarded on `experimental` servers, full-sudo on `lab` servers, and writes
+action history.
 
 Inventory access profiles set the authority boundary:
 
 - `guarded`: predefined action IDs only.
-- `experimental`: logged admin commands may run after exact approval.
-- `lab`: arbitrary logged admin commands may run after exact approval.
+- `experimental`: logged admin commands may run after exact approval with
+  destructive policy patterns still blocked.
+- `lab`: arbitrary logged sudo commands may run after exact approval, including
+  package installs and destructive commands.
 
 For collection, the inventory `remote_health_command` is allowlisted. The only
 approved v1 remote health command is:
@@ -82,8 +85,9 @@ Examples:
 ### forbidden
 
 Must not be exposed through the controller for `guarded` servers. Destructive
-work on `experimental` or `lab` servers belongs in an explicit rebuild/admin
-mode with action history and a before-state report.
+work on `experimental` servers belongs in an explicit rebuild/admin mode with
+action history and a before-state report. `lab` servers are intentionally full
+sudo after exact approval.
 
 Examples:
 
@@ -96,9 +100,10 @@ Examples:
 - automatic port exposure
 
 Logged admin shell execution is implemented as `run_admin_command` and remains
-blocked on `guarded` servers. It is approval-required and still checked against
-policy-level forbidden command patterns. Destructive disk or rebuild operations
-belong in a separate rebuild workflow, not this general admin action.
+blocked on `guarded` servers. It is approval-required. On `experimental`
+servers it is checked against policy-level forbidden command patterns. On `lab`
+servers, those forbidden command patterns are intentionally bypassed so the lab
+box can be fully controlled through logged sudo commands.
 
 Capture a before-state snapshot before proposing destructive rebuild work:
 
@@ -117,8 +122,8 @@ The repo includes profile templates under `server-scripts/sudoers/`.
 - `guarded.sudoers.template`: narrow maintenance commands.
 - `experimental.sudoers.template`: maintenance commands plus logged root shell
   command support after exact approval.
-- `lab.sudoers.template`: intentionally broad `NOPASSWD: ALL` for disposable lab
-  machines.
+- `lab.sudoers.template`: intentionally broad `NOPASSWD: ALL` for the Codex lab
+  machine.
 
 Install sudoers manually with `visudo`. Do not store sudo passwords or private
 keys in the repo.
@@ -201,17 +206,17 @@ The corresponding approval phrase is:
 Approve action reboot_server on ispy-server
 ```
 
-Logged admin commands are approval-gated, require an intent, and are allowed
-only on `experimental` and `lab` profiles:
+Logged admin commands are approval-gated, require an intent, and are allowed on
+`experimental` and `lab` profiles. Use `lab` for full sudo:
 
 ```powershell
-python -m controller.main actions run run_admin_command --server ispy-server --command "apt-get update" --intent "refresh package metadata" --dry-run
+python -m controller.main actions run run_admin_command --server container-host --command "apt-get install -y htop" --intent "install package in Codex lab" --dry-run
 ```
 
 The corresponding approval phrase is:
 
 ```text
-Approve action run_admin_command on ispy-server with command apt-get update, intent refresh package metadata
+Approve action run_admin_command on container-host with command apt-get install -y htop, intent install package in Codex lab
 ```
 
 ## Audit Trail

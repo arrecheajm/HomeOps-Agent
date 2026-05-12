@@ -5,7 +5,8 @@
 HomeOps Agent is a central controller for collecting server health evidence,
 preparing approved maintenance workflows, and exploring agentic homelab
 operations. It is designed for a small personal fleet where some machines are
-access infrastructure and others are intentionally disposable lab boxes.
+access infrastructure and `container-host` is an intentionally disposable Codex
+lab box.
 
 The controller does not call the OpenAI API. Codex in VS Code provides analysis by reading generated reports and JSON files from this repository.
 
@@ -56,8 +57,9 @@ Codex must not invent direct server maintenance commands when an action registry
 Inventory entries assign each server one access profile:
 
 - `guarded`: preserve access infrastructure such as VPN.
-- `experimental`: allow logged admin work on repairable project boxes.
-- `lab`: allow high-power experiments on disposable machines.
+- `experimental`: allow logged admin work on repairable project boxes, with
+  destructive policy guardrails.
+- `lab`: allow full logged sudo on disposable machines.
 
 The controller validates these profiles at inventory load time. A guarded server
 cannot be marked rebuildable.

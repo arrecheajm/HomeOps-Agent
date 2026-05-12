@@ -13,7 +13,11 @@ from shlex import quote
 from typing import Any
 
 from . import action_registry, approvals, config, policy
-from .inventory import DEFAULT_REMOTE_HEALTH_COMMAND, ServerInventoryItem
+from .inventory import (
+    ACCESS_PROFILE_LAB,
+    DEFAULT_REMOTE_HEALTH_COMMAND,
+    ServerInventoryItem,
+)
 from .ssh_client import build_ssh_base_command
 
 
@@ -74,7 +78,7 @@ def run_action(
     commands = build_action_commands(action_id, server, arguments)
     command = commands[0]
     for item in commands:
-        _validate_policy(action, item, active_policy)
+        _validate_policy(action, item, server, active_policy)
 
     expected_approval = approvals.approval_phrase(action_id, server_id, arguments)
     risk = str(action.get("risk", "approval_required"))
@@ -362,13 +366,19 @@ def _validate_action_for_server(
 
 
 def _validate_policy(
-    action: dict[str, Any], command: list[str], policy_data: dict[str, Any]
+    action: dict[str, Any],
+    command: list[str],
+    server: ServerInventoryItem,
+    policy_data: dict[str, Any],
 ) -> None:
     action_id = str(action.get("action_id"))
     risk = str(action.get("risk", "approval_required"))
     approval_required = policy_data.get("approval_required_actions") or []
     if risk == "approval_required" and action_id not in approval_required:
         raise ActionError(f"Policy does not allow approval-required action: {action_id}")
+
+    if action_id == "run_admin_command" and server.access_profile == ACCESS_PROFILE_LAB:
+        return
 
     command_text = " ".join(command).lower()
     for pattern in policy_data.get("forbidden_action_patterns") or []:

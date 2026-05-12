@@ -10,7 +10,7 @@ to make the controller's authority explicit, logged, and recoverable.
 |---|---|---:|---|
 | `openvpn-server` | `guarded` | no | Preserve remote access. |
 | `ispy-server` | `experimental` | yes | Diagnose, repair, or overhaul camera setup. |
-| `container-host` | `lab` | yes | Disposable Docker and agent playground. |
+| `container-host` | `lab` | yes | Codex lab with full logged sudo. |
 
 ## Local Inventory
 
@@ -85,7 +85,7 @@ Use the matching template:
 
 - `guarded.sudoers.template` for `openvpn-server`
 - `experimental.sudoers.template` for `ispy-server`
-- `lab.sudoers.template` for `container-host`
+- `lab.sudoers.template` for `container-host`; this grants full `NOPASSWD: ALL`
 
 Install manually with:
 
@@ -112,6 +112,7 @@ python -m controller.main actions list
 python -m controller.main actions run apply_security_updates --server ispy-server --dry-run
 python -m controller.main actions run reboot_server --server ispy-server --dry-run
 python -m controller.main actions run run_admin_command --server ispy-server --command "apt-get update" --intent "refresh package metadata" --dry-run
+python -m controller.main actions run run_admin_command --server container-host --command "apt-get install -y htop" --intent "install package in Codex lab" --dry-run
 ```
 
 Dry-runs must show the expected command and approval phrase. Do not execute live

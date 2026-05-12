@@ -158,7 +158,7 @@ Consequences:
 
 - `openvpn-server` is guarded and not rebuildable.
 - `ispy-server` is experimental and rebuildable.
-- `container-host` is lab-profile and rebuildable.
+- `container-host` is the Codex lab, lab-profile, and rebuildable.
 - Arbitrary admin-command support must check access profile.
 - Rebuild workflows require a before-state report and explicit destructive
   approval.
@@ -245,4 +245,34 @@ Consequences:
 - Plans are ignored generated history under `history/rebuild-plans/`.
 - Plans include preservation targets, phases, verification steps, blocked
   reasons, and a future destructive approval phrase.
-- `run_admin_command` remains blocked from destructive disk/rebuild patterns.
+- `run_admin_command` remains blocked from destructive disk/rebuild patterns on
+  `experimental` servers.
+
+## 0011: Container Host Is The Full-Sudo Codex Lab
+
+Status: accepted
+
+Date: 2026-05-12
+
+Decision:
+
+`container-host` is the Codex lab machine. The controller may run arbitrary
+logged sudo commands there through `run_admin_command` after exact approval,
+including package installs and destructive commands.
+
+Reasoning:
+
+- The container machine is disposable and exists primarily for agentic
+  experimentation.
+- The user explicitly wants Codex to have broader power on this box than on the
+  VPN or camera machines.
+- Keeping the full-power surface isolated to the `lab` profile preserves a clear
+  boundary around the access server and intermediate camera server.
+
+Consequences:
+
+- `openvpn-server` remains guarded and does not accept `run_admin_command`.
+- `ispy-server` remains intermediate: logged admin commands are available, but
+  destructive policy patterns stay blocked.
+- `container-host` bypasses forbidden command pattern checks for
+  `run_admin_command`, while still requiring exact approval and action history.

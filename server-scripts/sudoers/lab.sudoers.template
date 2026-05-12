@@ -1,7 +1,7 @@
-# HomeOps lab profile.
+# HomeOps Codex lab profile.
 # Install manually with: sudo visudo -f /etc/sudoers.d/homeops-agent
 # Replace HOMEOPS_USER with the inventory user or a dedicated homeops/labagent user.
 
-# This profile is intentionally high power and should only be used on disposable
-# lab machines.
+# This profile is intentionally full power. Use only on the disposable Codex lab
+# machine where full logged sudo is acceptable.
 HOMEOPS_USER ALL=(root) NOPASSWD: ALL

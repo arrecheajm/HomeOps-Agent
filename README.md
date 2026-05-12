@@ -11,7 +11,7 @@ Codex in VS Code acts as the human-facing analyst by reading the generated repor
 
 - `openvpn-server`: OpenVPN host
 - `ispy-server`: security camera / iSpy host
-- `container-host`: Docker and application host
+- `container-host`: Codex lab / Docker host
 
 ## Core Principles
 
@@ -23,8 +23,8 @@ Codex in VS Code acts as the human-facing analyst by reading the generated repor
 - Require explicit human approval before any risky action.
 - Make every executable action map to a predefined `action_id`.
 - Keep report and action history for auditability.
-- Give each server an explicit access profile so experimentation can be broad
-  on disposable boxes without weakening access infrastructure.
+- Give each server an explicit access profile so Codex can have full lab
+  authority on disposable boxes without weakening access infrastructure.
 
 ## Access Profiles
 
@@ -32,7 +32,7 @@ The current fleet is intentionally split by blast radius:
 
 - `openvpn-server`: `guarded`, not rebuildable, preserve access.
 - `ispy-server`: `experimental`, rebuildable, diagnose or overhaul camera setup.
-- `container-host`: `lab`, rebuildable, disposable Docker and agent playground.
+- `container-host`: `lab`, rebuildable, Codex lab with full logged sudo authority.
 
 See [Access Profiles](docs/access-profiles.md) for the operating model and
 sudoers templates.
@@ -69,7 +69,7 @@ python -m controller.main actions run restart_docker_container --server containe
 python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --dry-run
 python -m controller.main actions run apply_security_updates --server openvpn-server --dry-run
 python -m controller.main actions run reboot_server --server ispy-server --dry-run
-python -m controller.main actions run run_admin_command --server ispy-server --command "apt-get update" --intent "refresh package metadata" --dry-run
+python -m controller.main actions run run_admin_command --server container-host --command "apt-get install -y htop" --intent "install package in Codex lab" --dry-run
 python -m controller.main dashboard
 python -m controller.main collect --dry-run --inventory config/servers.example.yaml
 python -m controller.main collect
@@ -104,7 +104,7 @@ python -m controller.main actions run restart_service --server ispy-server --ser
 python -m controller.main actions run deploy_health_script --server container-host --approval "Approve action deploy_health_script on container-host"
 python -m controller.main actions run apply_security_updates --server openvpn-server --approval "Approve action apply_security_updates on openvpn-server"
 python -m controller.main actions run reboot_server --server ispy-server --approval "Approve action reboot_server on ispy-server"
-python -m controller.main actions run run_admin_command --server ispy-server --command "apt-get update" --intent "refresh package metadata" --approval "Approve action run_admin_command on ispy-server with command apt-get update, intent refresh package metadata"
+python -m controller.main actions run run_admin_command --server container-host --command "apt-get install -y htop" --intent "install package in Codex lab" --approval "Approve action run_admin_command on container-host with command apt-get install -y htop, intent install package in Codex lab"
 ```
 
 ## Server Script Installation

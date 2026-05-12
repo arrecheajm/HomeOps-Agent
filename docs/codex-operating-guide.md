@@ -32,10 +32,10 @@ commands only, then wait for exact approval before any live action execution.
 ## Access Profile Interpretation
 
 - `guarded`: preserve access; recommend only predefined maintenance actions.
-- `experimental`: suitable for deeper diagnosis, controlled changes, and
-  logged admin commands after exact approval.
-- `lab`: suitable for broad experiments, logged admin commands, and future
-  rebuild workflows after exact approval.
+- `experimental`: suitable for deeper diagnosis and controlled changes after
+  exact approval. Destructive policy patterns remain blocked.
+- `lab`: the Codex lab. Suitable for full sudo, package installs, destructive
+  experiments, and rebuild workflows after exact approval.
 
 For any `rebuildable` server, gather a before-state report before recommending
 destructive changes.

@@ -16,11 +16,12 @@ server through the approval-gated action runner.
 
 The project has pivoted to a personal homelab agent controller. The current
 operational model is: keep `openvpn-server` guarded for access, use
-`ispy-server` as an experimental repair/overhaul target, and use
-`container-host` as a disposable lab box. Bounded `apply_security_updates` and
+`ispy-server` as an intermediate repair/overhaul target, and use
+`container-host` as the Codex lab with full logged sudo. Bounded `apply_security_updates` and
 `reboot_server` support is available for dry-run and exact approval testing.
 `run_admin_command` is available for logged root shell commands on
-`experimental` and `lab` profiles only. `before-state` captures a durable JSON
+`experimental` and `lab` profiles only. The `lab` profile bypasses forbidden
+command pattern checks by design. `before-state` captures a durable JSON
 snapshot for rebuildable servers before destructive planning. `rebuild-plan`
 generates non-destructive draft plans from before-state snapshots.
 

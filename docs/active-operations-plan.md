@@ -9,7 +9,7 @@ Enabled servers:
 
 - `openvpn-server`: `guarded`, not rebuildable, preserve VPN access
 - `ispy-server`: `experimental`, rebuildable, diagnose or overhaul camera setup
-- `container-host`: `lab`, rebuildable, disposable Docker and agent playground
+- `container-host`: `lab`, rebuildable, Codex lab with full logged sudo
 
 Connection state:
 
@@ -24,12 +24,13 @@ Connection state:
   through the approval-gated `deploy_health_script` action on May 10, 2026
 - collection after deployment refreshed the dashboard and fleet catalog
 
-Latest known findings from run `2026-05-12T17-16-00Z`:
+Latest known findings from run `2026-05-12T22-41-57Z`:
 
 - `openvpn-server`: 53 package updates pending, no reboot required
 - `ispy-server`: reboot required, 71 package updates pending, failed legacy
   `ispy` service
-- `container-host`: reboot required, `watchtower` container restarting
+- `container-host`: reboot required, `watchtower` container restarting, no
+  package updates pending
 - no critical findings
 - no collection errors
 
@@ -56,8 +57,9 @@ reports/generated/index.html
 
 ## Immediate Goal
 
-Keep `openvpn-server` stable as the access box, then use `ispy-server` as the
-first experimental repair/overhaul target and `container-host` as the lab box.
+Keep `openvpn-server` stable as the access box, use `ispy-server` as the
+intermediate repair/overhaul target, and use `container-host` as the Codex lab
+box with full logged sudo.
 
 Only narrow approval-gated controller actions are implemented.
 `restart_docker_container`, `restart_service`, `apply_security_updates`, and
@@ -71,8 +73,8 @@ before any live maintenance window.
 2. Install the matching sudoers profile manually from `server-scripts/sudoers/`.
 3. Keep `openvpn-server` on the guarded template.
 4. Use the experimental template for `ispy-server`.
-5. Use the lab template only on `container-host` if broad agent experimentation
-   is acceptable.
+5. Use the lab template on `container-host`; this is the disposable Codex lab
+   box and should grant broad sudo.
 
 ## Step 2: Gather Reboot And Package Details
 
@@ -177,9 +179,10 @@ Expected result after maintenance:
 - no collection errors appear
 - role-specific service remains active
 
-## Step 6: Monitor Container Host
+## Step 6: Operate The Codex Lab
 
-After VPN and iSpy are stable:
+`container-host` is the Codex lab. Use it for full-sudo experiments after
+reviewing dry-runs and exact approval phrases:
 
 1. Review the `watchtower` container restart loop.
 2. Dry-run the approved action if a restart is the intended next step:
@@ -188,9 +191,11 @@ After VPN and iSpy are stable:
 python -m controller.main actions run restart_docker_container --server container-host --container watchtower --dry-run
 ```
 
-3. Execute only after the user approves the exact phrase printed by the dry-run.
-4. Keep `container-host` enabled in local `config/servers.yaml`.
-5. Refresh collection after any manual container maintenance:
+3. Use `run_admin_command` for package installs, lab setup, destructive tests,
+   and rebuild experiments on this host only.
+4. Execute only after the user approves the exact phrase printed by the dry-run.
+5. Keep `container-host` enabled in local `config/servers.yaml`.
+6. Refresh collection after any lab change:
 
 ```powershell
 python -m controller.main collect
@@ -200,8 +205,8 @@ python -m controller.main collect
 
 - Keep `knowledge/fleet-catalog.json` refreshed after meaningful collection
   changes.
-- Use `run_admin_command` dry-runs for profile-gated experiments on
-  `ispy-server` and `container-host`.
+- Use `run_admin_command` dry-runs for controlled experiments on `ispy-server`
+  and full-sudo lab work on `container-host`.
 - Capture `before-state` snapshots before any rebuild or overhaul plan.
 - Generate `rebuild-plan` drafts for rebuildable servers before destructive
   execution design.

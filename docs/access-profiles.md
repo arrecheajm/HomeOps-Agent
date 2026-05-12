@@ -16,20 +16,22 @@ Use for access infrastructure such as `openvpn-server`.
 
 ### experimental
 
-Use for repairable project boxes such as `ispy-server`.
+Use for intermediate repairable project boxes such as `ispy-server`.
 
 - Allow collection, predefined maintenance actions, and logged admin
   command workflows.
 - Permit config/package/service changes after a captured before-state and
   explicit approval.
+- Keep destructive disk/rebuild commands behind policy guardrails.
 - Permit rebuild planning and execution only after preserving useful configs.
 
 ### lab
 
-Use for disposable playground boxes such as `container-host`.
+Use for the Codex-owned disposable playground box, currently `container-host`.
 
 - Allow the broadest agent experiments.
-- Permit arbitrary logged admin commands and rebuild planning workflows.
+- Permit arbitrary logged sudo commands, installs, destructive commands, and
+  rebuild planning workflows after exact approval.
 - Treat Docker/root access as intentionally high power.
 
 ## Current Mapping
@@ -38,7 +40,7 @@ Use for disposable playground boxes such as `container-host`.
 |---|---|---:|---|
 | `openvpn-server` | `guarded` | no | Preserve remote access. |
 | `ispy-server` | `experimental` | yes | Diagnose or overhaul camera setup. |
-| `container-host` | `lab` | yes | Disposable Docker and agent lab. |
+| `container-host` | `lab` | yes | Codex lab with full logged sudo authority. |
 
 ## Inventory Fields
 
@@ -71,7 +73,9 @@ passwords in the repo.
 The controller uses these profiles before broader actions:
 
 - `guarded`: predefined action IDs only.
-- `experimental`: logged admin commands after exact approval.
-- `lab`: arbitrary logged admin commands after exact approval.
+- `experimental`: logged admin commands after exact approval, with destructive
+  policy guardrails.
+- `lab`: arbitrary logged sudo commands after exact approval. This profile is
+  intentionally full power.
 - `rebuildable: true`: rebuild workflows may be planned from before-state
   evidence, but destructive execution requires a separate approval phrase.

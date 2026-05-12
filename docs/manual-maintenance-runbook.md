@@ -10,8 +10,8 @@ window.
 Access profiles now set the operating stance:
 
 - `openvpn-server`: guarded access box.
-- `ispy-server`: experimental repair/overhaul target.
-- `container-host`: disposable lab box.
+- `ispy-server`: intermediate repair/overhaul target.
+- `container-host`: Codex lab with full logged sudo.
 
 ## Current Maintenance Targets
 
