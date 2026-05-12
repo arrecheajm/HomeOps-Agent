@@ -79,16 +79,16 @@ ACTIONS: tuple[dict[str, Any], ...] = (
     {
         "action_id": "apply_security_updates",
         "risk": "approval_required",
-        "description": "Apply available security updates.",
+        "description": "Apply security updates using the server unattended-upgrades policy.",
         "server_roles": ["openvpn_server", "ispy_server", "container_host"],
-        "implemented": False,
+        "implemented": True,
     },
     {
         "action_id": "reboot_server",
         "risk": "approval_required",
-        "description": "Reboot one server.",
+        "description": "Schedule one approved server reboot.",
         "server_roles": ["openvpn_server", "ispy_server", "container_host"],
-        "implemented": False,
+        "implemented": True,
     },
 )
 

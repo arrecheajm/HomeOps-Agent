@@ -94,7 +94,7 @@ Approval must be specific. A valid approval identifies:
 Example:
 
 ```text
-Approve action restart_docker_container on container-host for container homepage.
+Approve action restart_docker_container on container-host with container watchtower
 ```
 
 The controller also supports exact approval phrases for implemented actions. A
@@ -133,6 +133,31 @@ The corresponding approval phrase is:
 
 ```text
 Approve action deploy_health_script on container-host
+```
+
+Security updates are approval-gated and use the managed server's
+`unattended-upgrade` policy:
+
+```powershell
+python -m controller.main actions run apply_security_updates --server openvpn-server --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action apply_security_updates on openvpn-server
+```
+
+Server reboot is approval-gated and schedules a one-minute delayed reboot:
+
+```powershell
+python -m controller.main actions run reboot_server --server ispy-server --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action reboot_server on ispy-server
 ```
 
 ## Audit Trail

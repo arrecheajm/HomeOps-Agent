@@ -1,8 +1,11 @@
 # Manual Maintenance Runbook
 
-Use this runbook for update and reboot maintenance until controller action execution is implemented.
+Use this runbook for one-server-at-a-time update and reboot maintenance.
 
-The controller is currently read-only. These commands are manual server operations and should be run only during an acceptable maintenance window.
+The controller now has approval-gated `apply_security_updates` and
+`reboot_server` actions. Manual commands remain documented for broader package
+maintenance or recovery. Use either path only during an acceptable maintenance
+window.
 
 ## Current Maintenance Targets
 
@@ -10,15 +13,20 @@ Recommended order:
 
 1. `ispy-server`
 2. `openvpn-server`
+3. `container-host`
 
 Reasoning:
 
-- Both servers have pending package updates and kernel-triggered reboot-required state.
+- `ispy-server` has pending package updates and a reboot-required state.
+- `openvpn-server` has pending package updates but no reboot-required state in
+  the latest run.
+- `container-host` has a reboot-required state and a restarting `watchtower`
+  container, but should wait until VPN and iSpy maintenance are stable.
 - `ispy-server` maintenance can interrupt camera recording or monitoring.
 - `openvpn-server` maintenance can disconnect VPN clients, so handle it when VPN interruption is acceptable.
 - If your current access path to the servers depends on `openvpn-server`, rebooting or breaking it can cut off access to the whole fleet.
 - Prefer doing `openvpn-server` maintenance while physically on the same LAN or with a separate recovery path.
-- Do not update or reboot both servers at the same time.
+- Do not update or reboot multiple servers at the same time.
 
 ## Pre-Maintenance Checks
 
@@ -27,6 +35,7 @@ From the controller machine:
 ```powershell
 python -m controller.main collect
 python -m controller.main dashboard
+python -m controller.main catalog
 ```
 
 Review:
@@ -74,7 +83,17 @@ Proceed only when:
 
 ## Update One Server
 
-Run on the target server:
+For security updates only, first dry-run the controller action from the
+controller machine:
+
+```powershell
+python -m controller.main actions run apply_security_updates --server ispy-server --dry-run
+```
+
+Execute only after reviewing the command and supplying the exact approval phrase
+printed by the dry-run.
+
+For broader package maintenance, run on the target server:
 
 ```bash
 sudo apt update
@@ -88,6 +107,16 @@ If packages are held back, do not force them during this pass. Record them and c
 ## Reboot One Server
 
 If updates complete successfully and reboot is still expected:
+
+```powershell
+python -m controller.main actions run reboot_server --server ispy-server --dry-run
+```
+
+Execute only after reviewing the delayed reboot command and supplying the exact
+approval phrase printed by the dry-run. The controller action schedules a
+one-minute delayed reboot.
+
+Manual fallback on the target server:
 
 ```bash
 sudo reboot
@@ -143,12 +172,14 @@ From the controller machine:
 ```powershell
 python -m controller.main collect
 python -m controller.main dashboard
+python -m controller.main catalog
 ```
 
 Review:
 
 ```text
 reports/generated/index.html
+reports/generated/fleet-catalog.html
 history/runs/<timestamp>/fleet-health.json
 ```
 

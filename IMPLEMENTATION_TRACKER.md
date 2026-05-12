@@ -32,6 +32,10 @@ Live status:
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
   `2026-05-10T20-28-25Z`, after the deployment and follow-up collection.
+- The `run fleet review` operator workflow is documented for Codex: collect
+  live health, refresh dashboard and catalog, check the latest run explicitly,
+  summarize findings, and recommend next steps without executing
+  approval-required actions.
 
 Current operating model:
 
@@ -122,14 +126,14 @@ currently runs through `python -m controller.main collect`.
 - [x] `collect_ispy`
 
 Approval-required action IDs are registered. `restart_docker_container`,
-`restart_service`, and `deploy_health_script` are executable after exact
-approval. Update and reboot actions remain registered but are not executable yet.
+`restart_service`, `deploy_health_script`, `apply_security_updates`, and
+`reboot_server` are executable after exact approval.
 
 - [x] `deploy_health_script`
 - [x] `restart_service`
 - [x] `restart_docker_container`
-- [ ] `apply_security_updates`
-- [ ] `reboot_server`
+- [x] `reboot_server`
+- [x] `apply_security_updates`
 
 Forbidden actions:
 
@@ -145,8 +149,9 @@ Operationally, follow `docs/active-operations-plan.md`: perform manual package
 maintenance and reboots one server at a time, then re-run collection, dashboard,
 and catalog generation after each server.
 
-Implementation work can add similarly bounded support for `reboot_server` after
-the manual maintenance workflow is proven.
+The next implementation item is role-specific read-only scripts for OpenVPN,
+iSpy, and Docker, while package update and reboot operations should be tested
+with dry-runs before any live maintenance window.
 
 For live rule checks, pass the latest run explicitly because `check` without
 `--input` defaults to fixture data:
@@ -193,3 +198,4 @@ Reporting readiness:
 - [x] Generate tracked fleet capability catalog JSON.
 - [x] Generate separate fleet catalog HTML report.
 - [x] Refresh the tracked fleet catalog after health script deployment.
+- [x] Document the `run fleet review` Codex workflow.

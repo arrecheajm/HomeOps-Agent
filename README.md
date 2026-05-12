@@ -51,11 +51,26 @@ python -m controller.main actions list
 python -m controller.main actions run deploy_health_script --server container-host --dry-run
 python -m controller.main actions run restart_docker_container --server container-host --container watchtower --dry-run
 python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --dry-run
+python -m controller.main actions run apply_security_updates --server openvpn-server --dry-run
+python -m controller.main actions run reboot_server --server ispy-server --dry-run
 python -m controller.main dashboard
 python -m controller.main collect --dry-run --inventory config/servers.example.yaml
 python -m controller.main collect
 python -m unittest discover -s tests
 ```
+
+## Fleet Review
+
+When working with Codex, use this request for the standard safe review loop:
+
+```text
+run fleet review
+```
+
+That means: collect live health, refresh the dashboard and catalog, check the
+latest run explicitly, summarize current findings, and recommend next steps.
+Approval-required actions may be recommended as dry-runs, but they must not be
+executed without exact approval.
 
 `report` and `check` default to fixture data for local testing. For live fleet
 status, pass an explicit run file:
@@ -70,6 +85,8 @@ This command shape is approval-required and should be used only after reviewing 
 python -m controller.main actions run restart_docker_container --server container-host --container watchtower --approval "Approve action restart_docker_container on container-host with container watchtower"
 python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --approval "Approve action restart_service on ispy-server with service AgentDVR.service"
 python -m controller.main actions run deploy_health_script --server container-host --approval "Approve action deploy_health_script on container-host"
+python -m controller.main actions run apply_security_updates --server openvpn-server --approval "Approve action apply_security_updates on openvpn-server"
+python -m controller.main actions run reboot_server --server ispy-server --approval "Approve action reboot_server on ispy-server"
 ```
 
 ## Server Script Installation

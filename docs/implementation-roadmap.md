@@ -6,7 +6,7 @@ The controller can generate an HTML dashboard, load inventory with optional SSH 
 
 Real read-only collection succeeds for all three servers: `openvpn-server`, `ispy-server`, and `container-host`. `container-host` is online at `192.168.86.58`, local inventory uses `containerserver@192.168.86.58`, SSH key authentication works, and the current approved read-only health script has been deployed to every configured server through the approval-gated action runner.
 
-The current operational milestone is manual maintenance one server at a time: handle the `ispy-server` reboot and updates when camera interruption is acceptable, handle `openvpn-server` updates during a VPN-safe window, then review the restarting `watchtower` container and reboot-required state on `container-host`. Future implementation work can add a bounded `reboot_server` action after the manual workflow is proven.
+The current operational milestone is maintenance one server at a time: handle the `ispy-server` reboot and updates when camera interruption is acceptable, handle `openvpn-server` updates during a VPN-safe window, then review the restarting `watchtower` container and reboot-required state on `container-host`. Bounded `apply_security_updates` and `reboot_server` support is available for dry-run and exact approval testing.
 
 ## Phase 1: Documentation and Project Shape
 
@@ -125,10 +125,12 @@ Goal: allow safe, predefined maintenance actions.
 - keep destructive or config-changing operations out of scope
 
 Status: in progress. The registry exists, `actions list` works, and
-`deploy_health_script`, `restart_docker_container`, and `restart_service` have
-dry-run, exact approval, execution, and action history support. The deployment
-action has been exercised successfully on all configured servers. Update and
-reboot actions remain registered but unimplemented.
+`deploy_health_script`, `restart_docker_container`, `restart_service`,
+`apply_security_updates`, and `reboot_server` have dry-run, exact approval,
+execution, and action history support. The deployment action has been exercised
+successfully on all configured servers. `apply_security_updates` uses the
+server's unattended-upgrades policy, and `reboot_server` uses an exact-approval
+one-minute delayed reboot command.
 
 ## Phase 8: Hardening
 

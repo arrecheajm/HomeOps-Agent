@@ -57,10 +57,10 @@ reports/generated/index.html
 
 Gather targeted read-only details, perform any needed maintenance manually, and re-run collection to confirm the findings clear.
 
-Only narrow approval-gated controller actions are implemented. `restart_docker_container`
-and `restart_service` require exact approval and write action history. Package
-updates and reboots should still be done manually after deciding the outage
-impact is acceptable.
+Only narrow approval-gated controller actions are implemented.
+`restart_docker_container`, `restart_service`, `apply_security_updates`, and
+`reboot_server` require exact approval and write action history. Review dry-runs
+before any live maintenance window.
 
 ## Step 1: Gather Reboot And Package Details
 
@@ -120,8 +120,11 @@ Do not update and reboot both enabled servers at the same time.
 Recommended order:
 
 1. Start with `ispy-server` if camera interruption is acceptable.
-2. Apply updates manually during an acceptable maintenance window.
-3. Reboot only after confirming users and service impact.
+2. Apply updates during an acceptable maintenance window. Use the
+   approval-gated `apply_security_updates` action only after reviewing a dry-run,
+   or continue with manual updates if broader package maintenance is intended.
+3. Reboot only after confirming users and service impact. Use the approval-gated
+   `reboot_server` action only after reviewing a dry-run for that server.
 4. Wait for the server to return.
 5. Re-run HomeOps collection before moving to the next server.
 6. Then handle `openvpn-server` only during a VPN-safe maintenance window, ideally while local to the server network.
@@ -186,5 +189,5 @@ python -m controller.main collect
 - Keep `knowledge/fleet-catalog.json` refreshed after meaningful collection
   changes.
 - Consider role-specific scripts for OpenVPN, iSpy, and Docker.
-- Decide whether to implement additional approval-gated actions such as
-  `reboot_server`.
+- Add role-specific scripts for OpenVPN, iSpy, and Docker after the current
+  maintenance workflow is validated.

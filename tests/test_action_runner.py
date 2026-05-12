@@ -178,6 +178,100 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(attempt.record["exit_code"], 0)
         self.assertEqual(subprocess_run.call_count, 2)
 
+    def test_reboot_server_dry_run_writes_delayed_shutdown_command(self):
+        attempt = run_action(
+            "reboot_server",
+            "ispy-server",
+            [self._ispy_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(record["arguments"], {})
+        self.assertEqual(
+            record["command"][-6:],
+            ["sudo", "-n", "shutdown", "-r", "+1", "HomeOps-approved-reboot"],
+        )
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action reboot_server on ispy-server",
+        )
+
+    def test_reboot_server_executes_after_approval(self):
+        args = {}
+        approval = approvals.approval_phrase("reboot_server", "ispy-server", args)
+        completed = subprocess.CompletedProcess(
+            args=["ssh"],
+            returncode=0,
+            stdout="Reboot scheduled\n",
+            stderr="",
+        )
+
+        with patch("controller.action_runner.subprocess.run", return_value=completed):
+            attempt = run_action(
+                "reboot_server",
+                "ispy-server",
+                [self._ispy_server()],
+                args,
+                approval_text=approval,
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(attempt.record["exit_code"], 0)
+        self.assertEqual(attempt.record["stdout"], "Reboot scheduled")
+
+    def test_apply_security_updates_dry_run_uses_unattended_upgrade(self):
+        attempt = run_action(
+            "apply_security_updates",
+            "openvpn-server",
+            [self._openvpn_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(record["arguments"], {})
+        self.assertEqual(
+            record["command"][-3:],
+            ["sudo", "-n", "unattended-upgrade"],
+        )
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action apply_security_updates on openvpn-server",
+        )
+
+    def test_apply_security_updates_executes_after_approval(self):
+        args = {}
+        approval = approvals.approval_phrase(
+            "apply_security_updates", "openvpn-server", args
+        )
+        completed = subprocess.CompletedProcess(
+            args=["ssh"],
+            returncode=0,
+            stdout="Packages upgraded\n",
+            stderr="",
+        )
+
+        with patch("controller.action_runner.subprocess.run", return_value=completed):
+            attempt = run_action(
+                "apply_security_updates",
+                "openvpn-server",
+                [self._openvpn_server()],
+                args,
+                approval_text=approval,
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(attempt.record["exit_code"], 0)
+        self.assertEqual(attempt.record["stdout"], "Packages upgraded")
+
     def test_action_role_restriction_is_enforced(self):
         with self.assertRaisesRegex(ActionError, "not allowed for role"):
             run_action(

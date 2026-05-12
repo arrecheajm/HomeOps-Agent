@@ -13,6 +13,21 @@ Codex is the analyst. The controller is the deterministic evidence collector. A 
 5. Recommend only predefined action IDs when an executable action is appropriate.
 6. Do not run mutating actions unless the user gives exact approval for a supported action.
 
+## Fleet Review Shortcut
+
+When the user says `run fleet review`, perform the safe review loop:
+
+1. Check the worktree with `git status --short --branch`.
+2. Run `python -m controller.main collect`.
+3. Run `python -m controller.main dashboard`.
+4. Run `python -m controller.main catalog`.
+5. Identify the latest directory under `history/runs/`.
+6. Run `python -m controller.main check --input history\runs\<latest-run>\fleet-health.json`.
+7. Summarize current findings and recommended next steps.
+
+Do not execute approval-required actions during fleet review. Recommend dry-run
+commands only, then wait for exact approval before any live action execution.
+
 ## What Codex Must Not Do
 
 - Do not run arbitrary maintenance commands directly against home servers.

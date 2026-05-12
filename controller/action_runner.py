@@ -36,6 +36,8 @@ LOCAL_HEALTH_SCRIPT_PATH = (
     config.BASE_DIR / "server-scripts" / "common" / "health_summary.sh"
 )
 REMOTE_HEALTH_SCRIPT_PATH = DEFAULT_REMOTE_HEALTH_COMMAND
+REBOOT_DELAY = "+1"
+REBOOT_MESSAGE = "HomeOps-approved-reboot"
 
 
 class ActionError(RuntimeError):
@@ -182,6 +184,31 @@ def build_action_commands(
 
     if action_id == "deploy_health_script":
         return _deploy_health_script_commands(server)
+
+    if action_id == "apply_security_updates":
+        return [
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                "sudo",
+                "-n",
+                "unattended-upgrade",
+            ]
+        ]
+
+    if action_id == "reboot_server":
+        return [
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                "sudo",
+                "-n",
+                "shutdown",
+                "-r",
+                REBOOT_DELAY,
+                REBOOT_MESSAGE,
+            ]
+        ]
 
     raise ActionError(f"Action is not implemented: {action_id}")
 

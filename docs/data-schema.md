@@ -61,8 +61,8 @@ Each server collection script should output a single JSON object:
     "containers_running": 11,
     "unhealthy": [
       {
-        "name": "homepage",
-        "status": "unhealthy"
+        "name": "watchtower",
+        "status": "Restarting (1) 44 seconds ago"
       }
     ]
   },
@@ -77,7 +77,7 @@ Each server collection script should output a single JSON object:
     {
       "severity": "warning",
       "code": "docker_unhealthy_container",
-      "message": "Container homepage is unhealthy"
+      "message": "Container watchtower is reporting Restarting (1) 44 seconds ago."
     }
   ]
 }
