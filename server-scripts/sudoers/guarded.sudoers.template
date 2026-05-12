@@ -1,0 +1,7 @@
+# HomeOps guarded profile.
+# Install manually with: sudo visudo -f /etc/sudoers.d/homeops-agent
+# Replace HOMEOPS_USER with the inventory user or a dedicated homeops/labagent user.
+
+HOMEOPS_USER ALL=(root) NOPASSWD: /usr/bin/unattended-upgrade
+HOMEOPS_USER ALL=(root) NOPASSWD: /usr/bin/systemctl restart -- openvpnas.service
+HOMEOPS_USER ALL=(root) NOPASSWD: /usr/sbin/shutdown -r +1 HomeOps-approved-reboot

@@ -1,0 +1,7 @@
+# HomeOps lab profile.
+# Install manually with: sudo visudo -f /etc/sudoers.d/homeops-agent
+# Replace HOMEOPS_USER with the inventory user or a dedicated homeops/labagent user.
+
+# This profile is intentionally high power and should only be used on disposable
+# lab machines.
+HOMEOPS_USER ALL=(root) NOPASSWD: ALL

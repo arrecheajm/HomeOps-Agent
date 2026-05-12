@@ -134,3 +134,31 @@ Consequences:
 - `python -m controller.main collect` refreshes the HTML dashboard and does not write `homeops-report-<timestamp>.md`.
 - `python -m controller.main report` writes an HTML report view.
 - Existing generated Markdown files are legacy artifacts and should not be linked or regenerated.
+
+## 0007: Server Authority Is Profile-Based
+
+Status: accepted
+
+Date: 2026-05-12
+
+Decision:
+
+The fleet will be managed as a personal homelab agent environment with
+per-server access profiles: `guarded`, `experimental`, and `lab`. Inventory also
+tracks whether a server is rebuildable.
+
+Reasoning:
+
+- The servers are not mission-critical production infrastructure.
+- The user wants agentic exploration, diagnosis, repair, and potential rebuilds.
+- VPN access should remain protected even if other servers are disposable.
+- Explicit profiles make broad agent power intentional instead of accidental.
+
+Consequences:
+
+- `openvpn-server` is guarded and not rebuildable.
+- `ispy-server` is experimental and rebuildable.
+- `container-host` is lab-profile and rebuildable.
+- Future arbitrary admin-command support must check access profile.
+- Rebuild workflows require a before-state report and explicit destructive
+  approval.

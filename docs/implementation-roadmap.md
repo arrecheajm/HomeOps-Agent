@@ -2,11 +2,19 @@
 
 ## Current Status
 
-The controller can generate an HTML dashboard, load inventory with optional SSH identity files, validate approved remote health commands, pass inventory identity into collection, dry-run collection, validate collected server health shapes, normalize inventory identity, refresh the fleet capability catalog, and run collector logic under tests.
+The controller can generate an HTML dashboard, load inventory with optional SSH
+identity files, validate approved remote health commands, validate per-server
+access profiles, pass inventory identity into collection, dry-run collection,
+validate collected server health shapes, normalize inventory identity, refresh
+the fleet capability catalog, and run collector logic under tests.
 
 Real read-only collection succeeds for all three servers: `openvpn-server`, `ispy-server`, and `container-host`. `container-host` is online at `192.168.86.58`, local inventory uses `containerserver@192.168.86.58`, SSH key authentication works, and the current approved read-only health script has been deployed to every configured server through the approval-gated action runner.
 
-The current operational milestone is maintenance one server at a time: handle the `ispy-server` reboot and updates when camera interruption is acceptable, handle `openvpn-server` updates during a VPN-safe window, then review the restarting `watchtower` container and reboot-required state on `container-host`. Bounded `apply_security_updates` and `reboot_server` support is available for dry-run and exact approval testing.
+The project has pivoted to a personal homelab agent controller. The current
+operational model is: keep `openvpn-server` guarded for access, use
+`ispy-server` as an experimental repair/overhaul target, and use
+`container-host` as a disposable lab box. Bounded `apply_security_updates` and
+`reboot_server` support is available for dry-run and exact approval testing.
 
 ## Phase 1: Documentation and Project Shape
 
@@ -40,6 +48,7 @@ Goal: collect read-only health JSON from configured servers.
 
 - add `config/servers.example.yaml`
 - add inventory loader
+- add access profiles and rebuildability flags
 - add SSH client wrapper with timeout handling
 - support optional identity files for dedicated controller SSH keys
 - reject unapproved remote health commands
@@ -144,6 +153,19 @@ Goal: make failures understandable and safe.
 - document server setup
 - document adding a new check
 - document adding a new action
+
+## Phase 9: Agentic Homelab Profiles
+
+Goal: support more powerful agent work on disposable servers while preserving
+access infrastructure.
+
+- [x] Add `access_profile` to inventory.
+- [x] Add `rebuildable` to inventory.
+- [x] Document guarded, experimental, and lab profiles.
+- [x] Add sudoers profile templates.
+- [ ] Add a logged admin-command action for `experimental` and `lab` servers.
+- [ ] Add before-state capture for rebuildable servers.
+- [ ] Add rebuild planning and approval workflow.
 
 ## Minimum Viable Version
 

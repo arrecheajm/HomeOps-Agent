@@ -12,6 +12,7 @@ Codex is the analyst. The controller is the deterministic evidence collector. A 
 4. Explain findings by severity and operational impact.
 5. Recommend only predefined action IDs when an executable action is appropriate.
 6. Do not run mutating actions unless the user gives exact approval for a supported action.
+7. Respect each server's access profile before recommending broader work.
 
 ## Fleet Review Shortcut
 
@@ -27,6 +28,16 @@ When the user says `run fleet review`, perform the safe review loop:
 
 Do not execute approval-required actions during fleet review. Recommend dry-run
 commands only, then wait for exact approval before any live action execution.
+
+## Access Profile Interpretation
+
+- `guarded`: preserve access; recommend only predefined maintenance actions.
+- `experimental`: suitable for deeper diagnosis, controlled changes, and future
+  logged admin commands.
+- `lab`: suitable for broad experiments and future rebuild workflows.
+
+For any `rebuildable` server, gather a before-state report before recommending
+destructive changes.
 
 ## What Codex Must Not Do
 

@@ -36,6 +36,11 @@ Live status:
   live health, refresh dashboard and catalog, check the latest run explicitly,
   summarize findings, and recommend next steps without executing
   approval-required actions.
+- Inventory now distinguishes `guarded`, `experimental`, and `lab` access
+  profiles, with rebuildability tracked separately.
+- The project operating model is a personal homelab agent controller:
+  `openvpn-server` stays guarded for access, `ispy-server` is experimental and
+  rebuildable, and `container-host` is a rebuildable lab box.
 
 Current operating model:
 
@@ -139,19 +144,19 @@ Forbidden actions:
 
 - recursive deletion
 - firewall changes
-- arbitrary shell execution
+- unlogged arbitrary shell execution
 - automatic port exposure
 - SSH/OpenVPN/Docker/system config edits
 
 ## Next Implementation Step
 
-Operationally, follow `docs/active-operations-plan.md`: perform manual package
-maintenance and reboots one server at a time, then re-run collection, dashboard,
-and catalog generation after each server.
+Operationally, follow `docs/active-operations-plan.md`: install the right
+sudoers profile on each server, preserve VPN access on the guarded server, then
+use `ispy-server` and `container-host` for logged experimental work.
 
-The next implementation item is role-specific read-only scripts for OpenVPN,
-iSpy, and Docker, while package update and reboot operations should be tested
-with dry-runs before any live maintenance window.
+The next implementation item is a logged admin-command action limited to
+`experimental` and `lab` access profiles. Rebuild workflows should come after a
+before-state report exists for rebuildable servers.
 
 For live rule checks, pass the latest run explicitly because `check` without
 `--input` defaults to fixture data:
@@ -199,3 +204,13 @@ Reporting readiness:
 - [x] Generate separate fleet catalog HTML report.
 - [x] Refresh the tracked fleet catalog after health script deployment.
 - [x] Document the `run fleet review` Codex workflow.
+
+Access profile readiness:
+
+- [x] Add `access_profile` to inventory.
+- [x] Add `rebuildable` to inventory.
+- [x] Update example inventory with guarded, experimental, and lab profiles.
+- [x] Add access profile documentation.
+- [x] Add sudoers profile templates.
+- [ ] Add logged admin-command support for experimental/lab profiles.
+- [ ] Add rebuild planning workflow for rebuildable servers.

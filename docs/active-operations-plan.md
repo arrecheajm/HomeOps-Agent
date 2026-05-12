@@ -1,14 +1,16 @@
 # Active Operations Plan
 
-This plan captures the current HomeOps operating focus after the first successful read-only collections.
+This plan captures the current HomeOps operating focus after pivoting the fleet
+from production-style home infrastructure to a personal homelab agent
+controller.
 
 ## Current State
 
 Enabled servers:
 
-- `openvpn-server`
-- `ispy-server`
-- `container-host`
+- `openvpn-server`: `guarded`, not rebuildable, preserve VPN access
+- `ispy-server`: `experimental`, rebuildable, diagnose or overhaul camera setup
+- `container-host`: `lab`, rebuildable, disposable Docker and agent playground
 
 Connection state:
 
@@ -23,7 +25,7 @@ Connection state:
   through the approval-gated `deploy_health_script` action on May 10, 2026
 - collection after deployment refreshed the dashboard and fleet catalog
 
-Latest known findings from run `2026-05-10T20-28-25Z`:
+Latest known findings from run `2026-05-12T17-16-00Z`:
 
 - `openvpn-server`: 53 package updates pending, no reboot required
 - `ispy-server`: reboot required, 71 package updates pending, failed legacy
@@ -55,14 +57,25 @@ reports/generated/index.html
 
 ## Immediate Goal
 
-Gather targeted read-only details, perform any needed maintenance manually, and re-run collection to confirm the findings clear.
+Keep `openvpn-server` stable as the access box, then use `ispy-server` as the
+first experimental repair/overhaul target and `container-host` as the lab box.
 
 Only narrow approval-gated controller actions are implemented.
 `restart_docker_container`, `restart_service`, `apply_security_updates`, and
 `reboot_server` require exact approval and write action history. Review dry-runs
 before any live maintenance window.
 
-## Step 1: Gather Reboot And Package Details
+## Step 1: Finish Access Profile Setup
+
+1. Decide whether to create a dedicated `homeops` or `labagent` user on each
+   server, or continue with the current per-server users.
+2. Install the matching sudoers profile manually from `server-scripts/sudoers/`.
+3. Keep `openvpn-server` on the guarded template.
+4. Use the experimental template for `ispy-server`.
+5. Use the lab template only on `container-host` if broad agent experimentation
+   is acceptable.
+
+## Step 2: Gather Reboot And Package Details
 
 Run these read-only commands on each enabled server:
 
@@ -79,7 +92,7 @@ Purpose:
 - see all pending package updates
 - confirm whether users are currently logged in before maintenance
 
-## Step 2: Discover Role-Specific Services
+## Step 3: Discover Role-Specific Services
 
 VPN service detection currently sees `openvpnas`.
 
@@ -107,7 +120,7 @@ Current follow-up:
   `openvpnas.service`, or `docker.service`, and only after reviewing a dry-run.
 - Treat failed `ispy.service` as a manual cleanup candidate after updates/reboot, because it appears to duplicate the active AgentDVR service and has been failed since February 13, 2026.
 
-## Step 3: Perform Manual Maintenance One Server At A Time
+## Step 4: Perform Maintenance One Server At A Time
 
 Use the maintenance runbook:
 
@@ -115,7 +128,7 @@ Use the maintenance runbook:
 docs/manual-maintenance-runbook.md
 ```
 
-Do not update and reboot both enabled servers at the same time.
+Do not update and reboot multiple enabled servers at the same time.
 
 Recommended order:
 
@@ -140,7 +153,7 @@ iSpy caution:
 
 - rebooting `ispy-server` can interrupt camera recording or monitoring
 
-## Step 4: Verify After Each Server
+## Step 5: Verify After Each Server
 
 From the controller machine:
 
@@ -165,7 +178,7 @@ Expected result after maintenance:
 - no collection errors appear
 - role-specific service remains active
 
-## Step 5: Monitor Container Host
+## Step 6: Monitor Container Host
 
 After VPN and iSpy are stable:
 
@@ -188,6 +201,7 @@ python -m controller.main collect
 
 - Keep `knowledge/fleet-catalog.json` refreshed after meaningful collection
   changes.
-- Consider role-specific scripts for OpenVPN, iSpy, and Docker.
-- Add role-specific scripts for OpenVPN, iSpy, and Docker after the current
-  maintenance workflow is validated.
+- Add a logged admin-command workflow for `experimental` and `lab` profiles.
+- Add rebuild planning workflow for `rebuildable` servers.
+- Add role-specific scripts for OpenVPN, iSpy, and Docker after the access
+  profile model is validated.

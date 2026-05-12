@@ -3,6 +3,7 @@
 Use these documents as the current operating guide:
 
 - [Architecture](architecture.md): controller responsibilities and data flow.
+- [Access Profiles](access-profiles.md): guarded, experimental, and lab server authority model.
 - [Command Safety](command-safety.md): command boundaries, risk levels, and approval standards.
 - [Codex Operating Guide](codex-operating-guide.md): how Codex should review reports and recommend next steps.
 - [Data Schema](data-schema.md): server health, fleet health, and finding shapes.

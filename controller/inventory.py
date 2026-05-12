@@ -13,6 +13,14 @@ DEFAULT_REMOTE_HEALTH_COMMAND = (
 )
 
 ALLOWED_REMOTE_HEALTH_COMMANDS = (DEFAULT_REMOTE_HEALTH_COMMAND,)
+ACCESS_PROFILE_GUARDED = "guarded"
+ACCESS_PROFILE_EXPERIMENTAL = "experimental"
+ACCESS_PROFILE_LAB = "lab"
+ALLOWED_ACCESS_PROFILES = (
+    ACCESS_PROFILE_GUARDED,
+    ACCESS_PROFILE_EXPERIMENTAL,
+    ACCESS_PROFILE_LAB,
+)
 
 
 @dataclass(frozen=True)
@@ -27,10 +35,16 @@ class ServerInventoryItem:
     command_timeout_seconds: int = 30
     remote_health_command: str = DEFAULT_REMOTE_HEALTH_COMMAND
     identity_file: str | None = None
+    access_profile: str = ACCESS_PROFILE_GUARDED
+    rebuildable: bool = False
 
     @property
     def ssh_target(self) -> str:
         return f"{self.user}@{self.host}"
+
+    @property
+    def allows_admin_experiments(self) -> bool:
+        return self.access_profile in {ACCESS_PROFILE_EXPERIMENTAL, ACCESS_PROFILE_LAB}
 
 
 def load_inventory(path: Path) -> list[ServerInventoryItem]:
@@ -94,6 +108,19 @@ def _server_from_mapping(index: int, value: Any) -> ServerInventoryItem:
             f"{remote_health_command}"
         )
 
+    access_profile = str(value.get("access_profile") or ACCESS_PROFILE_GUARDED)
+    if access_profile not in ALLOWED_ACCESS_PROFILES:
+        allowed = ", ".join(ALLOWED_ACCESS_PROFILES)
+        raise ValueError(
+            f"servers[{index}].access_profile must be one of: {allowed}."
+        )
+
+    rebuildable = _as_bool(value.get("rebuildable", False))
+    if rebuildable and access_profile == ACCESS_PROFILE_GUARDED:
+        raise ValueError(
+            f"servers[{index}] cannot be rebuildable with guarded access_profile."
+        )
+
     return ServerInventoryItem(
         server_id=str(value["server_id"]),
         role=str(value["role"]),
@@ -107,6 +134,8 @@ def _server_from_mapping(index: int, value: Any) -> ServerInventoryItem:
         identity_file=(
             str(value["identity_file"]) if value.get("identity_file") else None
         ),
+        access_profile=access_profile,
+        rebuildable=rebuildable,
     )
 
 
@@ -114,3 +143,15 @@ def is_allowed_remote_health_command(command: str) -> bool:
     """Return whether a configured remote health command is approved for v1."""
 
     return command in ALLOWED_REMOTE_HEALTH_COMMANDS
+
+
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"true", "yes", "1"}:
+            return True
+        if lowered in {"false", "no", "0", ""}:
+            return False
+    return bool(value)

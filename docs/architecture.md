@@ -2,7 +2,10 @@
 
 ## Summary
 
-HomeOps Agent is a central controller for collecting server health evidence and preparing approved maintenance workflows. It is designed for a small home fleet and for a developer who wants the system to stay transparent while learning infrastructure automation.
+HomeOps Agent is a central controller for collecting server health evidence,
+preparing approved maintenance workflows, and exploring agentic homelab
+operations. It is designed for a small personal fleet where some machines are
+access infrastructure and others are intentionally disposable lab boxes.
 
 The controller does not call the OpenAI API. Codex in VS Code provides analysis by reading generated reports and JSON files from this repository.
 
@@ -13,6 +16,7 @@ The controller does not call the OpenAI API. Codex in VS Code provides analysis 
 The controller runs from the main machine and owns:
 
 - server inventory
+- per-server access profiles and rebuildability flags
 - SSH connection logic
 - approved read-only script execution
 - JSON parsing and schema validation
@@ -47,10 +51,21 @@ Codex acts as the analyst and operator assistant:
 
 Codex must not invent direct server maintenance commands when an action registry entry is required.
 
+## Access Model
+
+Inventory entries assign each server one access profile:
+
+- `guarded`: preserve access infrastructure such as VPN.
+- `experimental`: allow future logged admin work on repairable project boxes.
+- `lab`: allow future high-power experiments on disposable machines.
+
+The controller validates these profiles at inventory load time. A guarded server
+cannot be marked rebuildable.
+
 ## Logical Flow
 
 ```text
-1. Load server inventory.
+1. Load server inventory and validate access profiles.
 2. Validate that each configured remote health command is approved.
 3. Connect to each server over SSH.
 4. Run approved read-only collection scripts.

@@ -7,6 +7,12 @@ The controller now has approval-gated `apply_security_updates` and
 maintenance or recovery. Use either path only during an acceptable maintenance
 window.
 
+Access profiles now set the operating stance:
+
+- `openvpn-server`: guarded access box.
+- `ispy-server`: experimental repair/overhaul target.
+- `container-host`: disposable lab box.
+
 ## Current Maintenance Targets
 
 Recommended order:
@@ -80,6 +86,8 @@ Proceed only when:
 - the role-specific service is active before maintenance
 - you are comfortable with the outage window
 - for `openvpn-server`, you have confirmed whether you are currently relying on VPN for access
+- the target server has the expected sudoers profile installed, if using
+  controller maintenance actions
 
 ## Update One Server
 

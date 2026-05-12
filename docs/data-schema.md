@@ -2,6 +2,28 @@
 
 The first schema should be compact and stable enough for reports, local rules, and Codex analysis.
 
+## Inventory JSON
+
+Each configured server includes connection details plus the authority model:
+
+```json
+{
+  "server_id": "ispy-server",
+  "role": "ispy_server",
+  "host": "ispy-server.local",
+  "user": "homeops",
+  "access_profile": "experimental",
+  "rebuildable": true,
+  "remote_health_command": "/opt/homeops-agent/server-scripts/common/health_summary.sh"
+}
+```
+
+Allowed `access_profile` values:
+
+- `guarded`: predefined actions only; cannot be rebuildable.
+- `experimental`: repairable project server; future logged admin workflows.
+- `lab`: disposable playground server; future broad logged admin workflows.
+
 ## Per-Server Health JSON
 
 Each server collection script should output a single JSON object:
