@@ -100,6 +100,12 @@ blocked on `guarded` servers. It is approval-required and still checked against
 policy-level forbidden command patterns. Destructive disk or rebuild operations
 belong in a separate rebuild workflow, not this general admin action.
 
+Capture a before-state snapshot before proposing destructive rebuild work:
+
+```powershell
+python -m controller.main before-state --server ispy-server --intent "before AgentDVR overhaul"
+```
+
 ## Sudoers Profiles
 
 The repo includes profile templates under `server-scripts/sudoers/`.

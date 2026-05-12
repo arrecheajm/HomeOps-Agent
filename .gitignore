@@ -7,3 +7,4 @@ config/servers.yaml
 reports/generated/
 history/runs/
 history/actions/
+history/before-state/

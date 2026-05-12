@@ -12,6 +12,7 @@ from . import (
     action_registry,
     action_runner,
     approvals,
+    before_state,
     collector,
     config,
     history,
@@ -288,6 +289,48 @@ def command_catalog(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_before_state(args: argparse.Namespace) -> int:
+    inventory_path = (
+        Path(args.inventory) if args.inventory else config.DEFAULT_INVENTORY_PATH
+    )
+
+    try:
+        servers = inventory.load_inventory(inventory_path)
+    except (FileNotFoundError, ValueError) as exc:
+        raise SystemExit(str(exc)) from exc
+
+    if args.input:
+        input_path = Path(args.input)
+        fleet = apply_local_rules(load_json(input_path))
+        run_summary = history.run_summary_from_fleet(fleet, input_path)
+    else:
+        runs = history.discover_run_summaries()
+        if not runs:
+            raise SystemExit("No run history found. Run collection before capture.")
+        run_summary = runs[0]
+
+    try:
+        snapshot = before_state.write_before_state_snapshot(
+            run_summary,
+            before_state.server_by_id(servers, args.server),
+            args.intent,
+            history.discover_action_summaries(),
+            output_dir=Path(args.output_dir) if args.output_dir else None,
+        )
+    except before_state.BeforeStateError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    print(f"Wrote before-state snapshot: {snapshot.path}")
+    print(f"Server: {snapshot.payload['server_id']}")
+    print(f"Source run: {snapshot.payload['source']['run_id']}")
+    readiness = snapshot.payload.get("rebuild_readiness") or {}
+    print(
+        "Eligible for rebuild planning: "
+        f"{'yes' if readiness.get('eligible_for_rebuild_planning') else 'no'}"
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="HomeOps controller")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -361,6 +404,34 @@ def build_parser() -> argparse.ArgumentParser:
         help="Tracked catalog JSON path. Defaults to knowledge/fleet-catalog.json.",
     )
     catalog_parser.set_defaults(func=command_catalog)
+
+    before_state_parser = subparsers.add_parser(
+        "before-state",
+        help="Capture a before-state JSON snapshot for a rebuildable server",
+    )
+    before_state_parser.add_argument(
+        "--server",
+        required=True,
+        help="Inventory server_id to capture.",
+    )
+    before_state_parser.add_argument(
+        "--intent",
+        required=True,
+        help="Short reason for the planned rebuild or overhaul.",
+    )
+    before_state_parser.add_argument(
+        "--input",
+        help="Fleet health JSON to use. Defaults to latest run history.",
+    )
+    before_state_parser.add_argument(
+        "--inventory",
+        help="Inventory path. Defaults to config/servers.yaml.",
+    )
+    before_state_parser.add_argument(
+        "--output-dir",
+        help="Directory for snapshots. Defaults to history/before-state.",
+    )
+    before_state_parser.set_defaults(func=command_before_state)
 
     actions_parser = subparsers.add_parser("actions", help="Inspect or run actions")
     actions_subparsers = actions_parser.add_subparsers(

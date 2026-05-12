@@ -126,7 +126,8 @@ work:
 python -m controller.main collect
 python -m controller.main dashboard
 python -m controller.main catalog
+python -m controller.main before-state --server ispy-server --intent "before AgentDVR overhaul"
 ```
 
-Future rebuild workflows should preserve useful config, record the plan, and
-require a separate destructive approval phrase.
+Rebuild workflows should preserve useful config, record the plan, and require a
+separate destructive approval phrase.

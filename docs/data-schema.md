@@ -169,6 +169,36 @@ role, hostname, OS, hardware, service, maintenance, storage, Docker, capability,
 constraint, and placement guidance fields. Older collection runs may not include
 hardware details; the catalog treats missing hardware fields as `unknown`.
 
+## Before-State Snapshot JSON
+
+Before destructive planning on a rebuildable server, the controller can write:
+
+```json
+{
+  "schema_version": "1.0",
+  "snapshot_type": "before_rebuild",
+  "generated_at": "2026-05-12T21:00:00Z",
+  "server_id": "ispy-server",
+  "access_profile": "experimental",
+  "rebuildable": true,
+  "intent": "before AgentDVR overhaul",
+  "source": {
+    "run_id": "2026-05-12T17-16-00Z",
+    "fleet_path": "history/runs/2026-05-12T17-16-00Z/fleet-health.json"
+  },
+  "server": {},
+  "findings": [],
+  "collection_errors": [],
+  "recent_actions": [],
+  "rebuild_readiness": {
+    "eligible_for_rebuild_planning": true,
+    "blocked_reasons": []
+  }
+}
+```
+
+Before-state snapshots are generated artifacts under `history/before-state/`.
+
 ## Finding Object
 
 Local rules should produce finding objects:

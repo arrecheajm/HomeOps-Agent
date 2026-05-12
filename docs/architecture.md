@@ -93,6 +93,7 @@ HomeOps-Agent/
     rules.py
     policy.py
     history.py
+    before_state.py
     html_report_writer.py
     approvals.py
     action_runner.py

@@ -12,6 +12,7 @@ Structured reporting uses:
 ```text
 history/runs/<timestamp>/fleet-health.json
 history/actions/<timestamp>-<server_id>-<action_id>.json
+history/before-state/<timestamp>-<server_id>.json
 knowledge/fleet-catalog.json
 ```
 
@@ -141,3 +142,16 @@ reports/generated/fleet-catalog.html
 ```
 
 The controller no longer writes `homeops-report-<timestamp>.md` files.
+
+## Before-State Snapshots
+
+Before-state snapshots preserve current evidence for a rebuildable server before
+destructive planning:
+
+```bash
+python -m controller.main before-state --server ispy-server --intent "before AgentDVR overhaul"
+```
+
+The snapshot includes the source run, server health, current findings, recent
+actions for that server, access profile, and rebuildability metadata. Snapshot
+files are generated under `history/before-state/` and ignored by git.

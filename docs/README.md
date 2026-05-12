@@ -7,7 +7,7 @@ Use these documents as the current operating guide:
 - [Command Safety](command-safety.md): command boundaries, risk levels, and approval standards.
 - [Codex Operating Guide](codex-operating-guide.md): how Codex should review reports and recommend next steps.
 - [Data Schema](data-schema.md): server health, fleet health, and finding shapes.
-- [Reporting](reporting.md): HTML dashboard, fleet catalog, action history, and run grouping.
+- [Reporting](reporting.md): HTML dashboard, fleet catalog, before-state snapshots, action history, and run grouping.
 - [Active Operations Plan](active-operations-plan.md): current findings and next operational steps.
 - [Manual Maintenance Runbook](manual-maintenance-runbook.md): one-server-at-a-time update and reboot workflow.
 - [Implementation Roadmap](implementation-roadmap.md): current phase and upcoming work.

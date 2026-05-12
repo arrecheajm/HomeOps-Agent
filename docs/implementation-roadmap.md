@@ -20,7 +20,8 @@ operational model is: keep `openvpn-server` guarded for access, use
 `container-host` as a disposable lab box. Bounded `apply_security_updates` and
 `reboot_server` support is available for dry-run and exact approval testing.
 `run_admin_command` is available for logged root shell commands on
-`experimental` and `lab` profiles only.
+`experimental` and `lab` profiles only. `before-state` captures a durable JSON
+snapshot for rebuildable servers before destructive planning.
 
 ## Phase 1: Documentation and Project Shape
 
@@ -171,7 +172,7 @@ access infrastructure.
 - [x] Document guarded, experimental, and lab profiles.
 - [x] Add sudoers profile templates.
 - [x] Add a logged admin-command action for `experimental` and `lab` servers.
-- [ ] Add before-state capture for rebuildable servers.
+- [x] Add before-state capture for rebuildable servers.
 - [ ] Add rebuild planning and approval workflow.
 
 ## Completed Baseline

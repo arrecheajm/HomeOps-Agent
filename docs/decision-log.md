@@ -192,3 +192,31 @@ Consequences:
   the controller action.
 - Destructive rebuild workflows still need a before-state report and separate
   destructive approval.
+
+## 0009: Rebuild Planning Starts With Before-State Evidence
+
+Status: accepted
+
+Date: 2026-05-12
+
+Decision:
+
+Before destructive rebuild planning for any `rebuildable` server, the
+controller should capture a `before-state` JSON snapshot from the latest fleet
+evidence.
+
+Reasoning:
+
+- Rebuildable servers are intentionally disposable, but their current setup can
+  still contain useful configuration or troubleshooting evidence.
+- A stable snapshot gives Codex and the user a shared reference before proposing
+  wipe, reinstall, or overhaul steps.
+- The snapshot is local generated history, so it does not require another server
+  mutation.
+
+Consequences:
+
+- `before-state` is blocked for servers not marked rebuildable.
+- Rebuild planning can refer to a concrete source run, findings, recent actions,
+  and captured server state.
+- Destructive execution still needs a separate rebuild workflow and approval.

@@ -40,6 +40,10 @@ commands only, then wait for exact approval before any live action execution.
 For any `rebuildable` server, gather a before-state report before recommending
 destructive changes.
 
+```powershell
+python -m controller.main before-state --server ispy-server --intent "before AgentDVR overhaul"
+```
+
 ## What Codex Must Not Do
 
 - Do not run arbitrary maintenance commands directly against home servers.
@@ -61,6 +65,7 @@ destructive changes.
 5. Run action dry-runs first when an implemented action may apply.
 6. Ask the user for exact approval before any server mutation.
 7. Re-run collection to verify results after approved maintenance.
+8. Capture `before-state` before rebuild planning on rebuildable servers.
 ```
 
 ## Preferred Findings Format
