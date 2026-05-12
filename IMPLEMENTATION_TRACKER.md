@@ -28,6 +28,10 @@ Live status:
   and separate HTML reporting.
 - `deploy_health_script`, `restart_docker_container`, and `restart_service`
   support dry-run, exact approval, execution, and action history.
+- The current `health_summary.sh` script was deployed through the approval-gated
+  `deploy_health_script` action to all three configured servers on May 10, 2026.
+- The latest tracked fleet catalog is based on run
+  `2026-05-10T20-28-25Z`, after the deployment and follow-up collection.
 
 Current operating model:
 
@@ -105,7 +109,9 @@ Current operating model:
 
 ## Action Registry Backlog
 
-Read-only action IDs are registered. Execution is still pending.
+Read-only action IDs are registered for policy and reporting. Standalone
+execution for these read-only IDs is still pending; normal read-only collection
+currently runs through `python -m controller.main collect`.
 
 - [x] `collect_health`
 - [x] `collect_disk`
@@ -115,16 +121,15 @@ Read-only action IDs are registered. Execution is still pending.
 - [x] `collect_openvpn`
 - [x] `collect_ispy`
 
-Approval-required action IDs are registered. `restart_docker_container` and
-`restart_service` are executable after exact approval. `deploy_health_script`
-can deploy the known read-only health script after exact approval. Update and
-reboot actions are not executable yet.
+Approval-required action IDs are registered. `restart_docker_container`,
+`restart_service`, and `deploy_health_script` are executable after exact
+approval. Update and reboot actions remain registered but are not executable yet.
 
 - [x] `deploy_health_script`
 - [x] `restart_service`
 - [x] `restart_docker_container`
-- [x] `apply_security_updates`
-- [x] `reboot_server`
+- [ ] `apply_security_updates`
+- [ ] `reboot_server`
 
 Forbidden actions:
 
@@ -136,11 +141,19 @@ Forbidden actions:
 
 ## Next Implementation Step
 
-Use `actions run deploy_health_script --dry-run` to review script deployment for
-each server, then execute only if the user approves the exact phrase. After
-deployment, re-run collection so the catalog can capture richer hardware data.
+Operationally, follow `docs/active-operations-plan.md`: perform manual package
+maintenance and reboots one server at a time, then re-run collection, dashboard,
+and catalog generation after each server.
 
-Future implementation work can add similarly bounded support for `reboot_server`.
+Implementation work can add similarly bounded support for `reboot_server` after
+the manual maintenance workflow is proven.
+
+For live rule checks, pass the latest run explicitly because `check` without
+`--input` defaults to fixture data:
+
+```powershell
+python -m controller.main check --input history\runs\2026-05-10T20-28-25Z\fleet-health.json
+```
 
 Current operations are tracked in:
 
@@ -165,6 +178,8 @@ Connection readiness:
 - [x] Confirm SSH key authentication from controller to each configured server.
 - [x] Run `python -m controller.main collect --dry-run`.
 - [x] Run first real `python -m controller.main collect` for all configured servers.
+- [x] Deploy the current `health_summary.sh` to all configured servers through
+  `deploy_health_script`.
 
 Reporting readiness:
 
@@ -177,3 +192,4 @@ Reporting readiness:
 - [x] Refresh HTML dashboard after action attempts.
 - [x] Generate tracked fleet capability catalog JSON.
 - [x] Generate separate fleet catalog HTML report.
+- [x] Refresh the tracked fleet catalog after health script deployment.

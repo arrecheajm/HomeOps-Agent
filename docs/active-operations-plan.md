@@ -19,28 +19,31 @@ Connection state:
 - full controller collection now succeeds for all three servers
 - role-aware collection was verified on May 10, 2026, with inventory
   `server_id` and `role` passed into the health script
-- the controller can now dry-run and approval-gate deployment of the known
-  `health_summary.sh` script
+- the current `health_summary.sh` script was deployed to all three servers
+  through the approval-gated `deploy_health_script` action on May 10, 2026
+- collection after deployment refreshed the dashboard and fleet catalog
 
-Latest known findings:
+Latest known findings from run `2026-05-10T20-28-25Z`:
 
-- `openvpn-server`: pending package updates
-- `ispy-server`: reboot required, pending package updates, failed legacy `ispy`
-  service
+- `openvpn-server`: 53 package updates pending, no reboot required
+- `ispy-server`: reboot required, 71 package updates pending, failed legacy
+  `ispy` service
 - `container-host`: reboot required, `watchtower` container restarting
 - no critical findings
 - no collection errors
 
 Read-only detail gathered:
 
-- `openvpn-server` reboot is tied to kernel packages and `linux-base`.
+- Earlier inspection tied the previous `openvpn-server` reboot-required state
+  to kernel packages and `linux-base`; the latest run no longer reports reboot
+  required there.
 - `openvpn-server` role-aware service collection reports `ssh` and `openvpnas`.
 - `ispy-server` reboot is tied to multiple kernel image packages.
 - `ispy-server` role-aware service collection reports `ssh` and `AgentDVR`.
 - `container-host` role-aware service collection reports `ssh` and `docker`.
 - fleet catalog hardware details now include architecture, CPU model, memory
   total, virtualization, and disk sizes.
-- neither enabled server reported active `who` sessions during inspection.
+- none of the enabled servers reported active `who` sessions during inspection.
 - `ispy-server` uses `AgentDVR.service` as the active camera service.
 - `ispy-server` also has an enabled but failed legacy-looking `ispy.service` unit pointing at `/home/spy/AgentDVR/start_agent.sh`.
 
@@ -98,8 +101,8 @@ Current follow-up:
 - Monitor `AgentDVR.service` in collection. The controller now passes the
   inventory role into `health_summary.sh`, so service checks are selected by
   server role.
-- Deploy the updated `health_summary.sh` with `deploy_health_script` only after
-  reviewing a dry-run and approving the exact phrase for each server.
+- Keep the deployed `health_summary.sh` in place unless a future script change
+  needs another reviewed `deploy_health_script` run.
 - Use `restart_service` only for approved units such as `AgentDVR.service`,
   `openvpnas.service`, or `docker.service`, and only after reviewing a dry-run.
 - Treat failed `ispy.service` as a manual cleanup candidate after updates/reboot, because it appears to duplicate the active AgentDVR service and has been failed since February 13, 2026.
@@ -141,12 +144,14 @@ From the controller machine:
 ```powershell
 python -m controller.main collect
 python -m controller.main dashboard
+python -m controller.main catalog
 ```
 
 Then review:
 
 ```text
 reports/generated/index.html
+reports/generated/fleet-catalog.html
 history/runs/<timestamp>/fleet-health.json
 ```
 
@@ -178,7 +183,8 @@ python -m controller.main collect
 
 ## Backlog After Current Maintenance
 
-- Deploy the updated health script to populate catalog hardware fields.
+- Keep `knowledge/fleet-catalog.json` refreshed after meaningful collection
+  changes.
 - Consider role-specific scripts for OpenVPN, iSpy, and Docker.
 - Decide whether to implement additional approval-gated actions such as
   `reboot_server`.

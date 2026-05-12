@@ -2,11 +2,11 @@
 
 ## Current Status
 
-The controller can generate an HTML dashboard, load inventory with optional SSH identity files, validate approved remote health commands, pass inventory identity into collection, dry-run collection, validate collected server health shapes, normalize inventory identity, and run collector logic under tests.
+The controller can generate an HTML dashboard, load inventory with optional SSH identity files, validate approved remote health commands, pass inventory identity into collection, dry-run collection, validate collected server health shapes, normalize inventory identity, refresh the fleet capability catalog, and run collector logic under tests.
 
-The first real read-only collection has succeeded for all three servers: `openvpn-server`, `ispy-server`, and `container-host`. `container-host` is online at `192.168.86.58`, local inventory uses `containerserver@192.168.86.58`, SSH key authentication works, and the approved read-only health script is installed.
+Real read-only collection succeeds for all three servers: `openvpn-server`, `ispy-server`, and `container-host`. `container-host` is online at `192.168.86.58`, local inventory uses `containerserver@192.168.86.58`, SSH key authentication works, and the current approved read-only health script has been deployed to every configured server through the approval-gated action runner.
 
-The next milestone is reviewing the current findings, especially the restarting `watchtower` container on `container-host`, and using the new approval-gated action runner only after explicit approval.
+The current operational milestone is manual maintenance one server at a time: handle the `ispy-server` reboot and updates when camera interruption is acceptable, handle `openvpn-server` updates during a VPN-safe window, then review the restarting `watchtower` container and reboot-required state on `container-host`. Future implementation work can add a bounded `reboot_server` action after the manual workflow is proven.
 
 ## Phase 1: Documentation and Project Shape
 
@@ -126,8 +126,9 @@ Goal: allow safe, predefined maintenance actions.
 
 Status: in progress. The registry exists, `actions list` works, and
 `deploy_health_script`, `restart_docker_container`, and `restart_service` have
-dry-run, exact approval, execution, and action history support. Update and
-reboot actions remain unimplemented.
+dry-run, exact approval, execution, and action history support. The deployment
+action has been exercised successfully on all configured servers. Update and
+reboot actions remain registered but unimplemented.
 
 ## Phase 8: Hardening
 

@@ -57,6 +57,13 @@ python -m controller.main collect
 python -m unittest discover -s tests
 ```
 
+`report` and `check` default to fixture data for local testing. For live fleet
+status, pass an explicit run file:
+
+```bash
+python -m controller.main check --input history/runs/<timestamp>/fleet-health.json
+```
+
 This command shape is approval-required and should be used only after reviewing the generated approval phrase:
 
 ```bash
