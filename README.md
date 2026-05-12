@@ -67,6 +67,7 @@ python -m controller.main actions run restart_docker_container --server containe
 python -m controller.main actions run restart_service --server ispy-server --service AgentDVR.service --dry-run
 python -m controller.main actions run apply_security_updates --server openvpn-server --dry-run
 python -m controller.main actions run reboot_server --server ispy-server --dry-run
+python -m controller.main actions run run_admin_command --server ispy-server --command "apt-get update" --intent "refresh package metadata" --dry-run
 python -m controller.main dashboard
 python -m controller.main collect --dry-run --inventory config/servers.example.yaml
 python -m controller.main collect
@@ -101,6 +102,7 @@ python -m controller.main actions run restart_service --server ispy-server --ser
 python -m controller.main actions run deploy_health_script --server container-host --approval "Approve action deploy_health_script on container-host"
 python -m controller.main actions run apply_security_updates --server openvpn-server --approval "Approve action apply_security_updates on openvpn-server"
 python -m controller.main actions run reboot_server --server ispy-server --approval "Approve action reboot_server on ispy-server"
+python -m controller.main actions run run_admin_command --server ispy-server --command "apt-get update" --intent "refresh package metadata" --approval "Approve action run_admin_command on ispy-server with command apt-get update, intent refresh package metadata"
 ```
 
 ## Server Script Installation

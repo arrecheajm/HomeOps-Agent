@@ -32,9 +32,10 @@ commands only, then wait for exact approval before any live action execution.
 ## Access Profile Interpretation
 
 - `guarded`: preserve access; recommend only predefined maintenance actions.
-- `experimental`: suitable for deeper diagnosis, controlled changes, and future
-  logged admin commands.
-- `lab`: suitable for broad experiments and future rebuild workflows.
+- `experimental`: suitable for deeper diagnosis, controlled changes, and
+  logged admin commands after exact approval.
+- `lab`: suitable for broad experiments, logged admin commands, and future
+  rebuild workflows after exact approval.
 
 For any `rebuildable` server, gather a before-state report before recommending
 destructive changes.
@@ -43,6 +44,7 @@ destructive changes.
 
 - Do not run arbitrary maintenance commands directly against home servers.
 - Do not invent one-off SSH commands to mutate server state.
+- Do not use `run_admin_command` on a `guarded` server.
 - Do not delete files or prune storage without explicit approval.
 - Do not change firewall, SSH, OpenVPN, Docker, or system configuration without explicit approval.
 - Do not reboot a server without explicit approval.

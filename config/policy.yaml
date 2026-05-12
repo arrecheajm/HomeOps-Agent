@@ -5,7 +5,8 @@
     "restart_docker_container",
     "deploy_health_script",
     "apply_security_updates",
-    "reboot_server"
+    "reboot_server",
+    "run_admin_command"
   ],
   "forbidden_action_patterns": [
     "rm -rf",
@@ -16,7 +17,14 @@
     "sshd_config",
     "/etc/openvpn",
     "openvpn --config",
-    "dockerd"
+    "dockerd",
+    "mkfs",
+    "wipefs",
+    "dd if=",
+    "parted",
+    "sfdisk",
+    "sgdisk",
+    "fdisk"
   ],
   "thresholds": {
     "disk_warning_percent": 80,

@@ -203,6 +203,10 @@ def command_actions_run(args: argparse.Namespace) -> int:
         arguments["container"] = args.container
     if args.service:
         arguments["service"] = args.service
+    if args.admin_command:
+        arguments["command"] = args.admin_command
+    if args.intent:
+        arguments["intent"] = args.intent
 
     approval_text = args.approval
     if not args.dry_run and approval_text is None and sys.stdin.isatty():
@@ -304,7 +308,7 @@ def build_parser() -> argparse.ArgumentParser:
     report_parser.set_defaults(func=command_report)
 
     collect_parser = subparsers.add_parser(
-        "collect", help="Collect read-only health summaries over SSH"
+        "collect", help="Collect health summaries over SSH without changing server state"
     )
     collect_parser.add_argument(
         "--inventory",
@@ -383,6 +387,15 @@ def build_parser() -> argparse.ArgumentParser:
     actions_run_parser.add_argument(
         "--service",
         help="Approved system service name for restart_service.",
+    )
+    actions_run_parser.add_argument(
+        "--command",
+        dest="admin_command",
+        help="Root shell command for run_admin_command.",
+    )
+    actions_run_parser.add_argument(
+        "--intent",
+        help="Short reason for run_admin_command, stored in action history.",
     )
     actions_run_parser.add_argument(
         "--approval",

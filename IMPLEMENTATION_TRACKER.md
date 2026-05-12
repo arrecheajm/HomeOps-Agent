@@ -29,6 +29,8 @@ Live status:
   and separate HTML reporting.
 - `deploy_health_script`, `restart_docker_container`, and `restart_service`
   support dry-run, exact approval, execution, and action history.
+- `run_admin_command` supports dry-run, exact approval, execution, and action
+  history for `experimental` and `lab` servers only.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -134,15 +136,17 @@ currently runs through `python -m controller.main collect`.
 
 Approval-required action IDs are registered. `restart_docker_container`,
 `restart_service`, `deploy_health_script`, `apply_security_updates`, and
-`reboot_server` are executable after exact approval.
+`reboot_server` are executable after exact approval. `run_admin_command` is
+also executable after exact approval on `experimental` and `lab` profiles.
 
 - [x] `deploy_health_script`
 - [x] `restart_service`
 - [x] `restart_docker_container`
 - [x] `reboot_server`
 - [x] `apply_security_updates`
+- [x] `run_admin_command`
 
-Currently blocked outside a future explicit admin or rebuild workflow:
+Currently blocked outside a future explicit rebuild workflow or policy change:
 
 - recursive deletion
 - firewall changes
@@ -156,9 +160,8 @@ Operationally, follow `docs/active-operations-plan.md`: install the right
 sudoers profile on each server, preserve VPN access on the guarded server, then
 use `ispy-server` and `container-host` for logged experimental work.
 
-The next implementation item is a logged admin-command action limited to
-`experimental` and `lab` access profiles. Rebuild workflows should come after a
-before-state report exists for rebuildable servers.
+The next implementation item is before-state capture for rebuildable servers.
+Rebuild workflows should come after that report exists for rebuildable servers.
 
 For live rule checks, pass the latest run explicitly because `check` without
 `--input` defaults to fixture data:
@@ -214,5 +217,5 @@ Access profile readiness:
 - [x] Update example inventory with guarded, experimental, and lab profiles.
 - [x] Add access profile documentation.
 - [x] Add sudoers profile templates.
-- [ ] Add logged admin-command support for experimental/lab profiles.
+- [x] Add logged admin-command support for experimental/lab profiles.
 - [ ] Add rebuild planning workflow for rebuildable servers.

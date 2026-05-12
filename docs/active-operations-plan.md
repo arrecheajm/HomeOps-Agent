@@ -200,7 +200,8 @@ python -m controller.main collect
 
 - Keep `knowledge/fleet-catalog.json` refreshed after meaningful collection
   changes.
-- Add a logged admin-command workflow for `experimental` and `lab` profiles.
+- Use `run_admin_command` dry-runs for profile-gated experiments on
+  `ispy-server` and `container-host`.
 - Add rebuild planning workflow for `rebuildable` servers.
 - Add role-specific scripts for OpenVPN, iSpy, and Docker after the access
   profile model is validated.

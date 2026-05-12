@@ -21,13 +21,16 @@ An LLM or Codex may recommend an action, but executable actions must map to a lo
 recommendation -> action_id -> registry lookup -> policy check -> approval check -> execution
 ```
 
-Free-form commands from an LLM response are advisory text only and must not be executed against servers.
+Free-form commands from an LLM response are advisory text only unless the user
+intentionally routes one through `run_admin_command`, reviews the dry-run, and
+provides the exact approval phrase. That action is blocked on `guarded` servers
+and writes action history.
 
-Inventory access profiles set the future authority boundary:
+Inventory access profiles set the authority boundary:
 
 - `guarded`: predefined action IDs only.
-- `experimental`: future logged admin commands may be allowed after approval.
-- `lab`: future arbitrary logged admin commands may be allowed after approval.
+- `experimental`: logged admin commands may run after exact approval.
+- `lab`: arbitrary logged admin commands may run after exact approval.
 
 For collection, the inventory `remote_health_command` is allowlisted. The only
 approved v1 remote health command is:
@@ -74,6 +77,7 @@ Examples:
 - apply security updates
 - prune Docker images or build cache
 - reboot a server
+- run one logged admin command on an `experimental` or `lab` server
 
 ### forbidden
 
@@ -91,13 +95,18 @@ Examples:
 - unlogged arbitrary shell command execution
 - automatic port exposure
 
+Logged admin shell execution is implemented as `run_admin_command` and remains
+blocked on `guarded` servers. It is approval-required and still checked against
+policy-level forbidden command patterns. Destructive disk or rebuild operations
+belong in a separate rebuild workflow, not this general admin action.
+
 ## Sudoers Profiles
 
 The repo includes profile templates under `server-scripts/sudoers/`.
 
 - `guarded.sudoers.template`: narrow maintenance commands.
-- `experimental.sudoers.template`: narrow commands now, with a documented path
-  to future broad sudo after logging exists.
+- `experimental.sudoers.template`: maintenance commands plus logged root shell
+  command support after exact approval.
 - `lab.sudoers.template`: intentionally broad `NOPASSWD: ALL` for disposable lab
   machines.
 
@@ -180,6 +189,19 @@ The corresponding approval phrase is:
 
 ```text
 Approve action reboot_server on ispy-server
+```
+
+Logged admin commands are approval-gated, require an intent, and are allowed
+only on `experimental` and `lab` profiles:
+
+```powershell
+python -m controller.main actions run run_admin_command --server ispy-server --command "apt-get update" --intent "refresh package metadata" --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action run_admin_command on ispy-server with command apt-get update, intent refresh package metadata
 ```
 
 ## Audit Trail

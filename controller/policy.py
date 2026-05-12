@@ -18,6 +18,7 @@ DEFAULT_POLICY: dict[str, Any] = {
         "deploy_health_script",
         "apply_security_updates",
         "reboot_server",
+        "run_admin_command",
     ],
     "forbidden_action_patterns": [
         "rm -rf",
@@ -29,6 +30,13 @@ DEFAULT_POLICY: dict[str, Any] = {
         "/etc/openvpn",
         "openvpn --config",
         "dockerd",
+        "mkfs",
+        "wipefs",
+        "dd if=",
+        "parted",
+        "sfdisk",
+        "sgdisk",
+        "fdisk",
     ],
     "thresholds": {
         "disk_warning_percent": 80,

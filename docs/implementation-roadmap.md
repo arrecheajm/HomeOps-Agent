@@ -19,6 +19,8 @@ operational model is: keep `openvpn-server` guarded for access, use
 `ispy-server` as an experimental repair/overhaul target, and use
 `container-host` as a disposable lab box. Bounded `apply_security_updates` and
 `reboot_server` support is available for dry-run and exact approval testing.
+`run_admin_command` is available for logged root shell commands on
+`experimental` and `lab` profiles only.
 
 ## Phase 1: Documentation and Project Shape
 
@@ -168,7 +170,7 @@ access infrastructure.
 - [x] Add `rebuildable` to inventory.
 - [x] Document guarded, experimental, and lab profiles.
 - [x] Add sudoers profile templates.
-- [ ] Add a logged admin-command action for `experimental` and `lab` servers.
+- [x] Add a logged admin-command action for `experimental` and `lab` servers.
 - [ ] Add before-state capture for rebuildable servers.
 - [ ] Add rebuild planning and approval workflow.
 

@@ -278,6 +278,120 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(attempt.record["exit_code"], 0)
         self.assertEqual(attempt.record["stdout"], "Packages upgraded")
 
+    def test_run_admin_command_dry_run_writes_logged_command(self):
+        args = {
+            "command": "apt-get update",
+            "intent": "refresh package metadata",
+        }
+
+        attempt = run_action(
+            "run_admin_command",
+            "ispy-server",
+            [self._ispy_server()],
+            args,
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(record["access_profile"], "experimental")
+        self.assertTrue(record["rebuildable"])
+        self.assertEqual(record["arguments"], args)
+        self.assertEqual(
+            record["command"][-1],
+            "sudo -n /usr/bin/bash -lc 'apt-get update'",
+        )
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action run_admin_command on ispy-server "
+            "with command apt-get update, intent refresh package metadata",
+        )
+
+    def test_run_admin_command_executes_after_approval(self):
+        args = {
+            "command": "systemctl status AgentDVR.service",
+            "intent": "inspect camera service status",
+        }
+        approval = approvals.approval_phrase(
+            "run_admin_command",
+            "ispy-server",
+            args,
+        )
+        completed = subprocess.CompletedProcess(
+            args=["ssh"],
+            returncode=0,
+            stdout="active\n",
+            stderr="",
+        )
+
+        with patch("controller.action_runner.subprocess.run", return_value=completed):
+            attempt = run_action(
+                "run_admin_command",
+                "ispy-server",
+                [self._ispy_server()],
+                args,
+                approval_text=approval,
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(attempt.record["exit_code"], 0)
+        self.assertEqual(attempt.record["stdout"], "active")
+
+    def test_run_admin_command_rejects_guarded_server(self):
+        with self.assertRaisesRegex(ActionError, "experimental or lab access profiles"):
+            run_action(
+                "run_admin_command",
+                "openvpn-server",
+                [self._openvpn_server()],
+                {
+                    "command": "apt-get update",
+                    "intent": "refresh package metadata",
+                },
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_run_admin_command_requires_intent(self):
+        with self.assertRaisesRegex(ActionError, "intent is required"):
+            run_action(
+                "run_admin_command",
+                "container-host",
+                [self._container_server()],
+                {"command": "docker ps"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_run_admin_command_rejects_forbidden_policy_pattern(self):
+        with self.assertRaisesRegex(ActionError, "forbidden policy pattern"):
+            run_action(
+                "run_admin_command",
+                "container-host",
+                [self._container_server()],
+                {
+                    "command": "rm -rf /tmp/example",
+                    "intent": "exercise forbidden policy",
+                },
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_run_admin_command_rejects_destructive_disk_pattern(self):
+        with self.assertRaisesRegex(ActionError, "forbidden policy pattern"):
+            run_action(
+                "run_admin_command",
+                "container-host",
+                [self._container_server()],
+                {
+                    "command": "mkfs.ext4 /dev/sda1",
+                    "intent": "exercise rebuild guardrail",
+                },
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
     def test_action_role_restriction_is_enforced(self):
         with self.assertRaisesRegex(ActionError, "not allowed for role"):
             run_action(
@@ -303,6 +417,8 @@ class ActionRunnerTests(unittest.TestCase):
             host="container-host.local",
             user="homeops",
             identity_file="~/.ssh/homeops_ed25519",
+            access_profile="lab",
+            rebuildable=True,
         )
 
     def _ispy_server(self) -> ServerInventoryItem:
@@ -312,6 +428,8 @@ class ActionRunnerTests(unittest.TestCase):
             host="ispy-server.local",
             user="homeops",
             identity_file="~/.ssh/homeops_ed25519",
+            access_profile="experimental",
+            rebuildable=True,
         )
 
     def _openvpn_server(self) -> ServerInventoryItem:
@@ -321,6 +439,8 @@ class ActionRunnerTests(unittest.TestCase):
             host="openvpn-server.local",
             user="homeops",
             identity_file="~/.ssh/homeops_ed25519",
+            access_profile="guarded",
+            rebuildable=False,
         )
 
 

@@ -159,6 +159,36 @@ Consequences:
 - `openvpn-server` is guarded and not rebuildable.
 - `ispy-server` is experimental and rebuildable.
 - `container-host` is lab-profile and rebuildable.
-- Future arbitrary admin-command support must check access profile.
+- Arbitrary admin-command support must check access profile.
 - Rebuild workflows require a before-state report and explicit destructive
   approval.
+
+## 0008: Logged Admin Commands Are Profile-Gated
+
+Status: accepted
+
+Date: 2026-05-12
+
+Decision:
+
+The controller may run one free-form root shell command through the
+`run_admin_command` action, but only on `experimental` and `lab` access
+profiles. The action requires a command, a human-readable intent, exact
+approval text, policy checks, and an action history record.
+
+Reasoning:
+
+- The project goal is agentic exploration on disposable or repairable servers.
+- `openvpn-server` remains access infrastructure and must not accept arbitrary
+  admin shell commands.
+- Logging command intent, stdout, stderr, exit code, approval source, and access
+  profile makes experiments auditable.
+
+Consequences:
+
+- `ispy-server` and `container-host` can be used for broader investigation after
+  dry-run review and exact approval.
+- The experimental sudoers profile intentionally grants root shell access for
+  the controller action.
+- Destructive rebuild workflows still need a before-state report and separate
+  destructive approval.

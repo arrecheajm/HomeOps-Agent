@@ -100,6 +100,7 @@ Replace `HOMEOPS_USER` with the configured server user or a dedicated
 command -v unattended-upgrade
 command -v systemctl
 command -v shutdown
+command -v bash
 ```
 
 ## Readiness Checks
@@ -110,6 +111,7 @@ From the controller machine:
 python -m controller.main actions list
 python -m controller.main actions run apply_security_updates --server ispy-server --dry-run
 python -m controller.main actions run reboot_server --server ispy-server --dry-run
+python -m controller.main actions run run_admin_command --server ispy-server --command "apt-get update" --intent "refresh package metadata" --dry-run
 ```
 
 Dry-runs must show the expected command and approval phrase. Do not execute live

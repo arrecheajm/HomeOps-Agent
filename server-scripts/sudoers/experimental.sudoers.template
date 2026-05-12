@@ -6,7 +6,7 @@ HOMEOPS_USER ALL=(root) NOPASSWD: /usr/bin/unattended-upgrade
 HOMEOPS_USER ALL=(root) NOPASSWD: /usr/bin/systemctl restart -- AgentDVR.service
 HOMEOPS_USER ALL=(root) NOPASSWD: /usr/sbin/shutdown -r +1 HomeOps-approved-reboot
 
-# Future logged admin mode can intentionally widen this profile. Keep broad
-# sudo disabled until the controller records command intent, stdout, stderr,
-# exit code, and approval metadata for arbitrary commands.
-# HOMEOPS_USER ALL=(root) NOPASSWD: ALL
+# Enables controller action run_admin_command. This is intentionally high power:
+# the controller records command intent, approval phrase, stdout, stderr, exit
+# code, and access profile metadata for every attempt.
+HOMEOPS_USER ALL=(root) NOPASSWD: /usr/bin/bash -lc *, /bin/bash -lc *

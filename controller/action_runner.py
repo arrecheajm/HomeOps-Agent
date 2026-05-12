@@ -39,6 +39,9 @@ LOCAL_HEALTH_SCRIPT_PATH = (
 REMOTE_HEALTH_SCRIPT_PATH = DEFAULT_REMOTE_HEALTH_COMMAND
 REBOOT_DELAY = "+1"
 REBOOT_MESSAGE = "HomeOps-approved-reboot"
+ADMIN_SHELL_PATH = "/usr/bin/bash"
+ADMIN_COMMAND_MAX_LENGTH = 1000
+ADMIN_INTENT_MAX_LENGTH = 240
 
 
 class ActionError(RuntimeError):
@@ -204,6 +207,16 @@ def build_action_commands(
             ]
         ]
 
+    if action_id == "run_admin_command":
+        command = _validated_admin_command(server, arguments)
+        return [
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                _remote_command("sudo", "-n", ADMIN_SHELL_PATH, "-lc", command),
+            ]
+        ]
+
     raise ActionError(f"Action is not implemented: {action_id}")
 
 
@@ -262,6 +275,46 @@ def _approved_service_name(
     return normalized
 
 
+def _validated_admin_command(
+    server: ServerInventoryItem, arguments: dict[str, Any]
+) -> str:
+    if not server.allows_admin_experiments:
+        raise ActionError(
+            "run_admin_command is allowed only for experimental or lab access "
+            f"profiles. Server {server.server_id} is {server.access_profile}."
+        )
+
+    command = str(arguments.get("command") or "").strip()
+    if not command:
+        raise ActionError("Admin command is required. Pass --command.")
+    if len(command) > ADMIN_COMMAND_MAX_LENGTH:
+        raise ActionError(
+            f"Admin command is too long. Limit: {ADMIN_COMMAND_MAX_LENGTH} characters."
+        )
+    if _has_control_character(command):
+        raise ActionError(
+            "Admin command must be a single line without control characters."
+        )
+
+    intent = str(arguments.get("intent") or "").strip()
+    if not intent:
+        raise ActionError("Admin command intent is required. Pass --intent.")
+    if len(intent) > ADMIN_INTENT_MAX_LENGTH:
+        raise ActionError(
+            f"Admin command intent is too long. Limit: {ADMIN_INTENT_MAX_LENGTH} characters."
+        )
+    if _has_control_character(intent):
+        raise ActionError("Admin command intent must be a single line.")
+
+    arguments["command"] = command
+    arguments["intent"] = intent
+    return command
+
+
+def _has_control_character(value: str) -> bool:
+    return any(ord(character) < 32 for character in value)
+
+
 def write_action_record(record: dict[str, Any], actions_dir: Path | None = None) -> Path:
     """Write one action history record and return its path."""
 
@@ -317,9 +370,10 @@ def _validate_policy(
     if risk == "approval_required" and action_id not in approval_required:
         raise ActionError(f"Policy does not allow approval-required action: {action_id}")
 
-    command_text = " ".join(command)
+    command_text = " ".join(command).lower()
     for pattern in policy_data.get("forbidden_action_patterns") or []:
-        if str(pattern) and str(pattern) in command_text:
+        normalized_pattern = str(pattern).lower()
+        if normalized_pattern and normalized_pattern in command_text:
             raise ActionError(f"Command contains forbidden policy pattern: {pattern}")
 
 
@@ -340,6 +394,8 @@ def _base_record(
         "action_id": action_id,
         "arguments": arguments,
         "risk": risk,
+        "access_profile": server.access_profile,
+        "rebuildable": server.rebuildable,
         "approval_source": approval_source,
         "expected_approval": expected_approval,
         "dry_run": dry_run,

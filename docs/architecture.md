@@ -56,8 +56,8 @@ Codex must not invent direct server maintenance commands when an action registry
 Inventory entries assign each server one access profile:
 
 - `guarded`: preserve access infrastructure such as VPN.
-- `experimental`: allow future logged admin work on repairable project boxes.
-- `lab`: allow future high-power experiments on disposable machines.
+- `experimental`: allow logged admin work on repairable project boxes.
+- `lab`: allow high-power experiments on disposable machines.
 
 The controller validates these profiles at inventory load time. A guarded server
 cannot be marked rebuildable.

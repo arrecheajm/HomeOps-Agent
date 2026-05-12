@@ -75,7 +75,7 @@ def build_ssh_base_command(server: ServerInventoryItem) -> list[str]:
 
 
 def run_remote_command(server: ServerInventoryItem) -> RemoteCommandResult:
-    """Run the configured read-only health command over SSH."""
+    """Run the configured health command over SSH without changing server state."""
 
     command = build_ssh_command(server)
     started = time.monotonic()

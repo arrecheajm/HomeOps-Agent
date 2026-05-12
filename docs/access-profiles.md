@@ -18,7 +18,7 @@ Use for access infrastructure such as `openvpn-server`.
 
 Use for repairable project boxes such as `ispy-server`.
 
-- Allow collection, predefined maintenance actions, and future logged admin
+- Allow collection, predefined maintenance actions, and logged admin
   command workflows.
 - Permit config/package/service changes after a captured before-state and
   explicit approval.
@@ -29,7 +29,7 @@ Use for repairable project boxes such as `ispy-server`.
 Use for disposable playground boxes such as `container-host`.
 
 - Allow the broadest agent experiments.
-- Permit future arbitrary logged admin commands and rebuild workflows.
+- Permit arbitrary logged admin commands and future rebuild workflows.
 - Treat Docker/root access as intentionally high power.
 
 ## Current Mapping
@@ -66,12 +66,12 @@ Install them manually with `visudo -f /etc/sudoers.d/homeops-agent` after
 choosing the right profile and user for the target server. Do not store sudo
 passwords in the repo.
 
-## Future Controller Behavior
+## Controller Behavior
 
-The controller should use these profiles before adding broader actions:
+The controller uses these profiles before broader actions:
 
 - `guarded`: predefined action IDs only.
-- `experimental`: logged admin commands after explicit approval.
-- `lab`: arbitrary logged admin commands after explicit approval.
+- `experimental`: logged admin commands after exact approval.
+- `lab`: arbitrary logged admin commands after exact approval.
 - `rebuildable: true`: rebuild workflows may be planned, but destructive
   execution requires a before-state report and a separate approval phrase.

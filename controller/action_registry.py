@@ -72,7 +72,7 @@ ACTIONS: tuple[dict[str, Any], ...] = (
     {
         "action_id": "deploy_health_script",
         "risk": "approval_required",
-        "description": "Deploy the approved read-only health summary script.",
+        "description": "Deploy the approved health summary script.",
         "server_roles": ["openvpn_server", "ispy_server", "container_host"],
         "implemented": True,
     },
@@ -87,6 +87,13 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "action_id": "reboot_server",
         "risk": "approval_required",
         "description": "Schedule one approved server reboot.",
+        "server_roles": ["openvpn_server", "ispy_server", "container_host"],
+        "implemented": True,
+    },
+    {
+        "action_id": "run_admin_command",
+        "risk": "approval_required",
+        "description": "Run one logged root shell command on an experimental or lab server.",
         "server_roles": ["openvpn_server", "ispy_server", "container_host"],
         "implemented": True,
     },

@@ -21,8 +21,8 @@ Each configured server includes connection details plus the authority model:
 Allowed `access_profile` values:
 
 - `guarded`: predefined actions only; cannot be rebuildable.
-- `experimental`: repairable project server; future logged admin workflows.
-- `lab`: disposable playground server; future broad logged admin workflows.
+- `experimental`: repairable project server; logged admin workflows.
+- `lab`: disposable playground server; broad logged admin workflows.
 
 ## Per-Server Health JSON
 
