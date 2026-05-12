@@ -37,13 +37,13 @@ The current fleet is intentionally split by blast radius:
 See [Access Profiles](docs/access-profiles.md) for the operating model and
 sudoers templates.
 
-## Planned Workflow
+## Operating Workflow
 
 ```text
 Codex or user in VS Code
   -> runs the controller CLI
   -> controller SSHes into servers
-  -> controller runs approved read-only scripts with inventory identity and role
+  -> controller runs approved collection scripts with inventory identity and role
   -> controller validates and normalizes JSON
   -> controller applies local rules using policy thresholds
   -> controller writes JSON, HTML, and history artifacts
@@ -105,7 +105,9 @@ python -m controller.main actions run reboot_server --server ispy-server --appro
 
 ## Server Script Installation
 
-The controller does not silently install scripts on servers. For v1, install the read-only server scripts deliberately and then point `config/servers.yaml` at the approved remote path.
+The controller does not silently install scripts on servers. Install collection
+scripts deliberately and then point `config/servers.yaml` at the approved remote
+path.
 
 The current approved remote health command path is:
 
@@ -145,6 +147,6 @@ The HTML output is `reports/generated/fleet-catalog.html`.
 - [Active Operations Plan](docs/active-operations-plan.md)
 - [Manual Maintenance Runbook](docs/manual-maintenance-runbook.md)
 - [Implementation Roadmap](docs/implementation-roadmap.md)
-- [Server Setup Walkthrough](docs/server-setup-walkthrough.md)
+- [Server Access Setup](docs/server-access-setup.md)
 - [Decision Log](docs/decision-log.md)
 - [Implementation Tracker](IMPLEMENTATION_TRACKER.md)

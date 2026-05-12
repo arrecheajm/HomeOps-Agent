@@ -8,7 +8,11 @@ access profiles, pass inventory identity into collection, dry-run collection,
 validate collected server health shapes, normalize inventory identity, refresh
 the fleet capability catalog, and run collector logic under tests.
 
-Real read-only collection succeeds for all three servers: `openvpn-server`, `ispy-server`, and `container-host`. `container-host` is online at `192.168.86.58`, local inventory uses `containerserver@192.168.86.58`, SSH key authentication works, and the current approved read-only health script has been deployed to every configured server through the approval-gated action runner.
+Real collection succeeds for all three servers: `openvpn-server`, `ispy-server`,
+and `container-host`. `container-host` is online at `192.168.86.58`, local
+inventory uses `containerserver@192.168.86.58`, SSH key authentication works,
+and the current approved health script has been deployed to every configured
+server through the approval-gated action runner.
 
 The project has pivoted to a personal homelab agent controller. The current
 operational model is: keep `openvpn-server` guarded for access, use
@@ -44,7 +48,7 @@ python -m controller.main report --fixture tests/fixtures/fleet-health.json
 
 ## Phase 3: Server Inventory and SSH Collection
 
-Goal: collect read-only health JSON from configured servers.
+Goal: collect health JSON from configured servers without changing server state.
 
 - add `config/servers.example.yaml`
 - add inventory loader
@@ -131,7 +135,8 @@ Goal: allow safe, predefined maintenance actions.
 - implement dry-run behavior
 - implement approval prompt
 - write action history
-- keep destructive or config-changing operations out of scope
+- keep destructive or config-changing operations out of scope until
+  profile-aware admin and rebuild workflows exist
 
 Status: in progress. The registry exists, `actions list` works, and
 `deploy_health_script`, `restart_docker_container`, `restart_service`,
@@ -150,7 +155,7 @@ Goal: make failures understandable and safe.
 - redact sensitive values
 - improve SSH error reporting
 - handle partial fleet failures
-- document server setup
+- document server access setup
 - document adding a new check
 - document adding a new action
 
@@ -167,9 +172,9 @@ access infrastructure.
 - [ ] Add before-state capture for rebuildable servers.
 - [ ] Add rebuild planning and approval workflow.
 
-## Minimum Viable Version
+## Completed Baseline
 
-The read-only MVP is complete for enabled servers when this works:
+The baseline controller is complete for enabled servers when this works:
 
 ```bash
 python -m controller.main collect
@@ -183,10 +188,9 @@ reports/generated/index.html
 history/runs/<timestamp>/fleet-health.json
 ```
 
-MVP constraints:
+Baseline constraints:
 
-- read-only collection only
 - no OpenAI API integration
-- no automated risky actions
+- risky actions require exact approval and action history
 - local rule findings included in report
 - HTML dashboard clear enough for Codex to analyze from VS Code

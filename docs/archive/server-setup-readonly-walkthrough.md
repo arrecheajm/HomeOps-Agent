@@ -1,5 +1,9 @@
 # Server Setup Walkthrough
 
+Archived: this read-only setup walkthrough was superseded by
+`docs/server-access-setup.md` after the project pivoted to access profiles and
+homelab agent experimentation.
+
 Use this walkthrough while preparing and extending read-only HomeOps collection.
 Pause at any step and ask Codex questions using this file as the shared checklist.
 

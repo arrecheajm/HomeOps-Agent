@@ -29,7 +29,8 @@ Inventory access profiles set the future authority boundary:
 - `experimental`: future logged admin commands may be allowed after approval.
 - `lab`: future arbitrary logged admin commands may be allowed after approval.
 
-For the current read-only collection phase, the inventory `remote_health_command` is allowlisted. The only approved v1 remote health command is:
+For collection, the inventory `remote_health_command` is allowlisted. The only
+approved v1 remote health command is:
 
 ```text
 /opt/homeops-agent/server-scripts/common/health_summary.sh

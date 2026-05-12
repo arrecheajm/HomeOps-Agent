@@ -118,8 +118,8 @@ history/actions/
 
 The dashboard loads these records and shows the most recent action attempts with
 server ID, action ID, status, dry-run state, and arguments.
-This keeps mutating operations auditable even after the controller grows beyond
-read-only collection.
+This keeps mutating operations auditable as the controller grows beyond
+collection and predefined maintenance actions.
 
 The `Agent History` dashboard view renders the same records as historical data:
 

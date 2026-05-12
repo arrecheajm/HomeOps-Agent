@@ -11,7 +11,7 @@ Use these documents as the current operating guide:
 - [Active Operations Plan](active-operations-plan.md): current findings and next operational steps.
 - [Manual Maintenance Runbook](manual-maintenance-runbook.md): one-server-at-a-time update and reboot workflow.
 - [Implementation Roadmap](implementation-roadmap.md): current phase and upcoming work.
-- [Server Setup Walkthrough](server-setup-walkthrough.md): active checklist for onboarding servers.
+- [Server Access Setup](server-access-setup.md): inventory, SSH, profile, and sudoers setup for the homelab model.
 - [Decision Log](decision-log.md): accepted project decisions.
 
 Archived docs live in [archive](archive/). They are preserved for context only and may describe older assumptions.

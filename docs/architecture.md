@@ -18,7 +18,7 @@ The controller runs from the main machine and owns:
 - server inventory
 - per-server access profiles and rebuildability flags
 - SSH connection logic
-- approved read-only script execution
+- approved collection script execution
 - JSON parsing and schema validation
 - normalization into a fleet health model
 - local rule-based issue detection
@@ -32,7 +32,7 @@ The controller runs from the main machine and owns:
 Each server exposes small scripts that:
 
 - run locally on that server
-- collect read-only health data by default
+- collect health data by default without changing server state
 - summarize data before it leaves the server
 - output JSON
 - perform limited approved actions only when called by the controller
@@ -68,7 +68,7 @@ cannot be marked rebuildable.
 1. Load server inventory and validate access profiles.
 2. Validate that each configured remote health command is approved.
 3. Connect to each server over SSH.
-4. Run approved read-only collection scripts.
+4. Run approved collection scripts.
 5. Capture stdout, stderr, exit code, and timing.
 6. Parse JSON output.
 7. Validate expected field shapes.
@@ -128,7 +128,7 @@ HomeOps-Agent/
     codex-operating-guide.md
     data-schema.md
     implementation-roadmap.md
-    server-setup-walkthrough.md
+    server-access-setup.md
     reporting.md
     decision-log.md
     archive/

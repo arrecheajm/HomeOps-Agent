@@ -4,7 +4,8 @@ This tracker records the implementation state for HomeOps Agent.
 
 ## Current Status
 
-Project stage: read-only collection and reporting are live for all configured servers.
+Project stage: collection, reporting, fleet catalog generation, access profiles,
+and narrow approval-gated actions are live for all configured servers.
 
 Live status:
 
@@ -17,9 +18,9 @@ Live status:
 - Controller validates collected server health shapes before normalization.
 - Inventory and SSH command building reject unapproved remote health commands.
 - Local rule thresholds are loaded from `config/policy.yaml`.
-- First real read-only collection succeeded for `openvpn-server`, `ispy-server`,
-  and `container-host`.
-- Role-aware read-only collection was verified on May 10, 2026.
+- First real collection succeeded for `openvpn-server`, `ispy-server`, and
+  `container-host`.
+- Role-aware collection was verified on May 10, 2026.
 - `container-host` is online at `192.168.86.58`, reachable as
   `containerserver@192.168.86.58`, and included in normal collection.
 - HTML dashboard generation is implemented for latest status, historical charts,
@@ -31,7 +32,7 @@ Live status:
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
-  `2026-05-10T20-28-25Z`, after the deployment and follow-up collection.
+  `2026-05-12T17-16-00Z`, after the latest fleet review and action attempts.
 - The `run fleet review` operator workflow is documented for Codex: collect
   live health, refresh dashboard and catalog, check the latest run explicitly,
   summarize findings, and recommend next steps without executing
@@ -50,7 +51,7 @@ Current operating model:
 - No OpenAI API integration belongs in v1 controller code.
 - All executable server-side changes must map to predefined action IDs.
 
-## MVP Checklist
+## Baseline Checklist
 
 - [x] Create Python package skeleton under `controller/`.
 - [x] Add CLI entrypoint at `controller/main.py`.
@@ -68,7 +69,8 @@ Current operating model:
 - [x] Write generated HTML dashboard to `reports/generated/index.html`.
 - [x] Add action registry skeleton.
 - [x] Add `actions list` command.
-- [x] Keep mutating actions disabled until read-only collection is reliable.
+- [x] Gate mutating actions behind registry definitions, policy checks, exact
+  approval, and action history.
 - [x] Add initial unit tests for rules and report rendering.
 
 ## Initial Controller Modules
@@ -118,8 +120,8 @@ Current operating model:
 
 ## Action Registry Backlog
 
-Read-only action IDs are registered for policy and reporting. Standalone
-execution for these read-only IDs is still pending; normal read-only collection
+Collection action IDs are registered for policy and reporting. Standalone
+execution for these collection IDs is still pending; normal health collection
 currently runs through `python -m controller.main collect`.
 
 - [x] `collect_health`
@@ -140,7 +142,7 @@ Approval-required action IDs are registered. `restart_docker_container`,
 - [x] `reboot_server`
 - [x] `apply_security_updates`
 
-Forbidden actions:
+Currently blocked outside a future explicit admin or rebuild workflow:
 
 - recursive deletion
 - firewall changes
@@ -162,7 +164,7 @@ For live rule checks, pass the latest run explicitly because `check` without
 `--input` defaults to fixture data:
 
 ```powershell
-python -m controller.main check --input history\runs\2026-05-10T20-28-25Z\fleet-health.json
+python -m controller.main check --input history\runs\<latest-run>\fleet-health.json
 ```
 
 Current operations are tracked in:

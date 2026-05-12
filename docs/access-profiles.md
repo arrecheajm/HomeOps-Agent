@@ -1,8 +1,7 @@
 # Access Profiles
 
-The project is now a personal homelab agent controller rather than a
-production-style HomeOps service. Each server gets an access profile that
-matches how painful it is to break.
+The project is now a personal homelab agent controller. Each server gets an
+access profile that matches how painful it is to break.
 
 ## Profiles
 

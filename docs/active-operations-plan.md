@@ -1,8 +1,7 @@
 # Active Operations Plan
 
 This plan captures the current HomeOps operating focus after pivoting the fleet
-from production-style home infrastructure to a personal homelab agent
-controller.
+from a conservative home-infra framing to a personal homelab agent controller.
 
 ## Current State
 
@@ -17,7 +16,7 @@ Connection state:
 - `container-host` is back online at `192.168.86.58`
 - local inventory uses `containerserver@192.168.86.58`
 - SSH key authentication works
-- the approved read-only health script is installed
+- the approved health script is installed
 - full controller collection now succeeds for all three servers
 - role-aware collection was verified on May 10, 2026, with inventory
   `server_id` and `role` passed into the health script
