@@ -32,7 +32,7 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(record["status"], "dry_run")
         self.assertEqual(record["exit_code"], None)
         self.assertEqual(record["arguments"], {"container": "watchtower"})
-        self.assertEqual(record["command"][-3:], ["docker", "restart", "watchtower"])
+        self.assertEqual(record["command"][-1], "docker restart watchtower")
         self.assertIn("Approve action restart_docker_container", record["expected_approval"])
 
     def test_restart_docker_container_requires_exact_approval(self):
@@ -102,8 +102,8 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(record["status"], "dry_run")
         self.assertEqual(record["arguments"], {"service": "AgentDVR.service"})
         self.assertEqual(
-            record["command"][-6:],
-            ["sudo", "-n", "systemctl", "restart", "--", "AgentDVR.service"],
+            record["command"][-1],
+            "sudo -n systemctl restart -- AgentDVR.service",
         )
         self.assertIn("Approve action restart_service", record["expected_approval"])
 
@@ -117,7 +117,10 @@ class ActionRunnerTests(unittest.TestCase):
             actions_dir=self.actions_dir,
         )
 
-        self.assertEqual(attempt.record["command"][-1], "openvpnas.service")
+        self.assertEqual(
+            attempt.record["command"][-1],
+            "sudo -n systemctl restart -- openvpnas.service",
+        )
 
     def test_restart_service_rejects_unapproved_service_name(self):
         with self.assertRaisesRegex(ActionError, "not approved for restart"):
@@ -146,7 +149,10 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(len(record["commands"]), 2)
         self.assertEqual(record["commands"][0][0], "scp")
         self.assertIn("health_summary.sh", record["commands"][0][-2])
-        self.assertEqual(record["commands"][1][-3:], ["chmod", "755", "/opt/homeops-agent/server-scripts/common/health_summary.sh"])
+        self.assertEqual(
+            record["commands"][1][-1],
+            "chmod 755 /opt/homeops-agent/server-scripts/common/health_summary.sh",
+        )
         self.assertIn("Approve action deploy_health_script", record["expected_approval"])
 
     def test_deploy_health_script_executes_sequence_after_approval(self):
@@ -192,8 +198,8 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(record["status"], "dry_run")
         self.assertEqual(record["arguments"], {})
         self.assertEqual(
-            record["command"][-6:],
-            ["sudo", "-n", "shutdown", "-r", "+1", "HomeOps-approved-reboot"],
+            record["command"][-1],
+            "sudo -n shutdown -r +1 HomeOps-approved-reboot",
         )
         self.assertEqual(
             record["expected_approval"],
@@ -238,8 +244,8 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(record["status"], "dry_run")
         self.assertEqual(record["arguments"], {})
         self.assertEqual(
-            record["command"][-3:],
-            ["sudo", "-n", "unattended-upgrade"],
+            record["command"][-1],
+            "sudo -n unattended-upgrade",
         )
         self.assertEqual(
             record["expected_approval"],

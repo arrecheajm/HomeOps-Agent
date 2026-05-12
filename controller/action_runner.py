@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass
 from os.path import expanduser, expandvars
 from pathlib import Path
+from shlex import quote
 from typing import Any
 
 from . import action_registry, approvals, config, policy
@@ -161,9 +162,7 @@ def build_action_commands(
             build_ssh_base_command(server)
             + [
                 server.ssh_target,
-                "docker",
-                "restart",
-                container,
+                _remote_command("docker", "restart", container),
             ]
         ]
 
@@ -173,12 +172,7 @@ def build_action_commands(
             build_ssh_base_command(server)
             + [
                 server.ssh_target,
-                "sudo",
-                "-n",
-                "systemctl",
-                "restart",
-                "--",
-                service,
+                _remote_command("sudo", "-n", "systemctl", "restart", "--", service),
             ]
         ]
 
@@ -190,9 +184,7 @@ def build_action_commands(
             build_ssh_base_command(server)
             + [
                 server.ssh_target,
-                "sudo",
-                "-n",
-                "unattended-upgrade",
+                _remote_command("sudo", "-n", "unattended-upgrade"),
             ]
         ]
 
@@ -201,12 +193,14 @@ def build_action_commands(
             build_ssh_base_command(server)
             + [
                 server.ssh_target,
-                "sudo",
-                "-n",
-                "shutdown",
-                "-r",
-                REBOOT_DELAY,
-                REBOOT_MESSAGE,
+                _remote_command(
+                    "sudo",
+                    "-n",
+                    "shutdown",
+                    "-r",
+                    REBOOT_DELAY,
+                    REBOOT_MESSAGE,
+                ),
             ]
         ]
 
@@ -223,9 +217,7 @@ def _deploy_health_script_commands(server: ServerInventoryItem) -> list[list[str
         build_ssh_base_command(server)
         + [
             server.ssh_target,
-            "chmod",
-            "755",
-            REMOTE_HEALTH_SCRIPT_PATH,
+            _remote_command("chmod", "755", REMOTE_HEALTH_SCRIPT_PATH),
         ],
     ]
 
@@ -243,6 +235,10 @@ def _build_scp_base_command(server: ServerInventoryItem) -> list[str]:
     if server.identity_file:
         command.extend(["-i", expanduser(expandvars(server.identity_file))])
     return command
+
+
+def _remote_command(*parts: str) -> str:
+    return " ".join(quote(part) for part in parts)
 
 
 def _approved_service_name(

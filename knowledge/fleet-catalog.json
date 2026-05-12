@@ -7,7 +7,7 @@
     "running_containers": 9,
     "servers": 3
   },
-  "generated_at": "2026-05-10T20:28:25Z",
+  "generated_at": "2026-05-12T17:16:00Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
@@ -23,7 +23,7 @@
         "Low background workload",
         "Small CPU footprint"
       ],
-      "collected_at": "2026-05-10T20:28:28Z",
+      "collected_at": "2026-05-12T17:16:04Z",
       "constraints": [
         "53 package updates pending",
         "VPN availability affects remote access"
@@ -64,10 +64,10 @@
       ],
       "resources": {
         "cpu_count": 2,
-        "load_1m": 0.84,
-        "memory_used_percent": 20.6,
+        "load_1m": 1.63,
+        "memory_used_percent": 20.9,
         "swap_used_percent": 0.0,
-        "uptime_days": 2.1
+        "uptime_days": 4.0
       },
       "role": "openvpn_server",
       "role_label": "VPN",
@@ -110,7 +110,7 @@
         "AgentDVR workload",
         "Moderate CPU headroom"
       ],
-      "collected_at": "2026-05-10T20:28:31Z",
+      "collected_at": "2026-05-12T17:16:15Z",
       "constraints": [
         "Reboot required",
         "71 package updates pending",
@@ -163,10 +163,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.56,
+        "load_1m": 0.41,
         "memory_used_percent": 10.2,
         "swap_used_percent": 0.0,
-        "uptime_days": 86.0
+        "uptime_days": 87.9
       },
       "role": "ispy_server",
       "role_label": "Security Cameras",
@@ -221,7 +221,7 @@
         "Moderate CPU headroom",
         "Docker installed with 9 running containers"
       ],
-      "collected_at": "2026-05-10T20:28:34Z",
+      "collected_at": "2026-05-12T17:16:18Z",
       "constraints": [
         "Reboot required",
         "Docker issue: watchtower"
@@ -229,7 +229,7 @@
       "current_findings": [
         {
           "code": "docker_unhealthy_container",
-          "message": "Container watchtower is reporting Restarting (1) 44 seconds ago.",
+          "message": "Container watchtower is reporting Restarting (1) 50 seconds ago.",
           "severity": "warning"
         },
         {
@@ -245,7 +245,7 @@
         "unhealthy": [
           {
             "name": "watchtower",
-            "status": "Restarting (1) 44 seconds ago"
+            "status": "Restarting (1) 50 seconds ago"
           }
         ]
       },
@@ -272,10 +272,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.07,
-        "memory_used_percent": 15.4,
+        "load_1m": 0.86,
+        "memory_used_percent": 15.8,
         "swap_used_percent": 0.0,
-        "uptime_days": 3.0
+        "uptime_days": 4.9
       },
       "role": "container_host",
       "role_label": "Containers",
@@ -295,10 +295,10 @@
       "storage": {
         "disks": [
           {
-            "free_gb": 81,
+            "free_gb": 82,
             "mount": "/",
             "size_gb": 98,
-            "used_percent": 14
+            "used_percent": 13
           },
           {
             "free_gb": 2,
@@ -313,15 +313,15 @@
             "used_percent": 1
           }
         ],
-        "root_free_gb": 81,
-        "root_used_percent": 14,
-        "total_reported_free_gb": 85
+        "root_free_gb": 82,
+        "root_used_percent": 13,
+        "total_reported_free_gb": 86
       }
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-05-10T20-28-25Z/fleet-health.json",
-    "generated_at": "2026-05-10T20:28:25Z",
-    "run_id": "2026-05-10T20-28-25Z"
+    "fleet_path": "history/runs/2026-05-12T17-16-00Z/fleet-health.json",
+    "generated_at": "2026-05-12T17:16:00Z",
+    "run_id": "2026-05-12T17-16-00Z"
   }
 }
