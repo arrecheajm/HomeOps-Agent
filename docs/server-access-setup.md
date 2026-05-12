@@ -127,6 +127,7 @@ python -m controller.main collect
 python -m controller.main dashboard
 python -m controller.main catalog
 python -m controller.main before-state --server ispy-server --intent "before AgentDVR overhaul"
+python -m controller.main rebuild-plan --server ispy-server --goal "rebuild AgentDVR cleanly" --strategy reinstall
 ```
 
 Rebuild workflows should preserve useful config, record the plan, and require a

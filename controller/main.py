@@ -18,6 +18,7 @@ from . import (
     history,
     inventory,
     policy,
+    rebuild_plan,
     rules,
 )
 from .fleet_catalog import write_fleet_catalog
@@ -331,6 +332,42 @@ def command_before_state(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_rebuild_plan(args: argparse.Namespace) -> int:
+    inventory_path = (
+        Path(args.inventory) if args.inventory else config.DEFAULT_INVENTORY_PATH
+    )
+
+    try:
+        servers = inventory.load_inventory(inventory_path)
+    except (FileNotFoundError, ValueError) as exc:
+        raise SystemExit(str(exc)) from exc
+
+    try:
+        before_state_path = (
+            Path(args.before_state)
+            if args.before_state
+            else rebuild_plan.find_latest_before_state(args.server)
+        )
+        before_state_payload = rebuild_plan.load_before_state(before_state_path)
+        plan = rebuild_plan.write_rebuild_plan(
+            rebuild_plan.server_by_id(servers, args.server),
+            before_state_payload,
+            before_state_path,
+            args.goal,
+            args.strategy,
+            output_dir=Path(args.output_dir) if args.output_dir else None,
+        )
+    except rebuild_plan.RebuildPlanError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    print(f"Wrote rebuild plan: {plan.path}")
+    print(f"Server: {plan.payload['server_id']}")
+    print(f"Strategy: {plan.payload['strategy']}")
+    print(f"Status: {plan.payload['status']}")
+    print(f"Future approval phrase: {plan.payload['future_destructive_approval']}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="HomeOps controller")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -432,6 +469,40 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory for snapshots. Defaults to history/before-state.",
     )
     before_state_parser.set_defaults(func=command_before_state)
+
+    rebuild_plan_parser = subparsers.add_parser(
+        "rebuild-plan",
+        help="Draft a non-destructive rebuild plan from a before-state snapshot",
+    )
+    rebuild_plan_parser.add_argument(
+        "--server",
+        required=True,
+        help="Inventory server_id to plan.",
+    )
+    rebuild_plan_parser.add_argument(
+        "--goal",
+        required=True,
+        help="Short goal for the rebuild, repair, or repurpose plan.",
+    )
+    rebuild_plan_parser.add_argument(
+        "--strategy",
+        choices=rebuild_plan.ALLOWED_STRATEGIES,
+        default="repair",
+        help="Planning strategy. Defaults to repair.",
+    )
+    rebuild_plan_parser.add_argument(
+        "--before-state",
+        help="Before-state snapshot path. Defaults to latest for the server.",
+    )
+    rebuild_plan_parser.add_argument(
+        "--inventory",
+        help="Inventory path. Defaults to config/servers.yaml.",
+    )
+    rebuild_plan_parser.add_argument(
+        "--output-dir",
+        help="Directory for plans. Defaults to history/rebuild-plans.",
+    )
+    rebuild_plan_parser.set_defaults(func=command_rebuild_plan)
 
     actions_parser = subparsers.add_parser("actions", help="Inspect or run actions")
     actions_subparsers = actions_parser.add_subparsers(

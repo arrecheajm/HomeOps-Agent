@@ -203,6 +203,7 @@ python -m controller.main collect
 - Use `run_admin_command` dry-runs for profile-gated experiments on
   `ispy-server` and `container-host`.
 - Capture `before-state` snapshots before any rebuild or overhaul plan.
-- Add rebuild planning workflow for `rebuildable` servers.
+- Generate `rebuild-plan` drafts for rebuildable servers before destructive
+  execution design.
 - Add role-specific scripts for OpenVPN, iSpy, and Docker after the access
   profile model is validated.

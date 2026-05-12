@@ -62,6 +62,7 @@ python -m controller.main check
 python -m controller.main check --input history/runs/<timestamp>/fleet-health.json
 python -m controller.main catalog
 python -m controller.main before-state --server ispy-server --intent "before AgentDVR overhaul"
+python -m controller.main rebuild-plan --server ispy-server --goal "rebuild AgentDVR cleanly" --strategy reinstall
 python -m controller.main actions list
 python -m controller.main actions run deploy_health_script --server container-host --dry-run
 python -m controller.main actions run restart_docker_container --server container-host --container watchtower --dry-run
@@ -148,6 +149,17 @@ python -m controller.main before-state --server ispy-server --intent "before Age
 ```
 
 Snapshots are written under `history/before-state/` and are ignored by git.
+
+## Rebuild Plans
+
+After a before-state snapshot exists, generate a non-destructive rebuild plan:
+
+```bash
+python -m controller.main rebuild-plan --server ispy-server --goal "rebuild AgentDVR cleanly" --strategy reinstall
+```
+
+Plans are written under `history/rebuild-plans/` and are ignored by git. They
+do not execute destructive actions.
 
 ## Documentation
 

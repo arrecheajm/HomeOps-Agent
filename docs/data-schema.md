@@ -199,6 +199,32 @@ Before destructive planning on a rebuildable server, the controller can write:
 
 Before-state snapshots are generated artifacts under `history/before-state/`.
 
+## Rebuild Plan JSON
+
+Rebuild plans are non-destructive generated artifacts:
+
+```json
+{
+  "schema_version": "1.0",
+  "plan_type": "rebuild_plan",
+  "plan_id": "2026-05-12T21-30-00Z-ispy-server-rebuild-plan",
+  "generated_at": "2026-05-12T21:30:00Z",
+  "status": "draft",
+  "server_id": "ispy-server",
+  "strategy": "reinstall",
+  "goal": "rebuild AgentDVR cleanly",
+  "before_state": {},
+  "blocked_reasons": [],
+  "preserve": [],
+  "phases": [],
+  "verification": [],
+  "future_destructive_approval": "Approve destructive rebuild plan ...",
+  "execution_allowed": false
+}
+```
+
+Rebuild plans are generated under `history/rebuild-plans/`.
+
 ## Finding Object
 
 Local rules should produce finding objects:

@@ -28,6 +28,8 @@ Live status:
 - Fleet capability catalog generation is implemented for tracked repo knowledge
   and separate HTML reporting.
 - Before-state snapshot generation is implemented for rebuildable servers.
+- Rebuild plan generation is implemented for rebuildable servers from
+  before-state snapshots.
 - `deploy_health_script`, `restart_docker_container`, and `restart_service`
   support dry-run, exact approval, execution, and action history.
 - `run_admin_command` supports dry-run, exact approval, execution, and action
@@ -161,7 +163,8 @@ Operationally, follow `docs/active-operations-plan.md`: install the right
 sudoers profile on each server, preserve VPN access on the guarded server, then
 use `ispy-server` and `container-host` for logged experimental work.
 
-The next implementation item is rebuild planning for rebuildable servers.
+The next implementation item is an explicit rebuild execution design for
+rebuildable servers. It should stay separate from `run_admin_command`.
 
 For live rule checks, pass the latest run explicitly because `check` without
 `--input` defaults to fixture data:
@@ -219,4 +222,5 @@ Access profile readiness:
 - [x] Add sudoers profile templates.
 - [x] Add logged admin-command support for experimental/lab profiles.
 - [x] Add before-state capture for rebuildable servers.
-- [ ] Add rebuild planning workflow for rebuildable servers.
+- [x] Add rebuild planning workflow for rebuildable servers.
+- [ ] Design approval-gated rebuild execution workflow.

@@ -29,7 +29,7 @@ Use for repairable project boxes such as `ispy-server`.
 Use for disposable playground boxes such as `container-host`.
 
 - Allow the broadest agent experiments.
-- Permit arbitrary logged admin commands and future rebuild workflows.
+- Permit arbitrary logged admin commands and rebuild planning workflows.
 - Treat Docker/root access as intentionally high power.
 
 ## Current Mapping
@@ -73,5 +73,5 @@ The controller uses these profiles before broader actions:
 - `guarded`: predefined action IDs only.
 - `experimental`: logged admin commands after exact approval.
 - `lab`: arbitrary logged admin commands after exact approval.
-- `rebuildable: true`: rebuild workflows may be planned, but destructive
-  execution requires a before-state report and a separate approval phrase.
+- `rebuildable: true`: rebuild workflows may be planned from before-state
+  evidence, but destructive execution requires a separate approval phrase.

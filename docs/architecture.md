@@ -94,6 +94,7 @@ HomeOps-Agent/
     policy.py
     history.py
     before_state.py
+    rebuild_plan.py
     html_report_writer.py
     approvals.py
     action_runner.py

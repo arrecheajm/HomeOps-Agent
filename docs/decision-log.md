@@ -220,3 +220,29 @@ Consequences:
 - Rebuild planning can refer to a concrete source run, findings, recent actions,
   and captured server state.
 - Destructive execution still needs a separate rebuild workflow and approval.
+
+## 0010: Rebuild Plans Are Non-Destructive Drafts
+
+Status: accepted
+
+Date: 2026-05-12
+
+Decision:
+
+The controller can generate `rebuild-plan` JSON artifacts from before-state
+snapshots, but the plan command does not execute destructive server actions.
+
+Reasoning:
+
+- The user wants freedom to overhaul disposable servers while keeping the
+  process legible and logged.
+- A draft plan is the right boundary before wipe/reinstall authority exists.
+- Rebuild execution needs a narrower, separate approval model than general
+  admin commands.
+
+Consequences:
+
+- Plans are ignored generated history under `history/rebuild-plans/`.
+- Plans include preservation targets, phases, verification steps, blocked
+  reasons, and a future destructive approval phrase.
+- `run_admin_command` remains blocked from destructive disk/rebuild patterns.

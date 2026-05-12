@@ -104,7 +104,11 @@ Capture a before-state snapshot before proposing destructive rebuild work:
 
 ```powershell
 python -m controller.main before-state --server ispy-server --intent "before AgentDVR overhaul"
+python -m controller.main rebuild-plan --server ispy-server --goal "rebuild AgentDVR cleanly" --strategy reinstall
 ```
+
+`rebuild-plan` is documentation only. It writes a draft plan and future
+approval phrase, but it does not execute rebuild steps.
 
 ## Sudoers Profiles
 

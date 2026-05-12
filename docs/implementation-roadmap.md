@@ -21,7 +21,8 @@ operational model is: keep `openvpn-server` guarded for access, use
 `reboot_server` support is available for dry-run and exact approval testing.
 `run_admin_command` is available for logged root shell commands on
 `experimental` and `lab` profiles only. `before-state` captures a durable JSON
-snapshot for rebuildable servers before destructive planning.
+snapshot for rebuildable servers before destructive planning. `rebuild-plan`
+generates non-destructive draft plans from before-state snapshots.
 
 ## Phase 1: Documentation and Project Shape
 
@@ -173,7 +174,8 @@ access infrastructure.
 - [x] Add sudoers profile templates.
 - [x] Add a logged admin-command action for `experimental` and `lab` servers.
 - [x] Add before-state capture for rebuildable servers.
-- [ ] Add rebuild planning and approval workflow.
+- [x] Add rebuild planning workflow.
+- [ ] Design approval-gated rebuild execution workflow.
 
 ## Completed Baseline
 

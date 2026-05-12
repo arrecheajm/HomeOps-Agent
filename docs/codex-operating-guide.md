@@ -42,6 +42,7 @@ destructive changes.
 
 ```powershell
 python -m controller.main before-state --server ispy-server --intent "before AgentDVR overhaul"
+python -m controller.main rebuild-plan --server ispy-server --goal "rebuild AgentDVR cleanly" --strategy reinstall
 ```
 
 ## What Codex Must Not Do
@@ -66,6 +67,7 @@ python -m controller.main before-state --server ispy-server --intent "before Age
 6. Ask the user for exact approval before any server mutation.
 7. Re-run collection to verify results after approved maintenance.
 8. Capture `before-state` before rebuild planning on rebuildable servers.
+9. Generate `rebuild-plan` for review; do not execute destructive rebuild steps.
 ```
 
 ## Preferred Findings Format

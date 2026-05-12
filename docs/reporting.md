@@ -13,6 +13,7 @@ Structured reporting uses:
 history/runs/<timestamp>/fleet-health.json
 history/actions/<timestamp>-<server_id>-<action_id>.json
 history/before-state/<timestamp>-<server_id>.json
+history/rebuild-plans/<timestamp>-<server_id>-rebuild-plan.json
 knowledge/fleet-catalog.json
 ```
 
@@ -155,3 +156,15 @@ python -m controller.main before-state --server ispy-server --intent "before Age
 The snapshot includes the source run, server health, current findings, recent
 actions for that server, access profile, and rebuildability metadata. Snapshot
 files are generated under `history/before-state/` and ignored by git.
+
+## Rebuild Plans
+
+Rebuild plans turn a before-state snapshot into a non-destructive checklist:
+
+```bash
+python -m controller.main rebuild-plan --server ispy-server --goal "rebuild AgentDVR cleanly" --strategy reinstall
+```
+
+Plans include preservation targets, phases, verification steps, blocked reasons,
+and a future destructive approval phrase. Plan files are generated under
+`history/rebuild-plans/` and ignored by git.
