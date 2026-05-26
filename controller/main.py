@@ -13,6 +13,7 @@ from . import (
     action_runner,
     approvals,
     before_state,
+    container_review,
     collector,
     config,
     history,
@@ -154,6 +155,9 @@ def command_collect(args: argparse.Namespace) -> int:
         servers = inventory.load_inventory(inventory_path)
     except (FileNotFoundError, ValueError) as exc:
         raise SystemExit(str(exc)) from exc
+
+    if args.server:
+        servers = _filter_servers(servers, args.server)
 
     if args.dry_run:
         print(f"Inventory: {inventory_path}")
@@ -368,6 +372,54 @@ def command_rebuild_plan(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_container_review(args: argparse.Namespace) -> int:
+    if args.input:
+        input_path = Path(args.input)
+        fleet = apply_local_rules(load_json(input_path))
+        run_summary = history.run_summary_from_fleet(fleet, input_path)
+    else:
+        runs = history.discover_run_summaries()
+        if not runs:
+            raise SystemExit("No run history found. Run collection before review.")
+        run_summary = runs[0]
+
+    review = container_review.write_container_review(
+        run_summary,
+        args.server,
+        history.discover_action_summaries(),
+        output_dir=Path(args.output_dir) if args.output_dir else None,
+    )
+    print(f"Wrote container review: {review.html_path}")
+    print(f"Wrote container review JSON: {review.json_path}")
+    print(f"Source run: {run_summary.run_id}")
+    recommendations = review.payload.get("recommendations") or []
+    print(f"Recommendations: {len(recommendations)}")
+    for item in recommendations:
+        if not isinstance(item, dict):
+            continue
+        print(
+            f"- {item.get('severity', 'info')}: "
+            f"{item.get('title', 'Recommendation')}"
+        )
+        dry_run_command = item.get("dry_run_command")
+        if dry_run_command:
+            print(f"  Dry run: {dry_run_command}")
+
+    refreshed = refresh_html_reports()
+    print_report_refresh(refreshed)
+    return 0
+
+
+def _filter_servers(
+    servers: list[inventory.ServerInventoryItem], requested: list[str]
+) -> list[inventory.ServerInventoryItem]:
+    by_id = {server.server_id: server for server in servers}
+    missing = [server_id for server_id in requested if server_id not in by_id]
+    if missing:
+        raise SystemExit(f"Enabled server not found in inventory: {', '.join(missing)}")
+    return [by_id[server_id] for server_id in requested]
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="HomeOps controller")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -393,6 +445,11 @@ def build_parser() -> argparse.ArgumentParser:
     collect_parser.add_argument(
         "--inventory",
         help="Inventory path. Defaults to config/servers.yaml.",
+    )
+    collect_parser.add_argument(
+        "--server",
+        action="append",
+        help="Inventory server_id to collect. May be repeated. Defaults to all enabled servers.",
     )
     collect_parser.add_argument(
         "--dry-run",
@@ -503,6 +560,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory for plans. Defaults to history/rebuild-plans.",
     )
     rebuild_plan_parser.set_defaults(func=command_rebuild_plan)
+
+    container_review_parser = subparsers.add_parser(
+        "container-review",
+        help="Write a container host review with recommended dry-run fixes",
+    )
+    container_review_parser.add_argument(
+        "--server",
+        default=container_review.DEFAULT_CONTAINER_SERVER_ID,
+        help="Container host server_id. Defaults to container-host.",
+    )
+    container_review_parser.add_argument(
+        "--input",
+        help="Fleet health JSON to review. Defaults to latest run history.",
+    )
+    container_review_parser.add_argument(
+        "--output-dir",
+        help="Directory for generated review reports. Defaults to reports/generated.",
+    )
+    container_review_parser.set_defaults(func=command_container_review)
 
     actions_parser = subparsers.add_parser("actions", help="Inspect or run actions")
     actions_subparsers = actions_parser.add_subparsers(

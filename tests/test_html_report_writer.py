@@ -66,6 +66,71 @@ class HtmlReportWriterTests(unittest.TestCase):
         self.assertIn("Agent Action Timeline", html)
         self.assertIn("restart_docker_container", html)
 
+    def test_render_dashboard_links_existing_container_review(self):
+        output_dir = Path("tests/.tmp/dashboard-with-container-review")
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True)
+        (output_dir / "container-review.html").write_text(
+            "<html></html>",
+            encoding="utf-8",
+        )
+
+        html = render_dashboard([self._run_summary()], output_dir)
+
+        self.assertIn("Container Review", html)
+        self.assertIn("container-review.html", html)
+
+    def test_render_dashboard_preserves_known_servers_for_targeted_run(self):
+        latest = self._targeted_container_run()
+        previous_failure = self._partial_full_run_with_ispy_failure()
+        older_success = self._three_server_run()
+
+        html = render_dashboard(
+            [latest, previous_failure, older_success],
+            Path("reports/generated"),
+        )
+
+        self.assertIn("openvpn-server", html)
+        self.assertIn("ispy-server", html)
+        self.assertIn("container-host", html)
+        self.assertIn("3</strong>", html)
+        self.assertIn("1 checked, 0 failed", html)
+        self.assertIn("Collected</dt><dd>yes", html)
+        self.assertIn("Error", html)
+        self.assertIn("Services unknown.", html)
+        self.assertIn("Health command exited with code 255.", html)
+
+    def test_render_dashboard_preserves_failed_server_for_partial_run(self):
+        latest = self._targeted_container_run(
+            collection_errors=[
+                {
+                    "server_id": "ispy-server",
+                    "message": "Health command exited with code 255.",
+                }
+            ],
+            servers_failed=1,
+            counts={"critical": 1, "warning": 2, "info": 1},
+            findings=[
+                {
+                    "severity": "critical",
+                    "server_id": "ispy-server",
+                    "code": "collection_failed",
+                    "message": "Health command exited with code 255.",
+                    "recommended_action_ids": [],
+                }
+            ],
+        )
+        previous = self._three_server_run()
+
+        html = render_dashboard([latest, previous], Path("reports/generated"))
+
+        self.assertIn("ispy-server", html)
+        self.assertIn("failed", html)
+        self.assertIn("Error", html)
+        self.assertIn("Services unknown.", html)
+        self.assertIn("Health command exited with code 255.", html)
+
     def _run_summary(
         self,
         run_id: str = "2026-05-06T12-00-00Z",
@@ -111,6 +176,156 @@ class HtmlReportWriterTests(unittest.TestCase):
                 }
             ],
             collection_errors=[],
+        )
+
+    def _targeted_container_run(
+        self,
+        collection_errors: list[dict] | None = None,
+        servers_failed: int = 0,
+        counts: dict | None = None,
+        findings: list[dict] | None = None,
+    ) -> RunSummary:
+        return RunSummary(
+            run_id="2026-05-26T17-22-44Z",
+            generated_at="2026-05-26T17:22:44Z",
+            generated_dt=datetime.fromisoformat("2026-05-26T17:22:44+00:00"),
+            fleet_path=Path("history/runs/2026-05-26T17-22-44Z/fleet-health.json"),
+            servers_checked=1,
+            servers_failed=servers_failed,
+            counts=counts or {"critical": 0, "warning": 2, "info": 1},
+            findings=findings
+            or [
+                {
+                    "severity": "warning",
+                    "server_id": "container-host",
+                    "code": "docker_unhealthy_container",
+                    "message": "Container watchtower is restarting.",
+                    "recommended_action_ids": ["restart_docker_container"],
+                }
+            ],
+            servers=[
+                {
+                    "server_id": "container-host",
+                    "role": "container_host",
+                    "hostname": "containerserver",
+                    "updates": {
+                        "pending_total": 7,
+                        "reboot_required": True,
+                    },
+                    "services": [
+                        {"name": "ssh", "state": "active", "enabled": False},
+                        {"name": "docker", "state": "active", "enabled": True},
+                    ],
+                }
+            ],
+            collection_errors=collection_errors or [],
+        )
+
+    def _three_server_run(self) -> RunSummary:
+        run = self._run_summary(
+            run_id="2026-05-14T13-18-14Z",
+            generated_at="2026-05-14T13:18:14Z",
+        )
+        return RunSummary(
+            run_id=run.run_id,
+            generated_at=run.generated_at,
+            generated_dt=run.generated_dt,
+            fleet_path=run.fleet_path,
+            servers_checked=3,
+            servers_failed=0,
+            counts=run.counts,
+            findings=run.findings,
+            servers=[
+                run.servers[0],
+                {
+                    "server_id": "ispy-server",
+                    "role": "ispy_server",
+                    "hostname": "ispyserver",
+                    "updates": {
+                        "pending_total": 71,
+                        "reboot_required": True,
+                    },
+                    "services": [
+                        {"name": "ssh", "state": "active", "enabled": False},
+                        {"name": "AgentDVR", "state": "active", "enabled": True},
+                    ],
+                },
+                {
+                    "server_id": "container-host",
+                    "role": "container_host",
+                    "hostname": "containerserver",
+                    "updates": {
+                        "pending_total": 7,
+                        "reboot_required": True,
+                    },
+                    "services": [
+                        {"name": "ssh", "state": "active", "enabled": False},
+                        {"name": "docker", "state": "active", "enabled": True},
+                    ],
+                },
+            ],
+            collection_errors=[],
+        )
+
+    def _partial_full_run_with_ispy_failure(self) -> RunSummary:
+        return RunSummary(
+            run_id="2026-05-26T17-00-16Z",
+            generated_at="2026-05-26T17:00:16Z",
+            generated_dt=datetime.fromisoformat("2026-05-26T17:00:16+00:00"),
+            fleet_path=Path("history/runs/2026-05-26T17-00-16Z/fleet-health.json"),
+            servers_checked=2,
+            servers_failed=1,
+            counts={"critical": 1, "warning": 3, "info": 2},
+            findings=[
+                {
+                    "severity": "critical",
+                    "server_id": "ispy-server",
+                    "code": "collection_failed",
+                    "message": "Health command exited with code 255.",
+                    "recommended_action_ids": [],
+                },
+                {
+                    "severity": "warning",
+                    "server_id": "openvpn-server",
+                    "code": "reboot_required",
+                    "message": "The server reports that a reboot is required.",
+                    "recommended_action_ids": ["reboot_server"],
+                },
+            ],
+            servers=[
+                {
+                    "server_id": "openvpn-server",
+                    "role": "openvpn_server",
+                    "hostname": "vpnserver",
+                    "updates": {
+                        "pending_total": 53,
+                        "reboot_required": True,
+                    },
+                    "services": [
+                        {"name": "ssh", "state": "active", "enabled": False},
+                        {"name": "openvpnas", "state": "active", "enabled": True},
+                    ],
+                },
+                {
+                    "server_id": "container-host",
+                    "role": "container_host",
+                    "hostname": "containerserver",
+                    "updates": {
+                        "pending_total": 7,
+                        "reboot_required": True,
+                    },
+                    "services": [
+                        {"name": "ssh", "state": "active", "enabled": False},
+                        {"name": "docker", "state": "active", "enabled": True},
+                    ],
+                },
+            ],
+            collection_errors=[
+                {
+                    "server_id": "ispy-server",
+                    "message": "Health command exited with code 255.",
+                }
+            ],
         )
 
     def _action_summary(self) -> ActionSummary:

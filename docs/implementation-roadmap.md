@@ -17,9 +17,11 @@ server through the approval-gated action runner.
 The project has pivoted to a personal homelab agent controller. The current
 operational model is: keep `openvpn-server` guarded for access, use
 `ispy-server` as an intermediate repair/overhaul target, and use
-`container-host` as the Codex lab with full logged sudo. Bounded `apply_security_updates` and
-`reboot_server` support is available for dry-run and exact approval testing.
-`run_admin_command` is available for logged root shell commands on
+`container-host` as the Codex lab with full logged sudo. The controller now has
+bounded actions for Docker container inspection, Watchtower replacement and
+migration, health script deployment, sudoers profile deployment, package
+updates on the lab host, security updates, service restarts, and delayed
+reboots. `run_admin_command` is available for logged root shell commands on
 `experimental` and `lab` profiles only. The `lab` profile bypasses forbidden
 command pattern checks by design. `before-state` captures a durable JSON
 snapshot for rebuildable servers before destructive planning. `rebuild-plan`
@@ -144,12 +146,15 @@ Goal: allow safe, predefined maintenance actions.
   profile-aware admin and rebuild workflows exist
 
 Status: in progress. The registry exists, `actions list` works, and
-`deploy_health_script`, `restart_docker_container`, `restart_service`,
-`apply_security_updates`, and `reboot_server` have dry-run, exact approval,
-execution, and action history support. The deployment action has been exercised
-successfully on all configured servers. `apply_security_updates` uses the
-server's unattended-upgrades policy, and `reboot_server` uses an exact-approval
-one-minute delayed reboot command.
+`inspect_docker_container`, `replace_watchtower_container`,
+`migrate_watchtower_container`, `deploy_health_script`,
+`deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
+`apply_package_updates`, `apply_security_updates`, and `reboot_server` have
+dry-run, exact approval, execution, and action history support. The health
+script deployment action has been exercised successfully on all configured
+servers. `apply_security_updates` uses the server's unattended-upgrades policy,
+`apply_package_updates` is scoped to the container lab host, and
+`reboot_server` uses an exact-approval one-minute delayed reboot command.
 
 ## Phase 8: Hardening
 

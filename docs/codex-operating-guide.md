@@ -70,6 +70,17 @@ python -m controller.main rebuild-plan --server ispy-server --goal "rebuild Agen
 9. Generate `rebuild-plan` for review; do not execute destructive rebuild steps.
 ```
 
+For focused container host operations while another server is unavailable:
+
+```powershell
+python -m controller.main collect --server container-host
+python -m controller.main container-review --server container-host
+```
+
+The container review writes recommended dry-run fixes into generated JSON and
+HTML reports. Treat those suggestions as the handoff point before asking for
+exact approval.
+
 ## Preferred Findings Format
 
 When explaining a report, use this order:

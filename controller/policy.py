@@ -13,10 +13,15 @@ from . import config
 DEFAULT_POLICY: dict[str, Any] = {
     "auto_run_low_risk_actions": False,
     "approval_required_actions": [
+        "inspect_docker_container",
         "restart_service",
         "restart_docker_container",
+        "replace_watchtower_container",
+        "migrate_watchtower_container",
         "deploy_health_script",
+        "deploy_sudoers_profile",
         "apply_security_updates",
+        "apply_package_updates",
         "reboot_server",
         "run_admin_command",
     ],

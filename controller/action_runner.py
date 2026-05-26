@@ -41,11 +41,15 @@ LOCAL_HEALTH_SCRIPT_PATH = (
     config.BASE_DIR / "server-scripts" / "common" / "health_summary.sh"
 )
 REMOTE_HEALTH_SCRIPT_PATH = DEFAULT_REMOTE_HEALTH_COMMAND
+REMOTE_SUDOERS_PATH = "/etc/sudoers.d/homeops-agent"
 REBOOT_DELAY = "+1"
 REBOOT_MESSAGE = "HomeOps-approved-reboot"
 ADMIN_SHELL_PATH = "/usr/bin/bash"
 ADMIN_COMMAND_MAX_LENGTH = 1000
 ADMIN_INTENT_MAX_LENGTH = 240
+WATCHTOWER_IMAGE = "containrrr/watchtower"
+WATCHTOWER_MIGRATION_IMAGE = "nickfedor/watchtower"
+WATCHTOWER_NAME = "watchtower"
 
 
 class ActionError(RuntimeError):
@@ -173,6 +177,43 @@ def build_action_commands(
             ]
         ]
 
+    if action_id == "inspect_docker_container":
+        container = str(arguments.get("container") or "")
+        if not CONTAINER_NAME_RE.fullmatch(container):
+            raise ActionError(
+                "Container name is required and may contain only letters, digits, "
+                "periods, underscores, and dashes."
+            )
+        return [
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                _remote_command("docker", "ps", "-a", "--filter", f"name={container}"),
+            ],
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                _remote_command("docker", "logs", "--tail", "120", container),
+            ],
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                _remote_command(
+                    "docker",
+                    "inspect",
+                    "--format",
+                    "image={{.Config.Image}} restart={{json .HostConfig.RestartPolicy}} cmd={{json .Config.Cmd}} mounts={{json .Mounts}}",
+                    container,
+                ),
+            ],
+        ]
+
+    if action_id == "replace_watchtower_container":
+        return _watchtower_recreate_commands(server, WATCHTOWER_IMAGE)
+
+    if action_id == "migrate_watchtower_container":
+        return _watchtower_recreate_commands(server, WATCHTOWER_MIGRATION_IMAGE)
+
     if action_id == "restart_service":
         service = _approved_service_name(server, arguments)
         return [
@@ -186,6 +227,9 @@ def build_action_commands(
     if action_id == "deploy_health_script":
         return _deploy_health_script_commands(server)
 
+    if action_id == "deploy_sudoers_profile":
+        return _deploy_sudoers_profile_commands(server)
+
     if action_id == "apply_security_updates":
         return [
             build_ssh_base_command(server)
@@ -193,6 +237,33 @@ def build_action_commands(
                 server.ssh_target,
                 _remote_command("sudo", "-n", "unattended-upgrade"),
             ]
+        ]
+
+    if action_id == "apply_package_updates":
+        if server.access_profile != ACCESS_PROFILE_LAB:
+            raise ActionError(
+                "apply_package_updates is allowed only for lab access profiles. "
+                f"Server {server.server_id} is {server.access_profile}."
+            )
+        return [
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                _remote_command("sudo", "-n", "apt-get", "update"),
+            ],
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                _remote_command(
+                    "sudo",
+                    "-n",
+                    "env",
+                    "DEBIAN_FRONTEND=noninteractive",
+                    "apt-get",
+                    "-y",
+                    "upgrade",
+                ),
+            ],
         ]
 
     if action_id == "reboot_server":
@@ -224,6 +295,48 @@ def build_action_commands(
     raise ActionError(f"Action is not implemented: {action_id}")
 
 
+def _watchtower_recreate_commands(
+    server: ServerInventoryItem, image: str
+) -> list[list[str]]:
+    return [
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("docker", "pull", image),
+        ],
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("docker", "stop", WATCHTOWER_NAME),
+        ],
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("docker", "rm", WATCHTOWER_NAME),
+        ],
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command(
+                "docker",
+                "run",
+                "-d",
+                "--name",
+                WATCHTOWER_NAME,
+                "--restart",
+                "unless-stopped",
+                "-v",
+                "/var/run/docker.sock:/var/run/docker.sock",
+                image,
+                "--interval",
+                "3600",
+                "--label-enable",
+                "--cleanup",
+            ),
+        ],
+    ]
+
+
 def _deploy_health_script_commands(server: ServerInventoryItem) -> list[list[str]]:
     if not LOCAL_HEALTH_SCRIPT_PATH.exists():
         raise ActionError(f"Local health script not found: {LOCAL_HEALTH_SCRIPT_PATH}")
@@ -237,6 +350,45 @@ def _deploy_health_script_commands(server: ServerInventoryItem) -> list[list[str
             _remote_command("chmod", "755", REMOTE_HEALTH_SCRIPT_PATH),
         ],
     ]
+
+
+def _deploy_sudoers_profile_commands(server: ServerInventoryItem) -> list[list[str]]:
+    if server.access_profile != ACCESS_PROFILE_LAB:
+        raise ActionError(
+            "deploy_sudoers_profile is currently implemented only for lab "
+            f"access profiles. Server {server.server_id} is {server.access_profile}."
+        )
+
+    profile = "\n".join(
+        [
+            "# HomeOps Codex lab profile.",
+            "# Managed by HomeOps-Agent deploy_sudoers_profile.",
+            "",
+            "# This profile is intentionally full power. Use only on the",
+            "# disposable Codex lab machine where full logged sudo is acceptable.",
+            f"{server.user} ALL=(root) NOPASSWD: ALL",
+            "",
+        ]
+    )
+    script = (
+        "tmp=$(mktemp) && "
+        f"printf '%s' {_shell_single_quote(profile)} > \"$tmp\" && "
+        "sudo -n /usr/sbin/visudo -cf \"$tmp\" && "
+        f"sudo -n /usr/bin/install -o root -g root -m 0440 \"$tmp\" {REMOTE_SUDOERS_PATH} && "
+        "rm -f \"$tmp\" && "
+        f"sudo -n /usr/sbin/visudo -cf {REMOTE_SUDOERS_PATH}"
+    )
+    return [
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("sh", "-lc", script),
+        ]
+    ]
+
+
+def _shell_single_quote(value: str) -> str:
+    return "'" + value.replace("'", "'\"'\"'") + "'"
 
 
 def _build_scp_base_command(server: ServerInventoryItem) -> list[str]:

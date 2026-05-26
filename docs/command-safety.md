@@ -75,6 +75,7 @@ Requires explicit human approval every time.
 Examples:
 
 - deploy the approved health script
+- inspect Docker container status and recent logs
 - restart a service
 - restart a Docker container
 - apply security updates
@@ -168,6 +169,48 @@ python -m controller.main actions run restart_service --server container-host --
 The controller normalizes approved aliases such as `openvpnas` to
 `openvpnas.service`, but it does not accept arbitrary service names.
 
+Docker container inspection is approval-gated because logs may contain sensitive
+application data. It does not require sudo:
+
+```powershell
+python -m controller.main actions run inspect_docker_container --server container-host --container watchtower --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action inspect_docker_container on container-host with container watchtower
+```
+
+Watchtower replacement is approval-gated and scoped to the captured HomeOps
+Watchtower deployment: pull `containrrr/watchtower`, stop and remove the
+existing `watchtower` container, then recreate it with the Docker socket mount,
+`unless-stopped` restart policy, and `--interval 3600 --label-enable --cleanup`:
+
+```powershell
+python -m controller.main actions run replace_watchtower_container --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action replace_watchtower_container on container-host
+```
+
+If the `containrrr/watchtower` image still fails with a Docker client API
+mismatch, migrate the same HomeOps Watchtower deployment to
+`nickfedor/watchtower`:
+
+```powershell
+python -m controller.main actions run migrate_watchtower_container --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action migrate_watchtower_container on container-host
+```
+
 Health script deployment is also approval-gated and only copies the known
 repository script to the approved remote path:
 
@@ -181,6 +224,24 @@ The corresponding approval phrase is:
 Approve action deploy_health_script on container-host
 ```
 
+The container lab sudoers profile can be deployed through an approval-gated
+action after the initial root bootstrap exists. It renders the lab profile for
+the inventory user, validates it with `visudo`, installs it to
+`/etc/sudoers.d/homeops-agent`, and validates the installed file:
+
+```powershell
+python -m controller.main actions run deploy_sudoers_profile --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action deploy_sudoers_profile on container-host
+```
+
+If `sudo -n` already returns `sudo: a password is required`, this action cannot
+self-repair the server; use one manual root session with `visudo` first.
+
 Security updates are approval-gated and use the managed server's
 `unattended-upgrade` policy:
 
@@ -192,6 +253,19 @@ The corresponding approval phrase is:
 
 ```text
 Approve action apply_security_updates on openvpn-server
+```
+
+Normal package updates on the container lab host are approval-gated and run a
+bounded `apt-get update` followed by noninteractive `apt-get -y upgrade`:
+
+```powershell
+python -m controller.main actions run apply_package_updates --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action apply_package_updates on container-host
 ```
 
 Server reboot is approval-gated and schedules a one-minute delayed reboot:

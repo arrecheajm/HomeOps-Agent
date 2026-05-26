@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from copy import deepcopy
 from html import escape
 from pathlib import Path
 from typing import Any
@@ -19,9 +20,13 @@ def write_fleet_catalog(
 ) -> tuple[Path, Path]:
     """Write tracked catalog JSON and generated HTML for one run."""
 
-    catalog = build_fleet_catalog(run)
     actual_knowledge_path = knowledge_path or config.FLEET_CATALOG_PATH
     actual_output_dir = output_dir or config.GENERATED_REPORTS_DIR
+    catalog = build_fleet_catalog(
+        run,
+        fallback_servers=_fallback_server_catalogs(run, actual_knowledge_path),
+        include_all_fallback_servers=True,
+    )
     actual_knowledge_path.parent.mkdir(parents=True, exist_ok=True)
     actual_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -38,10 +43,39 @@ def write_fleet_catalog(
     return actual_knowledge_path, html_path
 
 
-def build_fleet_catalog(run: history.RunSummary) -> dict[str, Any]:
+def build_fleet_catalog(
+    run: history.RunSummary,
+    fallback_servers: dict[str, dict[str, Any]] | None = None,
+    include_all_fallback_servers: bool = False,
+) -> dict[str, Any]:
     """Build a stable catalog from the latest fleet run."""
 
     servers = [_server_catalog(server, run.findings) for server in run.servers]
+    seen_server_ids = {str(server.get("server_id") or "") for server in servers}
+    fallback_by_id = fallback_servers or {}
+    for server_id in _failed_server_ids(run):
+        if not server_id or server_id in seen_server_ids:
+            continue
+        fallback = fallback_by_id.get(server_id)
+        if fallback:
+            servers.append(_stale_server_catalog(server_id, fallback, run.findings))
+        else:
+            servers.append(_failed_server_catalog(server_id, run.findings))
+        seen_server_ids.add(server_id)
+    if include_all_fallback_servers:
+        for server_id, fallback in fallback_by_id.items():
+            if not server_id or server_id in seen_server_ids:
+                continue
+            servers.append(
+                _preserved_server_catalog(
+                    server_id,
+                    fallback,
+                    "not_in_latest_run",
+                    "Not collected in latest run",
+                )
+            )
+            seen_server_ids.add(server_id)
+    servers = sorted(servers, key=_server_sort_key)
     return {
         "schema_version": "1.0",
         "generated_at": run.generated_at,
@@ -191,15 +225,34 @@ def _fleet_summary(servers: list[dict[str, Any]]) -> dict[str, Any]:
         "pending_updates": sum(
             server["maintenance"]["pending_updates"] for server in servers
         ),
+        "collection_failed": sum(
+            1 for server in servers if server.get("collection_status") == "failed_latest"
+        ),
+        "not_collected": sum(
+            1
+            for server in servers
+            if server.get("collection_status") == "not_in_latest_run"
+        ),
     }
 
 
 def _fleet_recommendations(servers: list[dict[str, Any]]) -> list[str]:
+    container_host = next(
+        (server for server in servers if server.get("server_id") == "container-host"),
+        None,
+    )
     recommendations = [
         "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
         "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
-        "Use container-host as the Codex lab and default Docker experiment target after the current reboot and watchtower issues are resolved.",
     ]
+    if container_host and not container_host.get("constraints"):
+        recommendations.append(
+            "Use container-host as the Codex lab and default Docker experiment target."
+        )
+    else:
+        recommendations.append(
+            "Keep container-host maintenance current before increasing Docker workload."
+        )
     if any(server["maintenance"]["reboot_required"] for server in servers):
         recommendations.append(
             "Clear reboot-required hosts before making placement changes."
@@ -269,7 +322,12 @@ def _placement_guidance(server: dict[str, Any]) -> list[str]:
         guidance.append("Only add light support services after maintenance is current.")
     elif role == "container_host":
         guidance.append("Prefer this host for Codex lab experiments and Docker-backed applications.")
-        guidance.append("Fix unhealthy containers before increasing workload.")
+        if server["docker"]["unhealthy"]:
+            guidance.append("Fix unhealthy containers before increasing workload.")
+        elif server["maintenance"]["pending_updates"] or server["maintenance"]["reboot_required"]:
+            guidance.append("Clear host maintenance before increasing workload.")
+        else:
+            guidance.append("Current host maintenance is clean; suitable for lab workloads.")
     return guidance
 
 
@@ -305,11 +363,17 @@ def _server_card(server: dict[str, Any]) -> str:
     storage = server["storage"]
     maintenance = server["maintenance"]
     docker = server["docker"]
+    collection_status = (
+        "failed latest"
+        if server.get("collection_status") == "failed_latest"
+        else "current"
+    )
     return (
         '<article class="server-card">'
         f"<h2>{escape(server['server_id'])}</h2>"
         f"<p>{escape(server['role_label'])} on <code>{escape(server['hostname'])}</code></p>"
         '<dl class="facts">'
+        f"<div><dt>Collection</dt><dd>{escape(collection_status)}</dd></div>"
         f"<div><dt>OS</dt><dd>{escape(server['os']['name'])} {escape(server['os']['version'])}</dd></div>"
         f"<div><dt>Kernel</dt><dd>{escape(server['os']['kernel'])}</dd></div>"
         f"<div><dt>Architecture</dt><dd>{escape(hardware['architecture'])}</dd></div>"
@@ -448,6 +512,153 @@ def _as_float(value: Any) -> float:
         return round(float(value), 2)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _failed_server_ids(run: history.RunSummary) -> list[str]:
+    server_ids: list[str] = []
+    for error in run.collection_errors:
+        server_id = str(error.get("server_id") or "")
+        if server_id and server_id not in server_ids:
+            server_ids.append(server_id)
+    return server_ids
+
+
+def _fallback_server_catalogs(
+    run: history.RunSummary, knowledge_path: Path | None
+) -> dict[str, dict[str, Any]]:
+    fallback: dict[str, dict[str, Any]] = {}
+    if knowledge_path:
+        fallback.update(_catalog_servers_from_path(knowledge_path))
+
+    runs_dir = run.fleet_path.parent.parent
+    for previous_run in history.discover_run_summaries(runs_dir):
+        if previous_run.run_id == run.run_id:
+            continue
+        for server in previous_run.servers:
+            server_id = str(server.get("server_id") or "")
+            if server_id and server_id not in fallback:
+                fallback[server_id] = _server_catalog(server, previous_run.findings)
+    return fallback
+
+
+def _catalog_servers_from_path(path: Path) -> dict[str, dict[str, Any]]:
+    try:
+        catalog = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+    if not isinstance(catalog, dict) or not isinstance(catalog.get("servers"), list):
+        return {}
+
+    servers: dict[str, dict[str, Any]] = {}
+    for server in catalog["servers"]:
+        if not isinstance(server, dict):
+            continue
+        server_id = str(server.get("server_id") or "")
+        if server_id:
+            servers[server_id] = server
+    return servers
+
+
+def _stale_server_catalog(
+    server_id: str, fallback: dict[str, Any], findings: list[dict[str, Any]]
+) -> dict[str, Any]:
+    catalog = _preserved_server_catalog(
+        server_id,
+        fallback,
+        "failed_latest",
+        "Latest collection failed",
+    )
+    catalog["current_findings"] = _finding_summaries(server_id, findings)
+    return catalog
+
+
+def _preserved_server_catalog(
+    server_id: str,
+    fallback: dict[str, Any],
+    collection_status: str,
+    constraint: str,
+) -> dict[str, Any]:
+    catalog = deepcopy(fallback)
+    catalog["server_id"] = server_id
+    catalog["collection_status"] = collection_status
+    catalog["last_successful_collected_at"] = str(catalog.get("collected_at") or "")
+    catalog["current_findings"] = []
+    constraints = [str(item) for item in catalog.get("constraints", []) if str(item)]
+    if constraint not in constraints:
+        constraints.insert(0, constraint)
+    catalog["constraints"] = constraints
+    return catalog
+
+
+def _failed_server_catalog(
+    server_id: str, findings: list[dict[str, Any]]
+) -> dict[str, Any]:
+    return {
+        "server_id": server_id,
+        "hostname": "unknown",
+        "role": "unknown",
+        "role_label": "unknown",
+        "collected_at": "",
+        "collection_status": "failed_latest",
+        "last_successful_collected_at": "",
+        "os": {"name": "unknown", "version": "unknown", "kernel": "unknown"},
+        "hardware": {
+            "architecture": "unknown",
+            "cpu_model": "unknown",
+            "memory_total_mb": 0,
+            "virtualization": "unknown",
+        },
+        "resources": {
+            "cpu_count": 0,
+            "load_1m": 0.0,
+            "memory_used_percent": 0.0,
+            "swap_used_percent": 0.0,
+            "uptime_days": 0,
+        },
+        "storage": {
+            "disks": [],
+            "root_free_gb": 0,
+            "root_used_percent": 0,
+            "total_reported_free_gb": 0,
+        },
+        "services": [],
+        "docker": {
+            "installed": False,
+            "containers_total": 0,
+            "containers_running": 0,
+            "unhealthy": [],
+        },
+        "maintenance": {
+            "pending_updates": 0,
+            "pending_security_updates": 0,
+            "reboot_required": False,
+        },
+        "current_findings": _finding_summaries(server_id, findings),
+        "capabilities": [],
+        "constraints": ["Latest collection failed"],
+        "placement_guidance": [],
+    }
+
+
+def _finding_summaries(
+    server_id: str, findings: list[dict[str, Any]]
+) -> list[dict[str, str]]:
+    return [
+        {
+            "severity": str(finding.get("severity") or "info"),
+            "code": str(finding.get("code") or "unknown"),
+            "message": _clean_text(finding.get("message"), ""),
+        }
+        for finding in findings
+        if str(finding.get("server_id") or "") == server_id
+    ]
+
+
+def _server_sort_key(server: dict[str, Any]) -> tuple[int, str]:
+    role_order = {"openvpn_server": 0, "ispy_server": 1, "container_host": 2}
+    role = str(server.get("role") or "")
+    server_id = str(server.get("server_id") or "")
+    return (role_order.get(role, 99), server_id)
 
 
 def _link(label: str, path: Path, output_dir: Path) -> str:

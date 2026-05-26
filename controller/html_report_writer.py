@@ -90,9 +90,10 @@ def render_dashboard(
 
     body.extend(_dashboard_nav())
     body.append('<section id="overview" class="view-section">')
-    body.extend(_summary_cards(latest))
-    body.extend(_server_section(latest))
-    body.extend(_findings_section(latest))
+    dashboard_servers = _dashboard_servers(latest, sorted_runs)
+    body.extend(_summary_cards(latest, dashboard_servers))
+    body.extend(_server_section(dashboard_servers))
+    body.extend(_findings_section(latest, dashboard_servers))
     body.extend(_actions_section(action_summaries, actual_output_dir))
     body.append("</section>")
     body.extend(_history_section(sorted_runs))
@@ -120,18 +121,27 @@ def _latest_link(run: history.RunSummary | None, output_dir: Path) -> str:
         _link("Fleet JSON", run.fleet_path, output_dir),
         _link("Fleet Catalog", output_dir / "fleet-catalog.html", output_dir),
     ]
+    container_review_path = output_dir / "container-review.html"
+    if container_review_path.exists():
+        links.append(_link("Container Review", container_review_path, output_dir))
     return f'<nav class="actions">{"".join(links)}</nav>'
 
 
-def _summary_cards(run: history.RunSummary) -> list[str]:
-    total_findings = sum(run.counts.values())
+def _summary_cards(
+    run: history.RunSummary, dashboard_servers: list[dict[str, Any]]
+) -> list[str]:
+    status_counts = _status_counts(dashboard_servers)
     return [
         '<section class="summary-grid" aria-label="Latest run summary">',
         _metric_card("Latest Run", _display_time(run), run.run_id),
-        _metric_card("Servers", str(run.servers_checked), f"{run.servers_failed} failed"),
-        _metric_card("Critical", str(run.counts["critical"]), "Immediate attention"),
-        _metric_card("Warnings", str(run.counts["warning"]), f"{total_findings} total findings"),
-        _metric_card("Info", str(run.counts["info"]), "Maintenance notes"),
+        _metric_card(
+            "Servers",
+            str(len(dashboard_servers)),
+            f"{run.servers_checked} checked, {run.servers_failed} failed",
+        ),
+        _metric_card("OK", str(status_counts["OK"]), "healthy"),
+        _metric_card("Warning", str(status_counts["Warning"]), "needs attention"),
+        _metric_card("Error", str(status_counts["Error"]), "connection or critical"),
         "</section>",
     ]
 
@@ -146,34 +156,38 @@ def _metric_card(title: str, value: str, detail: str) -> str:
     )
 
 
-def _server_section(run: history.RunSummary) -> list[str]:
-    findings_by_server: dict[str, list[dict[str, Any]]] = {}
-    for finding in run.findings:
-        server_id = str(finding.get("server_id", "unknown"))
-        findings_by_server.setdefault(server_id, []).append(finding)
-
+def _server_section(dashboard_servers: list[dict[str, Any]]) -> list[str]:
     lines = [
         '<section class="panel">',
         "<h2>Latest Server State</h2>",
         '<div class="server-grid">',
     ]
-    for server in run.servers:
+    for server in dashboard_servers:
         server_id = str(server.get("server_id") or server.get("hostname") or "unknown")
         role = ROLE_LABELS.get(str(server.get("role")), str(server.get("role") or "Unknown"))
-        status = _server_status(findings_by_server.get(server_id, []))
-        note = _server_note(findings_by_server.get(server_id, []))
+        status = str(server.get("dashboard_status") or "Unknown")
+        note = str(server.get("dashboard_note") or "")
         hostname = str(server.get("hostname") or "unknown")
         updates = server.get("updates") if isinstance(server.get("updates"), dict) else {}
-        pending_total = updates.get("pending_total", 0)
-        reboot_required = "yes" if updates.get("reboot_required") else "no"
+        pending_total = _unknown_if_failed(server, updates.get("pending_total", 0))
+        reboot_required = _unknown_if_failed(
+            server,
+            "yes" if updates.get("reboot_required") else "no",
+        )
         services = _server_services(server)
         lines.extend(
             [
-                f'<article class="server-card status-{status.lower()}">',
+                f'<article class="server-card status-{_status_class(status)}">',
+                '<div class="server-card-header">',
+                "<div>",
                 f"<h3>{escape(server_id)}</h3>",
                 f"<p>{escape(role)} on <code>{escape(hostname)}</code></p>",
+                "</div>",
+                f'<span class="status-pill status-pill-{_status_class(status)}">{escape(status)}</span>',
+                "</div>",
                 '<dl class="server-facts">',
-                f"<div><dt>Status</dt><dd>{escape(status)}</dd></div>",
+                f"<div><dt>Evidence</dt><dd>{escape(_evidence_label(str(server.get('evidence_label') or 'unknown')))}</dd></div>",
+                f"<div><dt>Collected</dt><dd>{escape(_collection_label(str(server.get('collection_status') or 'current')))}</dd></div>",
                 f"<div><dt>Updates</dt><dd>{escape(str(pending_total))}</dd></div>",
                 f"<div><dt>Reboot</dt><dd>{escape(reboot_required)}</dd></div>",
                 "</dl>",
@@ -189,9 +203,156 @@ def _server_section(run: history.RunSummary) -> list[str]:
     return lines
 
 
-def _findings_section(run: history.RunSummary) -> list[str]:
-    lines = ['<section class="panel">', "<h2>Latest Findings</h2>"]
-    if not run.findings:
+def _dashboard_servers(
+    latest: history.RunSummary, runs: list[history.RunSummary]
+) -> list[dict[str, Any]]:
+    known_server_ids = _known_server_ids(runs)
+    servers: dict[str, dict[str, Any]] = {}
+    for server_id in known_server_ids:
+        servers[server_id] = _server_state_from_runs(server_id, latest, runs)
+    return [servers[server_id] for server_id in _ordered_known_server_ids(known_server_ids, servers)]
+
+
+def _known_server_ids(runs: list[history.RunSummary]) -> list[str]:
+    server_ids: list[str] = []
+    for run in runs:
+        for server in run.servers:
+            server_id = str(server.get("server_id") or server.get("hostname") or "unknown")
+            if server_id not in server_ids:
+                server_ids.append(server_id)
+        for error in run.collection_errors:
+            server_id = str(error.get("server_id") or "unknown")
+            if server_id not in server_ids:
+                server_ids.append(server_id)
+    return server_ids
+
+
+def _server_state_from_runs(
+    server_id: str, latest: history.RunSummary, runs: list[history.RunSummary]
+) -> dict[str, Any]:
+    fallback = _latest_successful_server(server_id, runs)
+    for run in runs:
+        error = _collection_error_for_server(run, server_id)
+        if error:
+            item = dict(fallback) if fallback else _unknown_server(server_id)
+            item["server_id"] = server_id
+            item["services"] = []
+            item["updates"] = {}
+            item["collection_status"] = "failed"
+            item["collection_message"] = str(error.get("message") or "Collection failed.")
+            item["evidence_label"] = _display_time(run)
+            item["dashboard_findings"] = _findings_for_server(run, server_id) or [
+                {
+                    "severity": "critical",
+                    "server_id": server_id,
+                    "code": "collection_failed",
+                    "message": item["collection_message"],
+                    "recommended_action_ids": [],
+                }
+            ]
+            _decorate_dashboard_server(item)
+            return item
+
+        server = _server_from_run(run, server_id)
+        if server:
+            item = dict(server)
+            item["collection_status"] = "current" if run.run_id == latest.run_id else "last_success"
+            item["collection_message"] = ""
+            item["evidence_label"] = _display_time(run)
+            item["dashboard_findings"] = _findings_for_server(run, server_id)
+            _decorate_dashboard_server(item)
+            return item
+
+    item = dict(fallback) if fallback else _unknown_server(server_id)
+    item["collection_status"] = "unknown"
+    item["collection_message"] = "No collection evidence found."
+    item["evidence_label"] = "unknown"
+    item["dashboard_findings"] = []
+    _decorate_dashboard_server(item)
+    return item
+
+
+def _latest_successful_server(
+    server_id: str, runs: list[history.RunSummary]
+) -> dict[str, Any] | None:
+    for run in runs:
+        server = _server_from_run(run, server_id)
+        if server:
+            return server
+    return None
+
+
+def _server_from_run(
+    run: history.RunSummary, server_id: str
+) -> dict[str, Any] | None:
+    for server in run.servers:
+        if str(server.get("server_id") or "") == server_id:
+            return server
+    return None
+
+
+def _collection_error_for_server(
+    run: history.RunSummary, server_id: str
+) -> dict[str, Any] | None:
+    for error in run.collection_errors:
+        if str(error.get("server_id") or "") == server_id:
+            return error
+    return None
+
+
+def _findings_for_server(
+    run: history.RunSummary, server_id: str
+) -> list[dict[str, Any]]:
+    return [
+        finding
+        for finding in run.findings
+        if str(finding.get("server_id") or "") == server_id
+    ]
+
+
+def _decorate_dashboard_server(server: dict[str, Any]) -> None:
+    findings = server.get("dashboard_findings")
+    if not isinstance(findings, list):
+        findings = []
+        server["dashboard_findings"] = findings
+    collection_status = str(server.get("collection_status") or "unknown")
+    collection_message = str(server.get("collection_message") or "")
+    server["dashboard_status"] = _server_status(findings, collection_status)
+    server["dashboard_note"] = _server_note(findings, collection_status, collection_message)
+
+
+def _unknown_server(server_id: str) -> dict[str, Any]:
+    return {
+        "server_id": server_id,
+        "role": "unknown",
+        "hostname": "unknown",
+        "updates": {},
+        "services": [],
+    }
+
+
+def _ordered_known_server_ids(
+    discovered_order: list[str], servers: dict[str, dict[str, Any]]
+) -> list[str]:
+    role_order = {"openvpn_server": 0, "ispy_server": 1, "container_host": 2}
+    return sorted(
+        dict.fromkeys(discovered_order),
+        key=lambda server_id: (
+            role_order.get(str(servers[server_id].get("role") or ""), 99),
+            server_id,
+        ),
+    )
+
+
+def _findings_section(
+    run: history.RunSummary,
+    dashboard_servers: list[dict[str, Any]] | None = None,
+) -> list[str]:
+    findings = _dashboard_findings(dashboard_servers or [])
+    if not findings:
+        findings = run.findings
+    lines = ['<section class="panel">', "<h2>Current Findings</h2>"]
+    if not findings:
         lines.extend(["<p>No findings in the latest run.</p>", "</section>"])
         return lines
 
@@ -203,7 +364,7 @@ def _findings_section(run: history.RunSummary) -> list[str]:
         ]
     )
     for finding in sorted(
-        run.findings,
+        findings,
         key=lambda item: (
             -rules.SEVERITY_RANK.get(str(item.get("severity")), 0),
             str(item.get("server_id", "")),
@@ -224,6 +385,20 @@ def _findings_section(run: history.RunSummary) -> list[str]:
         )
     lines.extend(["</tbody>", "</table>", "</section>"])
     return lines
+
+
+def _dashboard_findings(
+    dashboard_servers: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    for server in dashboard_servers:
+        server_findings = server.get("dashboard_findings")
+        if not isinstance(server_findings, list):
+            continue
+        findings.extend(
+            finding for finding in server_findings if isinstance(finding, dict)
+        )
+    return findings
 
 
 def _actions_section(
@@ -288,7 +463,7 @@ def _server_services(server: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _service_list(services: list[dict[str, Any]]) -> str:
     if not services:
-        return '<p class="muted">No services reported.</p>'
+        return '<p class="muted">Services unknown.</p>'
 
     items = []
     for service in services:
@@ -879,22 +1054,78 @@ def _as_int(value: Any) -> int:
         return 0
 
 
-def _server_status(findings: list[dict[str, Any]]) -> str:
+def _server_status(
+    findings: list[dict[str, Any]], collection_status: str = "current"
+) -> str:
+    if collection_status == "failed":
+        return "Error"
+    if collection_status == "unknown":
+        return "Unknown"
     worst = rules.worst_severity(findings)
     if worst == "critical":
-        return "Critical"
+        return "Error"
     if worst == "warning":
         return "Warning"
     if worst == "info":
-        return "Info"
+        return "OK"
     return "OK"
 
 
-def _server_note(findings: list[dict[str, Any]]) -> str:
+def _server_note(
+    findings: list[dict[str, Any]],
+    collection_status: str = "current",
+    collection_message: str = "",
+) -> str:
+    if collection_status == "failed":
+        return collection_message or "Latest collection failed."
+    if collection_status == "last_success":
+        if findings:
+            first = findings[0]
+            return str(first.get("message") or first.get("title") or "Review finding")
+        return "Last successful health check found no issues."
+    if collection_status == "unknown":
+        return collection_message or "No collection evidence found."
     if not findings:
         return "No issues detected"
     first = findings[0]
     return str(first.get("message") or first.get("title") or "Review finding")
+
+
+def _collection_label(collection_status: str) -> str:
+    if collection_status == "failed":
+        return "failed"
+    if collection_status == "last_success":
+        return "yes"
+    if collection_status == "unknown":
+        return "unknown"
+    return "yes"
+
+
+def _evidence_label(value: str) -> str:
+    if value == "unknown":
+        return value
+    return value
+
+
+def _status_class(status: str) -> str:
+    return status.lower().replace(" ", "-")
+
+
+def _status_counts(dashboard_servers: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {"OK": 0, "Warning": 0, "Error": 0, "Unknown": 0}
+    for server in dashboard_servers:
+        status = str(server.get("dashboard_status") or "Unknown")
+        if status in counts:
+            counts[status] += 1
+        else:
+            counts["Unknown"] += 1
+    return counts
+
+
+def _unknown_if_failed(server: dict[str, Any], value: Any) -> str:
+    if str(server.get("collection_status") or "") == "failed":
+        return "unknown"
+    return str(value)
 
 
 def _display_time(run: history.RunSummary) -> str:
@@ -1055,12 +1286,42 @@ a:hover { text-decoration: underline; }
   border-top: 4px solid var(--ok);
 }
 .server-card.status-warning { border-top-color: var(--warning); }
-.server-card.status-critical { border-top-color: var(--critical); }
-.server-card.status-info { border-top-color: var(--info); }
+.server-card.status-error { border-top-color: var(--critical); }
+.server-card.status-unknown { border-top-color: var(--muted); }
+.server-card-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
 .server-card h3 { margin-bottom: 4px; }
+.status-pill {
+  border-radius: 999px;
+  display: inline-block;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 4px 9px;
+}
+.status-pill-ok {
+  background: #e8f5ee;
+  color: var(--ok);
+}
+.status-pill-warning {
+  background: #fff4db;
+  color: var(--warning);
+}
+.status-pill-error {
+  background: #fdecea;
+  color: var(--critical);
+}
+.status-pill-unknown {
+  background: #eef2f7;
+  color: var(--muted);
+}
 .server-facts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin: 12px 0;
 }

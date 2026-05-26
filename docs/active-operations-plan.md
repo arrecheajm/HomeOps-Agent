@@ -24,13 +24,21 @@ Connection state:
   through the approval-gated `deploy_health_script` action on May 10, 2026
 - collection after deployment refreshed the dashboard and fleet catalog
 
-Latest known findings from run `2026-05-12T22-41-57Z`:
+Latest targeted `container-host` findings from run `2026-05-26T19-38-51Z`:
 
-- `openvpn-server`: 53 package updates pending, no reboot required
-- `ispy-server`: reboot required, 71 package updates pending, failed legacy
-  `ispy` service
-- `container-host`: reboot required, `watchtower` container restarting, no
-  package updates pending
+- `container-host`: no critical, warning, or info findings
+- pending package updates cleared
+- reboot-required cleared
+- Docker is active with no unhealthy containers
+- Watchtower is running as `nickfedor/watchtower`
+- sudoers profile is installed and controller sudo actions work
+
+Latest retained non-targeted findings from older successful evidence:
+
+- `openvpn-server`: 53 package updates pending and reboot required in latest
+  retained evidence
+- `ispy-server`: reboot required, 71 package updates pending, and failed legacy
+  `ispy` service in latest retained evidence
 - no critical findings
 - no collection errors
 
@@ -62,19 +70,20 @@ intermediate repair/overhaul target, and use `container-host` as the Codex lab
 box with full logged sudo.
 
 Only narrow approval-gated controller actions are implemented.
-`restart_docker_container`, `restart_service`, `apply_security_updates`, and
-`reboot_server` require exact approval and write action history. Review dry-runs
-before any live maintenance window.
+Docker inspection/replacement/migration, service restarts, health script
+deployment, sudoers deployment, package updates, security updates, delayed
+reboots, and logged admin commands require exact approval and write action
+history. Review dry-runs before any live maintenance window.
 
-## Step 1: Finish Access Profile Setup
+## Step 1: Maintain Access Profile Setup
 
 1. Decide whether to create a dedicated `homeops` or `labagent` user on each
    server, or continue with the current per-server users.
 2. Install the matching sudoers profile manually from `server-scripts/sudoers/`.
 3. Keep `openvpn-server` on the guarded template.
 4. Use the experimental template for `ispy-server`.
-5. Use the lab template on `container-host`; this is the disposable Codex lab
-   box and should grant broad sudo.
+5. Keep the lab template on `container-host`; this is the disposable Codex lab
+   box and grants broad sudo. The controller verified this on May 26, 2026.
 
 ## Step 2: Gather Reboot And Package Details
 
@@ -184,18 +193,21 @@ Expected result after maintenance:
 `container-host` is the Codex lab. Use it for full-sudo experiments after
 reviewing dry-runs and exact approval phrases:
 
-1. Review the `watchtower` container restart loop.
-2. Dry-run the approved action if a restart is the intended next step:
+1. Use `inspect_docker_container` for container status, logs, and compact
+   `docker inspect` data.
+2. Use `migrate_watchtower_container` if Watchtower regresses to the archived
+   `containrrr/watchtower` Docker API mismatch.
+3. Dry-run the approved action before execution:
 
 ```powershell
-python -m controller.main actions run restart_docker_container --server container-host --container watchtower --dry-run
+python -m controller.main actions run inspect_docker_container --server container-host --container watchtower --dry-run
 ```
 
-3. Use `run_admin_command` for package installs, lab setup, destructive tests,
+4. Use `run_admin_command` for package installs, lab setup, destructive tests,
    and rebuild experiments on this host only.
-4. Execute only after the user approves the exact phrase printed by the dry-run.
-5. Keep `container-host` enabled in local `config/servers.yaml`.
-6. Refresh collection after any lab change:
+5. Execute only after the user approves the exact phrase printed by the dry-run.
+6. Keep `container-host` enabled in local `config/servers.yaml`.
+7. Refresh collection after any lab change:
 
 ```powershell
 python -m controller.main collect

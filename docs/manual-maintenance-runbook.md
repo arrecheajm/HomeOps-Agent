@@ -3,9 +3,9 @@
 Use this runbook for one-server-at-a-time update and reboot maintenance.
 
 The controller now has approval-gated `apply_security_updates` and
-`reboot_server` actions. Manual commands remain documented for broader package
-maintenance or recovery. Use either path only during an acceptable maintenance
-window.
+`apply_package_updates` plus `reboot_server` actions. Manual commands remain
+documented for broader package maintenance or recovery. Use either path only
+during an acceptable maintenance window.
 
 Access profiles now set the operating stance:
 
@@ -19,15 +19,15 @@ Recommended order:
 
 1. `ispy-server`
 2. `openvpn-server`
-3. `container-host`
+3. `container-host` only if future collection shows drift
 
 Reasoning:
 
 - `ispy-server` has pending package updates and a reboot-required state.
 - `openvpn-server` has pending package updates but no reboot-required state in
   the latest run.
-- `container-host` has a reboot-required state and a restarting `watchtower`
-  container, but should wait until VPN and iSpy maintenance are stable.
+- `container-host` package updates, Watchtower migration, sudoers repair, and
+  reboot were completed and verified clean on May 26, 2026.
 - `ispy-server` maintenance can interrupt camera recording or monitoring.
 - `openvpn-server` maintenance can disconnect VPN clients, so handle it when VPN interruption is acceptable.
 - If your current access path to the servers depends on `openvpn-server`, rebooting or breaking it can cut off access to the whole fleet.
@@ -106,6 +106,12 @@ For broader package maintenance, run on the target server:
 ```bash
 sudo apt update
 sudo apt upgrade
+```
+
+For the container lab host, the controller has a scoped package update action:
+
+```powershell
+python -m controller.main actions run apply_package_updates --server container-host --dry-run
 ```
 
 Read the package summary before accepting. If the command proposes removing important packages or changing core services unexpectedly, stop and inspect before continuing.

@@ -27,17 +27,23 @@ Live status:
   agent/action history, and grouped run history.
 - Fleet capability catalog generation is implemented for tracked repo knowledge
   and separate HTML reporting.
+- Focused `container-review` reporting is implemented for container-host
+  diagnosis, recommended dry-run fixes, and verification commands.
 - Before-state snapshot generation is implemented for rebuildable servers.
 - Rebuild plan generation is implemented for rebuildable servers from
   before-state snapshots.
-- `deploy_health_script`, `restart_docker_container`, and `restart_service`
+- `inspect_docker_container`, `replace_watchtower_container`,
+  `migrate_watchtower_container`, `deploy_health_script`,
+  `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
+  `apply_package_updates`, `apply_security_updates`, and `reboot_server`
   support dry-run, exact approval, execution, and action history.
 - `run_admin_command` supports dry-run, exact approval, execution, and action
   history for `experimental` and `lab` servers only.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
-  `2026-05-12T17-16-00Z`, after the latest fleet review and action attempts.
+  `2026-05-26T19-38-51Z`, after container-host Watchtower migration,
+  package updates, sudoers repair, and reboot verification.
 - The `run fleet review` operator workflow is documented for Codex: collect
   live health, refresh dashboard and catalog, check the latest run explicitly,
   summarize findings, and recommend next steps without executing
@@ -139,14 +145,22 @@ currently runs through `python -m controller.main collect`.
 - [x] `collect_ispy`
 
 Approval-required action IDs are registered. `restart_docker_container`,
-`restart_service`, `deploy_health_script`, `apply_security_updates`, and
-`reboot_server` are executable after exact approval. `run_admin_command` is
-also executable after exact approval on `experimental` and `lab` profiles.
+`restart_service`, `deploy_health_script`, `deploy_sudoers_profile`,
+`inspect_docker_container`, `replace_watchtower_container`,
+`migrate_watchtower_container`, `apply_package_updates`,
+`apply_security_updates`, and `reboot_server` are executable after exact
+approval. `run_admin_command` is also executable after exact approval on
+`experimental` and `lab` profiles.
 
 - [x] `deploy_health_script`
+- [x] `deploy_sudoers_profile`
+- [x] `inspect_docker_container`
+- [x] `replace_watchtower_container`
+- [x] `migrate_watchtower_container`
 - [x] `restart_service`
 - [x] `restart_docker_container`
 - [x] `reboot_server`
+- [x] `apply_package_updates`
 - [x] `apply_security_updates`
 - [x] `run_admin_command`
 
@@ -160,10 +174,10 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-Operationally, follow `docs/active-operations-plan.md`: install the right
-sudoers profile on each server, preserve VPN access on the guarded server, use
-`ispy-server` for intermediate repair work, and use `container-host` as the
-full-sudo Codex lab.
+Operationally, follow `docs/active-operations-plan.md`: preserve VPN access on
+the guarded server, use `ispy-server` for intermediate repair work, and use
+`container-host` as the full-sudo Codex lab now that its sudoers profile,
+Watchtower migration, package updates, and reboot verification are complete.
 
 The next implementation item is an explicit rebuild execution design for
 rebuildable servers. It should stay separate from `run_admin_command`.
@@ -212,6 +226,7 @@ Reporting readiness:
 - [x] Refresh HTML dashboard after action attempts.
 - [x] Generate tracked fleet capability catalog JSON.
 - [x] Generate separate fleet catalog HTML report.
+- [x] Generate container host review reports with recommended dry-run fixes.
 - [x] Refresh the tracked fleet catalog after health script deployment.
 - [x] Document the `run fleet review` Codex workflow.
 

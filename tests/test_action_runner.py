@@ -35,6 +35,132 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(record["command"][-1], "docker restart watchtower")
         self.assertIn("Approve action restart_docker_container", record["expected_approval"])
 
+    def test_inspect_docker_container_dry_run_writes_status_log_and_config_commands(self):
+        attempt = run_action(
+            "inspect_docker_container",
+            "container-host",
+            [self._container_server()],
+            {"container": "watchtower"},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 3)
+        self.assertEqual(
+            record["commands"][0][-1],
+            "docker ps -a --filter name=watchtower",
+        )
+        self.assertEqual(
+            record["commands"][1][-1],
+            "docker logs --tail 120 watchtower",
+        )
+        self.assertIn("docker inspect --format", record["commands"][2][-1])
+        self.assertIn("image={{.Config.Image}}", record["commands"][2][-1])
+        self.assertIn("Approve action inspect_docker_container", record["expected_approval"])
+
+    def test_inspect_docker_container_executes_sequence_after_approval(self):
+        args = {"container": "watchtower"}
+        approval = approvals.approval_phrase(
+            "inspect_docker_container",
+            "container-host",
+            args,
+        )
+        completed = subprocess.CompletedProcess(
+            args=["ssh"],
+            returncode=0,
+            stdout="watchtower\n",
+            stderr="",
+        )
+
+        with patch(
+            "controller.action_runner.subprocess.run",
+            side_effect=[completed, completed, completed],
+        ) as subprocess_run:
+            attempt = run_action(
+                "inspect_docker_container",
+                "container-host",
+                [self._container_server()],
+                args,
+                approval_text=approval,
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(attempt.record["exit_code"], 0)
+        self.assertEqual(subprocess_run.call_count, 3)
+
+    def test_replace_watchtower_container_dry_run_writes_recreate_commands(self):
+        attempt = run_action(
+            "replace_watchtower_container",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 4)
+        self.assertEqual(record["commands"][0][-1], "docker pull containrrr/watchtower")
+        self.assertEqual(record["commands"][1][-1], "docker stop watchtower")
+        self.assertEqual(record["commands"][2][-1], "docker rm watchtower")
+        self.assertIn("docker run -d --name watchtower", record["commands"][3][-1])
+        self.assertIn("--label-enable --cleanup", record["commands"][3][-1])
+
+    def test_replace_watchtower_container_executes_after_approval(self):
+        approval = approvals.approval_phrase(
+            "replace_watchtower_container",
+            "container-host",
+            {},
+        )
+        completed = subprocess.CompletedProcess(
+            args=["ssh"],
+            returncode=0,
+            stdout="ok\n",
+            stderr="",
+        )
+
+        with patch(
+            "controller.action_runner.subprocess.run",
+            side_effect=[completed, completed, completed, completed],
+        ) as subprocess_run:
+            attempt = run_action(
+                "replace_watchtower_container",
+                "container-host",
+                [self._container_server()],
+                {},
+                approval_text=approval,
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(attempt.record["exit_code"], 0)
+        self.assertEqual(subprocess_run.call_count, 4)
+
+    def test_migrate_watchtower_container_dry_run_uses_maintained_image(self):
+        attempt = run_action(
+            "migrate_watchtower_container",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 4)
+        self.assertEqual(record["commands"][0][-1], "docker pull nickfedor/watchtower")
+        self.assertIn("docker run -d --name watchtower", record["commands"][3][-1])
+        self.assertIn("nickfedor/watchtower", record["commands"][3][-1])
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action migrate_watchtower_container on container-host",
+        )
+
     def test_restart_docker_container_requires_exact_approval(self):
         with self.assertRaisesRegex(ActionError, "requires exact approval"):
             run_action(
@@ -184,6 +310,53 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(attempt.record["exit_code"], 0)
         self.assertEqual(subprocess_run.call_count, 2)
 
+    def test_deploy_sudoers_profile_dry_run_writes_lab_profile_command(self):
+        attempt = run_action(
+            "deploy_sudoers_profile",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action deploy_sudoers_profile on container-host",
+        )
+        command = record["command"][-1]
+        self.assertIn("homeops ALL=(root) NOPASSWD: ALL", command)
+        self.assertIn("/etc/sudoers.d/homeops-agent", command)
+        self.assertIn("/usr/sbin/visudo -cf", command)
+        self.assertIn("/usr/bin/install -o root -g root -m 0440", command)
+
+    def test_deploy_sudoers_profile_rejects_non_lab_profile(self):
+        with self.assertRaisesRegex(ActionError, "implemented only for lab"):
+            run_action(
+                "deploy_sudoers_profile",
+                "container-host",
+                [
+                    ServerInventoryItem(
+                        server_id="container-host",
+                        role="container_host",
+                        host="container-host.local",
+                        user="containerserver",
+                        port=22,
+                        enabled=True,
+                        access_profile="experimental",
+                        rebuildable=True,
+                        connect_timeout_seconds=10,
+                        command_timeout_seconds=30,
+                        identity_file=None,
+                    )
+                ],
+                {},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
     def test_reboot_server_dry_run_writes_delayed_shutdown_command(self):
         attempt = run_action(
             "reboot_server",
@@ -277,6 +450,69 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(attempt.record["status"], "completed")
         self.assertEqual(attempt.record["exit_code"], 0)
         self.assertEqual(attempt.record["stdout"], "Packages upgraded")
+
+    def test_apply_package_updates_dry_run_uses_apt_upgrade_on_lab_host(self):
+        attempt = run_action(
+            "apply_package_updates",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 2)
+        self.assertEqual(record["commands"][0][-1], "sudo -n apt-get update")
+        self.assertEqual(
+            record["commands"][1][-1],
+            "sudo -n env DEBIAN_FRONTEND=noninteractive apt-get -y upgrade",
+        )
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action apply_package_updates on container-host",
+        )
+
+    def test_apply_package_updates_executes_after_approval(self):
+        args = {}
+        approval = approvals.approval_phrase(
+            "apply_package_updates", "container-host", args
+        )
+        completed = subprocess.CompletedProcess(
+            args=["ssh"],
+            returncode=0,
+            stdout="Packages upgraded\n",
+            stderr="",
+        )
+
+        with patch(
+            "controller.action_runner.subprocess.run",
+            side_effect=[completed, completed],
+        ) as subprocess_run:
+            attempt = run_action(
+                "apply_package_updates",
+                "container-host",
+                [self._container_server()],
+                args,
+                approval_text=approval,
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(attempt.record["exit_code"], 0)
+        self.assertEqual(subprocess_run.call_count, 2)
+
+    def test_apply_package_updates_rejects_non_container_host(self):
+        with self.assertRaisesRegex(ActionError, "not allowed for role openvpn_server"):
+            run_action(
+                "apply_package_updates",
+                "openvpn-server",
+                [self._openvpn_server()],
+                {},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
 
     def test_run_admin_command_dry_run_writes_logged_command(self):
         args = {
