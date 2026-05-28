@@ -232,4 +232,4 @@ Stop and reassess if:
 - VPN access is needed before rebooting `openvpn-server`
 - you are not on the local server network and have no independent recovery path for `openvpn-server`
 
-Record findings in `docs/active-operations-plan.md` before continuing.
+Record resumable findings in `ACTIVE_WORK.md` before continuing.

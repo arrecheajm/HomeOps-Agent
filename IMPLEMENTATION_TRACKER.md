@@ -174,13 +174,17 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-Operationally, follow `docs/active-operations-plan.md`: preserve VPN access on
-the guarded server, use `ispy-server` for intermediate repair work, and use
-`container-host` as the full-sudo Codex lab now that its sudoers profile,
-Watchtower migration, package updates, and reboot verification are complete.
-
 The next implementation item is an explicit rebuild execution design for
 rebuildable servers. It should stay separate from `run_admin_command`.
+
+For day-to-day Codex resume state, use `ACTIVE_WORK.md` and the generated
+`reports/generated/codex-brief.md`. Do not use this tracker as the first file
+for every session.
+
+Operationally, preserve VPN access on the guarded server, use `ispy-server` for
+intermediate repair work, and use `container-host` as the full-sudo Codex lab
+now that its sudoers profile, Watchtower migration, package updates, and reboot
+verification are complete.
 
 For live rule checks, pass the latest run explicitly because `check` without
 `--input` defaults to fixture data:
@@ -189,10 +193,10 @@ For live rule checks, pass the latest run explicitly because `check` without
 python -m controller.main check --input history\runs\<latest-run>\fleet-health.json
 ```
 
-Current operations are tracked in:
+Current daily handoff is tracked in:
 
 ```text
-docs/active-operations-plan.md
+ACTIVE_WORK.md
 ```
 
 Manual update/reboot workflow is tracked in:

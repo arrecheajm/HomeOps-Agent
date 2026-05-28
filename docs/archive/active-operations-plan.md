@@ -1,5 +1,8 @@
 # Active Operations Plan
 
+Archived: use `ACTIVE_WORK.md` for current daily handoff and next-step
+guidance. This file is kept only for historical context.
+
 This plan captures the current HomeOps operating focus after pivoting the fleet
 from a conservative home-infra framing to a personal homelab agent controller.
 

@@ -13,6 +13,7 @@ from . import (
     action_runner,
     approvals,
     before_state,
+    codex_brief,
     container_review,
     collector,
     config,
@@ -268,6 +269,27 @@ def command_dashboard(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_codex_brief(args: argparse.Namespace) -> int:
+    runs_dir = Path(args.runs_dir) if args.runs_dir else config.RUNS_DIR
+    output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
+    active_work_path = (
+        Path(args.active_work) if args.active_work else config.ACTIVE_WORK_PATH
+    )
+    tracker_path = (
+        Path(args.tracker)
+        if args.tracker
+        else config.BASE_DIR / "IMPLEMENTATION_TRACKER.md"
+    )
+    brief_path = codex_brief.write_codex_brief(
+        history.discover_run_summaries(runs_dir),
+        output_dir=output_dir,
+        active_work_path=active_work_path,
+        tracker_path=tracker_path,
+    )
+    print(f"Wrote Codex brief: {brief_path}")
+    return 0
+
+
 def command_catalog(args: argparse.Namespace) -> int:
     output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
     knowledge_path = (
@@ -481,6 +503,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory for generated dashboard. Defaults to reports/generated.",
     )
     dashboard_parser.set_defaults(func=command_dashboard)
+
+    codex_brief_parser = subparsers.add_parser(
+        "codex-brief", help="Generate a compact Codex session startup brief"
+    )
+    codex_brief_parser.add_argument(
+        "--runs-dir",
+        help="History runs directory. Defaults to history/runs.",
+    )
+    codex_brief_parser.add_argument(
+        "--output-dir",
+        help="Directory for generated brief. Defaults to reports/generated.",
+    )
+    codex_brief_parser.add_argument(
+        "--active-work",
+        help="Daily handoff path. Defaults to ACTIVE_WORK.md.",
+    )
+    codex_brief_parser.add_argument(
+        "--tracker",
+        help="Implementation tracker path. Defaults to IMPLEMENTATION_TRACKER.md.",
+    )
+    codex_brief_parser.set_defaults(func=command_codex_brief)
 
     catalog_parser = subparsers.add_parser(
         "catalog", help="Generate fleet capability catalog HTML and tracked JSON"

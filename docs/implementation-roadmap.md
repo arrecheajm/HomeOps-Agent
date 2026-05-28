@@ -1,5 +1,9 @@
 # Implementation Roadmap
 
+This is the durable phase roadmap. For daily Codex resume state and thinking
+level guidance, use `ACTIVE_WORK.md` instead of re-reading this file at session
+startup.
+
 ## Current Status
 
 The controller can generate an HTML dashboard, load inventory with optional SSH

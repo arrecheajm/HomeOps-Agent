@@ -8,7 +8,7 @@ Use these documents as the current operating guide:
 - [Codex Operating Guide](codex-operating-guide.md): how Codex should review reports and recommend next steps.
 - [Data Schema](data-schema.md): server health, fleet health, and finding shapes.
 - [Reporting](reporting.md): HTML dashboard, fleet catalog, before-state snapshots, rebuild plans, action history, and run grouping.
-- [Active Operations Plan](active-operations-plan.md): current findings and next operational steps.
+- [Active Work](../ACTIVE_WORK.md): daily Codex handoff, quick resume prompt, and thinking-level guidance.
 - [Manual Maintenance Runbook](manual-maintenance-runbook.md): one-server-at-a-time update and reboot workflow.
 - [Implementation Roadmap](implementation-roadmap.md): current phase and upcoming work.
 - [Server Access Setup](server-access-setup.md): inventory, SSH, profile, and sudoers setup for the homelab model.

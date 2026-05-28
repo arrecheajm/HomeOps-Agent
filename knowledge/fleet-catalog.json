@@ -3,18 +3,17 @@
     "collection_failed": 0,
     "cpu_threads": 10,
     "docker_hosts": 1,
-    "not_collected": 2,
-    "pending_updates": 124,
-    "reboots_required": 2,
+    "not_collected": 0,
+    "pending_updates": 148,
+    "reboots_required": 0,
     "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-05-26T19:38:51Z",
+  "generated_at": "2026-05-28T14:49:34Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
-    "Use container-host as the Codex lab and default Docker experiment target.",
-    "Clear reboot-required hosts before making placement changes.",
+    "Keep container-host maintenance current before increasing Docker workload.",
     "Apply pending package maintenance before using current capacity numbers for long-term planning."
   ],
   "schema_version": "1.0",
@@ -25,15 +24,18 @@
         "Low background workload",
         "Small CPU footprint"
       ],
-      "collected_at": "2026-05-26T17:00:28Z",
-      "collection_status": "not_in_latest_run",
+      "collected_at": "2026-05-28T14:49:42Z",
       "constraints": [
-        "Not collected in latest run",
-        "Reboot required",
-        "53 package updates pending",
+        "54 package updates pending",
         "VPN availability affects remote access"
       ],
-      "current_findings": [],
+      "current_findings": [
+        {
+          "code": "security_updates_pending",
+          "message": "1 security update is pending.",
+          "severity": "warning"
+        }
+      ],
       "docker": {
         "containers_running": 0,
         "containers_total": 0,
@@ -47,14 +49,13 @@
         "virtualization": "none"
       },
       "hostname": "vpnserver",
-      "last_successful_collected_at": "2026-05-26T17:00:28Z",
       "maintenance": {
-        "pending_security_updates": 0,
-        "pending_updates": 53,
-        "reboot_required": true
+        "pending_security_updates": 1,
+        "pending_updates": 54,
+        "reboot_required": false
       },
       "os": {
-        "kernel": "6.8.0-111-generic",
+        "kernel": "6.8.0-117-generic",
         "name": "Ubuntu",
         "version": "24.04"
       },
@@ -64,10 +65,10 @@
       ],
       "resources": {
         "cpu_count": 2,
-        "load_1m": 2.74,
-        "memory_used_percent": 24.4,
+        "load_1m": 1.17,
+        "memory_used_percent": 19.0,
         "swap_used_percent": 0.0,
-        "uptime_days": 17.9
+        "uptime_days": 0.0
       },
       "role": "openvpn_server",
       "role_label": "VPN",
@@ -110,16 +111,24 @@
         "AgentDVR workload",
         "Moderate CPU headroom"
       ],
-      "collected_at": "2026-05-14T13:18:30Z",
-      "collection_status": "not_in_latest_run",
+      "collected_at": "2026-05-28T14:49:46Z",
       "constraints": [
-        "Not collected in latest run",
-        "Reboot required",
-        "71 package updates pending",
+        "93 package updates pending",
         "Service issue: ispy",
         "Camera recording interruption risk"
       ],
-      "current_findings": [],
+      "current_findings": [
+        {
+          "code": "security_updates_pending",
+          "message": "22 security updates are pending.",
+          "severity": "warning"
+        },
+        {
+          "code": "service_failed",
+          "message": "Service ispy is failed.",
+          "severity": "warning"
+        }
+      ],
       "docker": {
         "containers_running": 0,
         "containers_total": 0,
@@ -133,14 +142,13 @@
         "virtualization": "none"
       },
       "hostname": "ispyserver",
-      "last_successful_collected_at": "2026-05-14T13:18:30Z",
       "maintenance": {
-        "pending_security_updates": 0,
-        "pending_updates": 71,
-        "reboot_required": true
+        "pending_security_updates": 22,
+        "pending_updates": 93,
+        "reboot_required": false
       },
       "os": {
-        "kernel": "6.8.0-100-generic",
+        "kernel": "6.8.0-111-generic",
         "name": "Ubuntu",
         "version": "24.04"
       },
@@ -150,10 +158,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.45,
-        "memory_used_percent": 9.9,
+        "load_1m": 0.32,
+        "memory_used_percent": 9.6,
         "swap_used_percent": 0.0,
-        "uptime_days": 89.7
+        "uptime_days": 0.6
       },
       "role": "ispy_server",
       "role_label": "Security Cameras",
@@ -178,10 +186,10 @@
       "storage": {
         "disks": [
           {
-            "free_gb": 82,
+            "free_gb": 83,
             "mount": "/",
             "size_gb": 98,
-            "used_percent": 13
+            "used_percent": 12
           },
           {
             "free_gb": 2,
@@ -196,9 +204,9 @@
             "used_percent": 1
           }
         ],
-        "root_free_gb": 82,
-        "root_used_percent": 13,
-        "total_reported_free_gb": 86
+        "root_free_gb": 83,
+        "root_used_percent": 12,
+        "total_reported_free_gb": 87
       }
     },
     {
@@ -209,9 +217,17 @@
         "Moderate CPU headroom",
         "Docker installed with 6 running containers"
       ],
-      "collected_at": "2026-05-26T19:38:57Z",
-      "constraints": [],
-      "current_findings": [],
+      "collected_at": "2026-05-28T14:49:48Z",
+      "constraints": [
+        "1 package updates pending"
+      ],
+      "current_findings": [
+        {
+          "code": "updates_pending",
+          "message": "1 package update is pending.",
+          "severity": "info"
+        }
+      ],
       "docker": {
         "containers_running": 6,
         "containers_total": 9,
@@ -227,7 +243,7 @@
       "hostname": "containerserver",
       "maintenance": {
         "pending_security_updates": 0,
-        "pending_updates": 0,
+        "pending_updates": 1,
         "reboot_required": false
       },
       "os": {
@@ -237,14 +253,14 @@
       },
       "placement_guidance": [
         "Prefer this host for Codex lab experiments and Docker-backed applications.",
-        "Current host maintenance is clean; suitable for lab workloads."
+        "Clear host maintenance before increasing workload."
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.11,
-        "memory_used_percent": 10.6,
+        "load_1m": 0.02,
+        "memory_used_percent": 11.7,
         "swap_used_percent": 0.0,
-        "uptime_days": 0.0
+        "uptime_days": 1.8
       },
       "role": "container_host",
       "role_label": "Containers",
@@ -289,8 +305,8 @@
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-05-26T19-38-51Z/fleet-health.json",
-    "generated_at": "2026-05-26T19:38:51Z",
-    "run_id": "2026-05-26T19-38-51Z"
+    "fleet_path": "history/runs/2026-05-28T14-49-34Z/fleet-health.json",
+    "generated_at": "2026-05-28T14:49:34Z",
+    "run_id": "2026-05-28T14-49-34Z"
   }
 }

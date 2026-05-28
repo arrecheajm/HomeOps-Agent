@@ -76,6 +76,7 @@ python -m controller.main actions run apply_security_updates --server openvpn-se
 python -m controller.main actions run reboot_server --server ispy-server --dry-run
 python -m controller.main actions run run_admin_command --server container-host --command "apt-get install -y htop" --intent "install package in Codex lab" --dry-run
 python -m controller.main dashboard
+python -m controller.main codex-brief
 python -m controller.main collect --dry-run --inventory config/servers.example.yaml
 python -m controller.main collect --server container-host
 python -m controller.main collect
@@ -84,6 +85,16 @@ python -m unittest discover -s tests
 ```
 
 ## Fleet Review
+
+For token-efficient daily work with Codex, start with:
+
+```text
+quick resume
+```
+
+That means: read `ACTIVE_WORK.md`, optionally refresh and read
+`reports/generated/codex-brief.md`, then continue the next step without
+re-reviewing the whole repository.
 
 When working with Codex, use this request for the standard safe review loop:
 
@@ -193,7 +204,7 @@ do not execute destructive actions.
 - [Codex Operating Guide](docs/codex-operating-guide.md)
 - [Data Schema](docs/data-schema.md)
 - [Reporting](docs/reporting.md)
-- [Active Operations Plan](docs/active-operations-plan.md)
+- [Active Work](ACTIVE_WORK.md)
 - [Manual Maintenance Runbook](docs/manual-maintenance-runbook.md)
 - [Implementation Roadmap](docs/implementation-roadmap.md)
 - [Server Access Setup](docs/server-access-setup.md)

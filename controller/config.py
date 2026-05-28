@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
+ACTIVE_WORK_PATH = BASE_DIR / "ACTIVE_WORK.md"
 CONFIG_DIR = BASE_DIR / "config"
 REPORTS_DIR = BASE_DIR / "reports"
 GENERATED_REPORTS_DIR = REPORTS_DIR / "generated"

@@ -4,6 +4,21 @@ This repository is intended to be opened and operated from VS Code with Codex.
 
 Codex is the analyst. The controller is the deterministic evidence collector. A narrow approval-gated action runner exists for supported actions.
 
+## Quick Resume Shortcut
+
+When the user says `quick resume`, keep startup context small:
+
+1. Read `ACTIVE_WORK.md`.
+2. Read `reports/generated/codex-brief.md` if it exists.
+3. Run `python -m controller.main codex-brief` only when brief pointers may be stale.
+4. Continue the next step from `ACTIVE_WORK.md`.
+5. Do not re-review the whole repository unless the active handoff is missing necessary context.
+6. Do not run live fleet collection unless current server state is needed.
+
+Use the thinking level guidance in `ACTIVE_WORK.md`: start daily resume work at
+`medium`, raise to `high` for implementation, and reserve `extra high` for
+security, architecture, rebuild execution, or approval-gated mutation design.
+
 ## When Reviewing Server Health
 
 1. Read the latest generated HTML dashboard at `reports/generated/index.html`.
