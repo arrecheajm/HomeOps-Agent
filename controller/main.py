@@ -19,6 +19,7 @@ from . import (
     config,
     history,
     inventory,
+    ispy_review,
     policy,
     rebuild_plan,
     rules,
@@ -432,6 +433,71 @@ def command_container_review(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_ispy_review(args: argparse.Namespace) -> int:
+    if args.input:
+        input_path = Path(args.input)
+        fleet = apply_local_rules(load_json(input_path))
+        run_summary = history.run_summary_from_fleet(fleet, input_path)
+    else:
+        runs = history.discover_run_summaries()
+        if not runs:
+            raise SystemExit("No run history found. Run collection before review.")
+        run_summary = runs[0]
+
+    before_state_payload = None
+    before_state_path = None
+    try:
+        before_state_path = (
+            Path(args.before_state)
+            if args.before_state
+            else rebuild_plan.find_latest_before_state(args.server)
+        )
+        before_state_payload = rebuild_plan.load_before_state(before_state_path)
+    except rebuild_plan.RebuildPlanError:
+        before_state_payload = None
+        before_state_path = None
+
+    output_dir = Path(args.output_dir) if args.output_dir else config.GENERATED_REPORTS_DIR
+    agentdvr_evidence_path = (
+        Path(args.agentdvr_evidence)
+        if args.agentdvr_evidence
+        else output_dir / "ispy-agentdvr-evidence.json"
+    )
+    agentdvr_evidence = None
+    if agentdvr_evidence_path.exists():
+        agentdvr_evidence = load_json(agentdvr_evidence_path)
+
+    review = ispy_review.write_ispy_review(
+        run_summary,
+        args.server,
+        history.discover_action_summaries(),
+        before_state=before_state_payload,
+        before_state_path=before_state_path,
+        agentdvr_evidence=agentdvr_evidence,
+        agentdvr_evidence_path=agentdvr_evidence_path if agentdvr_evidence else None,
+        output_dir=output_dir,
+    )
+    print(f"Wrote iSpy review: {review.html_path}")
+    print(f"Wrote iSpy review JSON: {review.json_path}")
+    print(f"Source run: {run_summary.run_id}")
+    recommendations = review.payload.get("recommendations") or []
+    print(f"Recommendations: {len(recommendations)}")
+    for item in recommendations:
+        if not isinstance(item, dict):
+            continue
+        print(
+            f"- {item.get('severity', 'info')}: "
+            f"{item.get('title', 'Recommendation')}"
+        )
+        dry_run_command = item.get("dry_run_command")
+        if dry_run_command:
+            print(f"  Dry run: {dry_run_command}")
+
+    refreshed = refresh_html_reports()
+    print_report_refresh(refreshed)
+    return 0
+
+
 def _filter_servers(
     servers: list[inventory.ServerInventoryItem], requested: list[str]
 ) -> list[inventory.ServerInventoryItem]:
@@ -622,6 +688,36 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory for generated review reports. Defaults to reports/generated.",
     )
     container_review_parser.set_defaults(func=command_container_review)
+
+    ispy_review_parser = subparsers.add_parser(
+        "ispy-review",
+        help="Write an iSpy server review with AgentDVR reliability recommendations",
+    )
+    ispy_review_parser.add_argument(
+        "--server",
+        default=ispy_review.DEFAULT_ISPY_SERVER_ID,
+        help="iSpy server_id. Defaults to ispy-server.",
+    )
+    ispy_review_parser.add_argument(
+        "--input",
+        help="Fleet health JSON to review. Defaults to latest run history.",
+    )
+    ispy_review_parser.add_argument(
+        "--before-state",
+        help="Before-state snapshot path. Defaults to latest for the server.",
+    )
+    ispy_review_parser.add_argument(
+        "--agentdvr-evidence",
+        help=(
+            "Sanitized AgentDVR evidence JSON. Defaults to "
+            "reports/generated/ispy-agentdvr-evidence.json when present."
+        ),
+    )
+    ispy_review_parser.add_argument(
+        "--output-dir",
+        help="Directory for generated review reports. Defaults to reports/generated.",
+    )
+    ispy_review_parser.set_defaults(func=command_ispy_review)
 
     actions_parser = subparsers.add_parser("actions", help="Inspect or run actions")
     actions_subparsers = actions_parser.add_subparsers(

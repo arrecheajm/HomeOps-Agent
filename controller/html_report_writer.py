@@ -124,6 +124,9 @@ def _latest_link(run: history.RunSummary | None, output_dir: Path) -> str:
     container_review_path = output_dir / "container-review.html"
     if container_review_path.exists():
         links.append(_link("Container Review", container_review_path, output_dir))
+    ispy_review_path = output_dir / "ispy-review.html"
+    if ispy_review_path.exists():
+        links.append(_link("iSpy Review", ispy_review_path, output_dir))
     return f'<nav class="actions">{"".join(links)}</nav>'
 
 

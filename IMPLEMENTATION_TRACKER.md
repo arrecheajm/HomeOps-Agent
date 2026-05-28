@@ -29,6 +29,10 @@ Live status:
   and separate HTML reporting.
 - Focused `container-review` reporting is implemented for container-host
   diagnosis, recommended dry-run fixes, and verification commands.
+- Focused `ispy-review` reporting is implemented for iSpy/AgentDVR reliability
+  work, including service diagnosis, before-state context, recent action
+  history, sanitized AgentDVR evidence, recording gaps, endpoint checks, and
+  recommended next steps.
 - Before-state snapshot generation is implemented for rebuildable servers.
 - Rebuild plan generation is implemented for rebuildable servers from
   before-state snapshots.
@@ -99,6 +103,7 @@ Current operating model:
 | `controller/policy.py` | policy loading and thresholds | Implemented |
 | `controller/html_report_writer.py` | HTML dashboard generation | Implemented |
 | `controller/fleet_catalog.py` | fleet capability catalog generation | Implemented |
+| `controller/ispy_review.py` | focused iSpy/AgentDVR reliability report generation | Implemented |
 | `controller/history.py` | run history loading and grouping | Implemented |
 | `controller/action_registry.py` | allowed action definitions | Implemented |
 | `controller/approvals.py` | approval checks and prompts | Implemented |
@@ -231,6 +236,8 @@ Reporting readiness:
 - [x] Generate tracked fleet capability catalog JSON.
 - [x] Generate separate fleet catalog HTML report.
 - [x] Generate container host review reports with recommended dry-run fixes.
+- [x] Generate iSpy/AgentDVR review reports with service, recording, and
+  sanitized endpoint evidence.
 - [x] Refresh the tracked fleet catalog after health script deployment.
 - [x] Document the `run fleet review` Codex workflow.
 

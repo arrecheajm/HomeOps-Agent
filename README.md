@@ -81,6 +81,7 @@ python -m controller.main collect --dry-run --inventory config/servers.example.y
 python -m controller.main collect --server container-host
 python -m controller.main collect
 python -m controller.main container-review --server container-host
+python -m controller.main ispy-review --server ispy-server
 python -m unittest discover -s tests
 ```
 
@@ -117,6 +118,17 @@ python -m controller.main container-review --server container-host
 The review writes recommended dry-run fixes into
 `reports/generated/container-review.html` and
 `reports/generated/container-review.json`.
+
+For focused iSpy/AgentDVR operations, use:
+
+```bash
+python -m controller.main ispy-review --server ispy-server
+```
+
+The review writes service diagnosis, before-state context, recording evidence,
+sanitized endpoint checks, and recommended next steps into
+`reports/generated/ispy-review.html` and
+`reports/generated/ispy-review.json`.
 
 `report` and `check` default to fixture data for local testing. For live fleet
 status, pass an explicit run file:

@@ -4,6 +4,8 @@ HomeOps writes generated HTML report surfaces from structured history:
 
 - An HTML dashboard for current status, action history, and recent trends.
 - An HTML fleet catalog for server capabilities and workload placement guidance.
+- Focused server review reports for active repair work, currently
+  `container-review` and `ispy-review`.
 
 ## Source Of Truth
 
@@ -15,6 +17,7 @@ history/actions/<timestamp>-<server_id>-<action_id>.json
 history/before-state/<timestamp>-<server_id>.json
 history/rebuild-plans/<timestamp>-<server_id>-rebuild-plan.json
 knowledge/fleet-catalog.json
+reports/generated/ispy-agentdvr-evidence.json
 ```
 
 Legacy Markdown reports are not generated anymore and are not included in the HTML dashboard timeline.
@@ -85,6 +88,40 @@ create timestamp-only catalog churn.
 If hardware fields show as `unknown`, deploy the latest approved health script
 with `deploy_health_script`, then run collection and regenerate the catalog.
 
+## Focused Server Reviews
+
+Focused review reports turn the latest fleet run plus local evidence into a
+short operational report for the server currently being repaired.
+
+Container host review:
+
+```bash
+python -m controller.main container-review --server container-host
+```
+
+iSpy/AgentDVR review:
+
+```bash
+python -m controller.main ispy-review --server ispy-server
+```
+
+The iSpy review writes:
+
+```text
+reports/generated/ispy-review.html
+reports/generated/ispy-review.json
+```
+
+When present, it also reads sanitized AgentDVR evidence from:
+
+```text
+reports/generated/ispy-agentdvr-evidence.json
+```
+
+That evidence may include camera counts, recording database summaries, recent
+recording gaps, log diagnoses, and sanitized endpoint checks. It must not store
+credentials or full stream URLs.
+
 ## Run Grouping
 
 The dashboard groups run history into operating periods:
@@ -140,6 +177,8 @@ The generated HTML report is:
 ```text
 reports/generated/index.html
 reports/generated/fleet-catalog.html
+reports/generated/container-review.html
+reports/generated/ispy-review.html
 ```
 
 The controller no longer writes `homeops-report-<timestamp>.md` files.
