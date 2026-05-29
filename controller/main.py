@@ -11,6 +11,7 @@ from typing import Any
 from . import (
     action_registry,
     action_runner,
+    agentdvr_evidence,
     approvals,
     before_state,
     codex_brief,
@@ -498,6 +499,42 @@ def command_ispy_review(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_agentdvr_evidence(args: argparse.Namespace) -> int:
+    inventory_path = (
+        Path(args.inventory) if args.inventory else config.DEFAULT_INVENTORY_PATH
+    )
+
+    try:
+        servers = inventory.load_inventory(inventory_path)
+    except (FileNotFoundError, ValueError) as exc:
+        raise SystemExit(str(exc)) from exc
+
+    server = _server_by_id(servers, args.server)
+    command = agentdvr_evidence.build_agentdvr_evidence_command(server)
+    if args.dry_run:
+        print(f"Inventory: {inventory_path}")
+        print(f"Server: {server.server_id}")
+        print(f"Command: {' '.join(command)}")
+        print(f"Remote script: {agentdvr_evidence.REMOTE_SCRIPT_PATH}")
+        print("Writes: reports/generated/ispy-agentdvr-evidence.json")
+        return 0
+
+    try:
+        result = agentdvr_evidence.collect_agentdvr_evidence(
+            server,
+            output_path=Path(args.output) if args.output else None,
+        )
+    except agentdvr_evidence.AgentDvrEvidenceError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    print(f"Wrote AgentDVR evidence: {result.output_path}")
+    print(f"Server: {server.server_id}")
+    print(f"Cameras: {result.payload.get('camera_count', 0)}")
+    print(f"Endpoint checks: {len(result.payload.get('endpoint_checks') or [])}")
+    print(f"Duration: {result.duration_seconds}s")
+    return 0
+
+
 def _filter_servers(
     servers: list[inventory.ServerInventoryItem], requested: list[str]
 ) -> list[inventory.ServerInventoryItem]:
@@ -506,6 +543,15 @@ def _filter_servers(
     if missing:
         raise SystemExit(f"Enabled server not found in inventory: {', '.join(missing)}")
     return [by_id[server_id] for server_id in requested]
+
+
+def _server_by_id(
+    servers: list[inventory.ServerInventoryItem], server_id: str
+) -> inventory.ServerInventoryItem:
+    for server in servers:
+        if server.server_id == server_id:
+            return server
+    raise SystemExit(f"Enabled server not found in inventory: {server_id}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -718,6 +764,33 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory for generated review reports. Defaults to reports/generated.",
     )
     ispy_review_parser.set_defaults(func=command_ispy_review)
+
+    agentdvr_evidence_parser = subparsers.add_parser(
+        "agentdvr-evidence",
+        help="Collect sanitized read-only AgentDVR evidence from the iSpy server",
+    )
+    agentdvr_evidence_parser.add_argument(
+        "--server",
+        default=ispy_review.DEFAULT_ISPY_SERVER_ID,
+        help="iSpy server_id. Defaults to ispy-server.",
+    )
+    agentdvr_evidence_parser.add_argument(
+        "--inventory",
+        help="Inventory path. Defaults to config/servers.yaml.",
+    )
+    agentdvr_evidence_parser.add_argument(
+        "--output",
+        help=(
+            "Output JSON path. Defaults to "
+            "reports/generated/ispy-agentdvr-evidence.json."
+        ),
+    )
+    agentdvr_evidence_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show the fixed SSH command without connecting.",
+    )
+    agentdvr_evidence_parser.set_defaults(func=command_agentdvr_evidence)
 
     actions_parser = subparsers.add_parser("actions", help="Inspect or run actions")
     actions_subparsers = actions_parser.add_subparsers(
