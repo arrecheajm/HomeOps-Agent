@@ -101,7 +101,7 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "action_id": "deploy_sudoers_profile",
         "risk": "approval_required",
         "description": "Install the approved sudoers profile for the server access profile.",
-        "server_roles": ["container_host"],
+        "server_roles": ["openvpn_server", "ispy_server", "container_host"],
         "implemented": True,
     },
     {

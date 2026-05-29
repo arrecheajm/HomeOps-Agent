@@ -332,24 +332,42 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertIn("/usr/sbin/visudo -cf", command)
         self.assertIn("/usr/bin/install -o root -g root -m 0440", command)
 
-    def test_deploy_sudoers_profile_rejects_non_lab_profile(self):
-        with self.assertRaisesRegex(ActionError, "implemented only for lab"):
+    def test_deploy_sudoers_profile_dry_run_writes_experimental_profile(self):
+        attempt = run_action(
+            "deploy_sudoers_profile",
+            "ispy-server",
+            [self._ispy_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action deploy_sudoers_profile on ispy-server",
+        )
+        command = record["command"][-1]
+        self.assertIn("homeops ALL=(root) NOPASSWD: /usr/bin/unattended-upgrade", command)
+        self.assertIn("AgentDVR.service", command)
+        self.assertIn("/usr/bin/bash -lc *", command)
+        self.assertIn("experimental.sudoers.template", command)
+
+    def test_deploy_sudoers_profile_rejects_unsafe_user(self):
+        with self.assertRaisesRegex(ActionError, "not safe for sudoers"):
             run_action(
                 "deploy_sudoers_profile",
-                "container-host",
+                "ispy-server",
                 [
                     ServerInventoryItem(
-                        server_id="container-host",
-                        role="container_host",
-                        host="container-host.local",
-                        user="containerserver",
-                        port=22,
-                        enabled=True,
+                        server_id="ispy-server",
+                        role="ispy_server",
+                        host="ispy-server.local",
+                        user="homeops ALL=(root) NOPASSWD: ALL",
+                        identity_file="~/.ssh/homeops_ed25519",
                         access_profile="experimental",
                         rebuildable=True,
-                        connect_timeout_seconds=10,
-                        command_timeout_seconds=30,
-                        identity_file=None,
                     )
                 ],
                 {},

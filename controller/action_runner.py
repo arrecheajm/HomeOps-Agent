@@ -14,6 +14,8 @@ from typing import Any
 
 from . import action_registry, approvals, config, policy
 from .inventory import (
+    ACCESS_PROFILE_EXPERIMENTAL,
+    ACCESS_PROFILE_GUARDED,
     ACCESS_PROFILE_LAB,
     DEFAULT_REMOTE_HEALTH_COMMAND,
     ServerInventoryItem,
@@ -23,6 +25,7 @@ from .ssh_client import build_ssh_base_command
 
 CONTAINER_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 SERVICE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@-]*$")
+SUDOERS_USER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*[$]?$")
 APPROVED_SERVICE_RESTARTS = {
     "openvpn_server": {
         "openvpnas": "openvpnas.service",
@@ -40,6 +43,12 @@ APPROVED_SERVICE_RESTARTS = {
 LOCAL_HEALTH_SCRIPT_PATH = (
     config.BASE_DIR / "server-scripts" / "common" / "health_summary.sh"
 )
+LOCAL_SUDOERS_TEMPLATE_DIR = config.BASE_DIR / "server-scripts" / "sudoers"
+SUDOERS_TEMPLATE_NAMES = {
+    ACCESS_PROFILE_GUARDED: "guarded.sudoers.template",
+    ACCESS_PROFILE_EXPERIMENTAL: "experimental.sudoers.template",
+    ACCESS_PROFILE_LAB: "lab.sudoers.template",
+}
 REMOTE_HEALTH_SCRIPT_PATH = DEFAULT_REMOTE_HEALTH_COMMAND
 REMOTE_SUDOERS_PATH = "/etc/sudoers.d/homeops-agent"
 REBOOT_DELAY = "+1"
@@ -353,23 +362,13 @@ def _deploy_health_script_commands(server: ServerInventoryItem) -> list[list[str
 
 
 def _deploy_sudoers_profile_commands(server: ServerInventoryItem) -> list[list[str]]:
-    if server.access_profile != ACCESS_PROFILE_LAB:
+    if not SUDOERS_USER_RE.fullmatch(server.user):
         raise ActionError(
-            "deploy_sudoers_profile is currently implemented only for lab "
-            f"access profiles. Server {server.server_id} is {server.access_profile}."
+            "Server user is not safe for sudoers rendering: "
+            f"{server.server_id} uses {server.user!r}."
         )
 
-    profile = "\n".join(
-        [
-            "# HomeOps Codex lab profile.",
-            "# Managed by HomeOps-Agent deploy_sudoers_profile.",
-            "",
-            "# This profile is intentionally full power. Use only on the",
-            "# disposable Codex lab machine where full logged sudo is acceptable.",
-            f"{server.user} ALL=(root) NOPASSWD: ALL",
-            "",
-        ]
-    )
+    profile = _render_sudoers_profile(server)
     script = (
         "tmp=$(mktemp) && "
         f"printf '%s' {_shell_single_quote(profile)} > \"$tmp\" && "
@@ -385,6 +384,28 @@ def _deploy_sudoers_profile_commands(server: ServerInventoryItem) -> list[list[s
             _remote_command("sh", "-lc", script),
         ]
     ]
+
+
+def _render_sudoers_profile(server: ServerInventoryItem) -> str:
+    template_name = SUDOERS_TEMPLATE_NAMES.get(server.access_profile)
+    if not template_name:
+        raise ActionError(
+            "No approved sudoers template for access profile: "
+            f"{server.access_profile}."
+        )
+
+    template_path = LOCAL_SUDOERS_TEMPLATE_DIR / template_name
+    if not template_path.exists():
+        raise ActionError(f"Local sudoers template not found: {template_path}")
+
+    profile = template_path.read_text(encoding="utf-8").replace(
+        "HOMEOPS_USER", server.user
+    )
+    return (
+        "# Managed by HomeOps-Agent deploy_sudoers_profile.\n"
+        f"# Source template: server-scripts/sudoers/{template_name}\n"
+        f"{profile}"
+    )
 
 
 def _shell_single_quote(value: str) -> str:
