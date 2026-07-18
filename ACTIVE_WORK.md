@@ -3,7 +3,7 @@
 Purpose: this is the daily Codex handoff. Read this first before inspecting
 broader docs, history, generated reports, or source files.
 
-Last updated: 2026-05-28.
+Last updated: 2026-07-18.
 
 ## Session Start
 
@@ -42,75 +42,49 @@ approved scripts and predefined action IDs, not autonomous agents.
 
 Current implementation focus:
 
-- Improve `ispy-server` health and AgentDVR reliability.
+- Plan and implement the LAN-only `container-host` House OS described in
+  `docs/container-host-house-os-plan.md`.
 - Keep `openvpn-server` guarded and avoid VPN-impacting work unless explicitly
   requested.
-- Keep `container-host` as the lab box; it is currently in acceptable shape.
-- Defer approval-gated rebuild execution design until the iSpy reliability pass
-  is complete.
+- Keep the currently healthy `ispy-server` camera workload isolated from the
+  new household services.
+- Extend HomeOps with repeatable desired-state stack, storage, backup, restore,
+  upgrade, and rollback workflows before treating new application data as
+  durable.
 
 Recommended thinking level for the next work:
 
-- Start at `medium` for focused collection, before-state capture, report review,
-  and read-only inspection planning.
-- Use `high` for implementation work that changes controller checks, server
-  scripts, AgentDVR monitoring, or configuration recommendations.
-- Use `extra high` only before live approval-required mutations on
-  `ispy-server`, destructive cleanup, rebuild execution design, or changes that
-  could affect camera recording availability.
+- Start at `medium` for container inventory, plan refinement, report review,
+  and read-only storage planning.
+- Use `high` for desired-state schema, controller lifecycle actions, Compose
+  bundles, backup/restore logic, and cross-file implementation.
+- Use `extra high` only before approval-required cleanup, storage formatting,
+  firewall or routing changes, destructive stack removal, or rebuild execution.
 
 ## Current Resume State
 
 - Check `git status --short --branch` at session start for branch cleanliness.
-- Latest fleet report run: `2026-05-28T14-49-34Z`.
-- Latest focused `ispy-server` run: `2026-05-28T15-03-53Z`.
-- Latest focused `ispy-server` status: 0 critical, 2 warnings, 0 info.
-- `openvpn-server` is reachable again and has 1 security update pending.
-- `ispy-server` has 22 security updates pending and failed legacy `ispy`
-  service while `AgentDVR` remains active in the collected service list.
-- Captured before-state snapshot:
-  `history/before-state/2026-05-28T15-04-03Z-ispy-server.json`.
-- Dry-ran `apply_security_updates` for `ispy-server`; approval phrase is
-  `Approve action apply_security_updates on ispy-server`.
-- Read-only service inspection found `AgentDVR.service` active with
-  `Restart=always`, running `/home/spy/AgentDVR/Agent` as user `spy`.
-- Read-only service inspection found failed `ispy.service` is a duplicate stale
-  unit running `/home/spy/AgentDVR/start_agent.sh`; that script only calls
-  `./Agent`, so it fails under systemd because the unit lacks the AgentDVR
-  working directory.
-- AgentDVR media/config files are active today under `/home/spy/AgentDVR/Media`;
-  media usage is small at about 46 MB, so current evidence does not suggest
-  disk pressure.
-- Implemented and generated focused iSpy tracking report:
-  `reports/generated/ispy-review.html` and `reports/generated/ispy-review.json`.
-- `ispy-review` currently tracks findings, before-state, recent actions,
-  AgentDVR service diagnosis, failed legacy service diagnosis, reliability
-  checklist gaps, and recommended dry-run commands.
-- Read-only AgentDVR XML/DB inspection found 2 configured cameras and 2
-  microphones. Both cameras have source URI configuration present, and the
-  current manual evidence includes sanitized endpoint reachability checks.
-- AgentDVR recording DB has 50 file records and 100 alert records. Recording
-  evidence exists for Camera 5 only, newest file `2026-05-28T17:25:42Z`;
-  Camera 4 has no recording DB evidence in the sanitized inspection.
-- Recent AgentDVR logs show Camera 4 repeatedly fails before recording with
-  FFmpeg `OPEN_INPUT: Connection refused` and reconnect attempts. Recent log
-  sample counted 90 errors and 45 exceptions for Camera 4.
-- Recent AgentDVR logs show Camera 5 opening and closing recordings. Recent DB
-  and log evidence confirms Camera 5 is recording.
-- Read-only RTSP reachability from `ispy-server` confirms Camera 4's configured
-  endpoint host ending `.166` refuses TCP connections on port 554, while Camera
-  5's configured endpoint host ending `.164` accepts RTSP and returns
-  `RTSP/1.0 200 OK`.
-- `ispy-review` now surfaces sanitized per-camera endpoint checks without
-  storing credentials or full stream URLs in the report.
-- Configured camera media directories `KDWDF` and `BENRC` were not present
-  under `/home/spy/AgentDVR/Media`, so storage path intent needs verification.
-- `ispy-review` now reads sanitized AgentDVR evidence from
-  `reports/generated/ispy-agentdvr-evidence.json` when present.
-- Stopping point: iSpy report implementation and endpoint evidence are ready to
-  commit. Full tests passed with `python -m unittest discover -s tests`.
-- `container-host` has 1 package update pending and Docker is active with no
-  unhealthy containers.
+- Latest fleet report run: `2026-07-18T18-47-49Z`; all 3 servers collected
+  without errors.
+- Latest fleet status: 0 critical, 0 warning, and 1 informational finding.
+- `openvpn-server` has 2 non-security package updates pending; no reboot is
+  required.
+- `ispy-server` is current and AgentDVR is active with no fleet finding.
+- `container-host` is current with Docker active, 9 of 9 containers running,
+  and no unhealthy containers or host finding.
+- `container-host` has an i5-4210U with 4 CPU threads, about 8 GB RAM, and about
+  80 GB free on the root disk. Current load and memory use are low.
+- The accepted direction is a LAN-only House OS combining Home Assistant,
+  Mealie, Paperless-ngx, Forgejo, and a household Mission Control dashboard.
+- A 1 TB USB drive can be added for larger application data and exports. Keep
+  databases and latency-sensitive state on the internal disk.
+- A phone on normal home Wi-Fi must be able to scan a PDF and upload it through
+  the Paperless web dashboard.
+- Existing containers may be removed if sanitized inventory shows they are not
+  useful.
+- Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
+  backup destination remain open inputs.
+- Durable plan: `docs/container-host-house-os-plan.md`.
 - `ACTIVE_WORK.md` is the single daily handoff source.
 - `reports/generated/codex-brief.md` is the compact generated startup brief.
 - `docs/active-operations-plan.md` was archived because it duplicated daily
@@ -121,25 +95,23 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Review whether to approve `apply_security_updates` on `ispy-server`.
-2. Plan a cleanup action for stale `ispy.service`: likely disable the duplicate
-   unit and reset failed state, after explicit approval.
-3. Use `reports/generated/ispy-review.html` as the working report for the iSpy
-   reliability pass.
-4. Troubleshoot Camera 4 stream reachability/config because AgentDVR reports
-   `OPEN_INPUT: Connection refused` and direct RTSP TCP from `ispy-server` is
-   refused. Next read-only checks should confirm whether Camera 4 is powered,
-   has changed IP/RTSP port, or uses a different RTSP path than the configured
-   endpoint.
-5. Determine whether Camera 4/5 media directories should exist under the
-   default media path or whether AgentDVR is storing recordings elsewhere.
-6. Promote the current manual AgentDVR evidence gathering into a durable
-   read-only collection command so camera recording and endpoint status can be
-   regenerated without ad hoc SSH inspection.
+1. Add sanitized Docker inventory and classify all 9 current containers as
+   keep, replace, or remove.
+2. Record the smart-switch and garage-controller brands/apps, phone platform,
+   USB drive details, and independent backup destination.
+3. Define `config/workloads.yaml`, version-controlled Compose bundles, and
+   approval-gated stack lifecycle operations.
+4. Implement USB mount/sentinel preflight before storage-dependent deployment.
+5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+   then Forgejo and an optional limited CI runner.
+6. Prove reboot persistence and backup/restore for each stateful application
+   before expanding its use.
 
 ## Relevant Files
 
 - `ACTIVE_WORK.md`: daily handoff and thinking-level guidance.
+- `docs/container-host-house-os-plan.md`: accepted container-host application,
+  storage, safety, and HomeOps delivery direction.
 - `reports/generated/codex-brief.md`: generated compact session brief.
 - `docs/codex-operating-guide.md`: Codex operating rules.
 - `IMPLEMENTATION_TRACKER.md`: durable implementation status and checklist.
@@ -153,7 +125,7 @@ python -m controller.main codex-brief
 python -m controller.main collect
 python -m controller.main dashboard
 python -m controller.main catalog
-python -m controller.main ispy-review --server ispy-server
+python -m controller.main container-review --server container-host
 python -m controller.main check --input history\runs\<latest-run>\fleet-health.json
 python -m unittest discover -s tests
 ```

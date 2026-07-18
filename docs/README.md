@@ -10,6 +10,7 @@ Use these documents as the current operating guide:
 - [Reporting](reporting.md): HTML dashboard, fleet catalog, before-state snapshots, rebuild plans, action history, and run grouping.
 - [Active Work](../ACTIVE_WORK.md): daily Codex handoff, quick resume prompt, and thinking-level guidance.
 - [Manual Maintenance Runbook](manual-maintenance-runbook.md): one-server-at-a-time update and reboot workflow.
+- [Container Host House OS Plan](container-host-house-os-plan.md): accepted LAN-only smart-home, household, developer-lab, storage, and HomeOps delivery direction.
 - [Implementation Roadmap](implementation-roadmap.md): current phase and upcoming work.
 - [Server Access Setup](server-access-setup.md): inventory, SSH, profile, and sudoers setup for the homelab model.
 - [Decision Log](decision-log.md): accepted project decisions.

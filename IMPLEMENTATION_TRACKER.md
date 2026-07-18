@@ -46,8 +46,9 @@ Live status:
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
-  `2026-05-26T19-38-51Z`, after container-host Watchtower migration,
-  package updates, sudoers repair, and reboot verification.
+  `2026-07-18T18-47-49Z`; all three servers collected successfully,
+  `container-host` has 9 of 9 containers running, and it has no current host
+  finding.
 - The `run fleet review` operator workflow is documented for Codex: collect
   live health, refresh dashboard and catalog, check the latest run explicitly,
   summarize findings, and recommend next steps without executing
@@ -58,6 +59,10 @@ Live status:
   `openvpn-server` stays guarded for access, `ispy-server` is the intermediate
   experimental/rebuildable box, and `container-host` is the Codex lab with full
   logged sudo authority.
+- The accepted `container-host` application direction is the LAN-only House OS
+  in `docs/container-host-house-os-plan.md`: smart-home control, Paperless-ngx
+  and Mealie, Forgejo, a 1 TB USB data drive, and HomeOps-managed lifecycle and
+  recovery workflows.
 
 Current operating model:
 
@@ -179,8 +184,14 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next implementation item is an explicit rebuild execution design for
-rebuildable servers. It should stay separate from `run_admin_command`.
+The next implementation item is sanitized Docker inventory for
+`container-host`, followed by desired-state workload configuration and
+approval-gated stack lifecycle design. Use
+`docs/container-host-house-os-plan.md` as the acceptance and delivery-order
+source.
+
+Explicit rebuild execution design remains a separate later item and must stay
+separate from `run_admin_command`.
 
 For day-to-day Codex resume state, use `ACTIVE_WORK.md` and the generated
 `reports/generated/codex-brief.md`. Do not use this tracker as the first file
