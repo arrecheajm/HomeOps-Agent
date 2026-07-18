@@ -9,7 +9,7 @@
     "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-07-18T18:12:16Z",
+  "generated_at": "2026-07-18T18:20:15Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
@@ -24,7 +24,7 @@
         "Low background workload",
         "Small CPU footprint"
       ],
-      "collected_at": "2026-07-18T18:12:21Z",
+      "collected_at": "2026-07-18T18:20:19Z",
       "constraints": [
         "2 package updates pending",
         "VPN availability affects remote access"
@@ -65,8 +65,8 @@
       ],
       "resources": {
         "cpu_count": 2,
-        "load_1m": 0.1,
-        "memory_used_percent": 19.9,
+        "load_1m": 0.01,
+        "memory_used_percent": 19.8,
         "swap_used_percent": 0.0,
         "uptime_days": 0.1
       },
@@ -111,7 +111,7 @@
         "AgentDVR workload",
         "Moderate CPU headroom"
       ],
-      "collected_at": "2026-07-18T18:12:23Z",
+      "collected_at": "2026-07-18T18:20:22Z",
       "constraints": [
         "Camera recording interruption risk"
       ],
@@ -145,8 +145,8 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.59,
-        "memory_used_percent": 10.4,
+        "load_1m": 0.51,
+        "memory_used_percent": 10.3,
         "swap_used_percent": 0.0,
         "uptime_days": 0.1
       },
@@ -199,7 +199,7 @@
         "Moderate CPU headroom",
         "Docker installed with 6 running containers"
       ],
-      "collected_at": "2026-07-18T18:12:26Z",
+      "collected_at": "2026-07-18T18:20:24Z",
       "constraints": [
         "1 package updates pending"
       ],
@@ -239,7 +239,7 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.26,
+        "load_1m": 0.14,
         "memory_used_percent": 11.5,
         "swap_used_percent": 0.0,
         "uptime_days": 0.1
@@ -287,8 +287,8 @@
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-18T18-12-16Z/fleet-health.json",
-    "generated_at": "2026-07-18T18:12:16Z",
-    "run_id": "2026-07-18T18-12-16Z"
+    "fleet_path": "history/runs/2026-07-18T18-20-15Z/fleet-health.json",
+    "generated_at": "2026-07-18T18:20:15Z",
+    "run_id": "2026-07-18T18-20-15Z"
   }
 }
