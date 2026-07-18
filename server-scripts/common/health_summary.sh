@@ -122,7 +122,7 @@ else
       service_names="ssh sshd openvpnas openvpn openvpn-server@server"
       ;;
     ispy_server)
-      service_names="ssh sshd AgentDVR agent-dvr ispy"
+      service_names="ssh sshd AgentDVR agent-dvr"
       ;;
     container_host)
       service_names="ssh sshd docker"
