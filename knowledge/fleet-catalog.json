@@ -4,16 +4,17 @@
     "cpu_threads": 10,
     "docker_hosts": 1,
     "not_collected": 0,
-    "pending_updates": 148,
-    "reboots_required": 0,
+    "pending_updates": 92,
+    "reboots_required": 1,
     "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-05-28T14:49:34Z",
+  "generated_at": "2026-07-18T16:12:32Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
     "Keep container-host maintenance current before increasing Docker workload.",
+    "Clear reboot-required hosts before making placement changes.",
     "Apply pending package maintenance before using current capacity numbers for long-term planning."
   ],
   "schema_version": "1.0",
@@ -24,16 +25,16 @@
         "Low background workload",
         "Small CPU footprint"
       ],
-      "collected_at": "2026-05-28T14:49:42Z",
+      "collected_at": "2026-07-18T16:12:36Z",
       "constraints": [
-        "54 package updates pending",
+        "48 package updates pending",
         "VPN availability affects remote access"
       ],
       "current_findings": [
         {
-          "code": "security_updates_pending",
-          "message": "1 security update is pending.",
-          "severity": "warning"
+          "code": "updates_pending",
+          "message": "48 package updates are pending.",
+          "severity": "info"
         }
       ],
       "docker": {
@@ -50,12 +51,12 @@
       },
       "hostname": "vpnserver",
       "maintenance": {
-        "pending_security_updates": 1,
-        "pending_updates": 54,
+        "pending_security_updates": 0,
+        "pending_updates": 48,
         "reboot_required": false
       },
       "os": {
-        "kernel": "6.8.0-117-generic",
+        "kernel": "6.8.0-136-generic",
         "name": "Ubuntu",
         "version": "24.04"
       },
@@ -65,8 +66,8 @@
       ],
       "resources": {
         "cpu_count": 2,
-        "load_1m": 1.17,
-        "memory_used_percent": 19.0,
+        "load_1m": 0.0,
+        "memory_used_percent": 20.0,
         "swap_used_percent": 0.0,
         "uptime_days": 0.0
       },
@@ -111,22 +112,28 @@
         "AgentDVR workload",
         "Moderate CPU headroom"
       ],
-      "collected_at": "2026-05-28T14:49:46Z",
+      "collected_at": "2026-07-18T16:12:39Z",
       "constraints": [
-        "93 package updates pending",
+        "Reboot required",
+        "43 package updates pending",
         "Service issue: ispy",
         "Camera recording interruption risk"
       ],
       "current_findings": [
         {
-          "code": "security_updates_pending",
-          "message": "22 security updates are pending.",
+          "code": "reboot_required",
+          "message": "The server reports that a reboot is required.",
           "severity": "warning"
         },
         {
           "code": "service_failed",
           "message": "Service ispy is failed.",
           "severity": "warning"
+        },
+        {
+          "code": "updates_pending",
+          "message": "43 package updates are pending.",
+          "severity": "info"
         }
       ],
       "docker": {
@@ -143,12 +150,12 @@
       },
       "hostname": "ispyserver",
       "maintenance": {
-        "pending_security_updates": 22,
-        "pending_updates": 93,
-        "reboot_required": false
+        "pending_security_updates": 0,
+        "pending_updates": 43,
+        "reboot_required": true
       },
       "os": {
-        "kernel": "6.8.0-111-generic",
+        "kernel": "6.8.0-124-generic",
         "name": "Ubuntu",
         "version": "24.04"
       },
@@ -158,10 +165,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.32,
-        "memory_used_percent": 9.6,
+        "load_1m": 0.1,
+        "memory_used_percent": 9.8,
         "swap_used_percent": 0.0,
-        "uptime_days": 0.6
+        "uptime_days": 16.0
       },
       "role": "ispy_server",
       "role_label": "Security Cameras",
@@ -217,7 +224,7 @@
         "Moderate CPU headroom",
         "Docker installed with 6 running containers"
       ],
-      "collected_at": "2026-05-28T14:49:48Z",
+      "collected_at": "2026-07-18T16:12:42Z",
       "constraints": [
         "1 package updates pending"
       ],
@@ -237,7 +244,7 @@
       "hardware": {
         "architecture": "x86_64",
         "cpu_model": "Intel(R) Core(TM) i5-4210U CPU @ 1.70GHz",
-        "memory_total_mb": 7864,
+        "memory_total_mb": 7866,
         "virtualization": "none"
       },
       "hostname": "containerserver",
@@ -247,7 +254,7 @@
         "reboot_required": false
       },
       "os": {
-        "kernel": "6.8.0-117-generic",
+        "kernel": "6.8.0-136-generic",
         "name": "Ubuntu",
         "version": "24.04"
       },
@@ -257,10 +264,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.02,
-        "memory_used_percent": 11.7,
+        "load_1m": 0.24,
+        "memory_used_percent": 11.2,
         "swap_used_percent": 0.0,
-        "uptime_days": 1.8
+        "uptime_days": 0.0
       },
       "role": "container_host",
       "role_label": "Containers",
@@ -283,7 +290,7 @@
             "free_gb": 80,
             "mount": "/",
             "size_gb": 98,
-            "used_percent": 15
+            "used_percent": 14
           },
           {
             "free_gb": 2,
@@ -299,14 +306,14 @@
           }
         ],
         "root_free_gb": 80,
-        "root_used_percent": 15,
+        "root_used_percent": 14,
         "total_reported_free_gb": 84
       }
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-05-28T14-49-34Z/fleet-health.json",
-    "generated_at": "2026-05-28T14:49:34Z",
-    "run_id": "2026-05-28T14-49-34Z"
+    "fleet_path": "history/runs/2026-07-18T16-12-32Z/fleet-health.json",
+    "generated_at": "2026-07-18T16:12:32Z",
+    "run_id": "2026-07-18T16-12-32Z"
   }
 }
