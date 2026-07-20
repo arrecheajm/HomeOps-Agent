@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "servers": {
+    "container-host": {
+      "cadvisor": {
+        "classification": "keep",
+        "rationale": "Useful container metrics source; retain while moving it to a pinned image and reviewed LAN exposure."
+      },
+      "filebrowser": {
+        "classification": "review",
+        "rationale": "Potentially useful for household file intake, but its three read-write /mnt paths are nearly empty directories on the root filesystem, not external storage."
+      },
+      "monitoring-grafana-1": {
+        "classification": "redeploy",
+        "rationale": "Keep Grafana capability, but redeploy from desired state with a pinned image and restart policy."
+      },
+      "monitoring-node_exporter-1": {
+        "classification": "redeploy",
+        "rationale": "Keep host metrics, but redeploy from desired state with a pinned image, restart policy, and reviewed port binding."
+      },
+      "monitoring-prometheus-1": {
+        "classification": "redeploy",
+        "rationale": "Keep metrics history, but redeploy from desired state with a pinned image, restart policy, and read-only configuration mount."
+      },
+      "mysql57": {
+        "classification": "review",
+        "rationale": "Legacy MySQL 5.7 dev-db container with about 210 MiB in a named volume, no application network peer, and a LAN-published port; logical backup is required before retirement."
+      },
+      "nonprofit-postgres": {
+        "classification": "review",
+        "rationale": "Standalone PostgreSQL 15 container with about 46 MiB in its volume and a small nonprofit_app database, but no application network peer; logical backup is required before any change."
+      },
+      "portainer": {
+        "classification": "retire_later",
+        "rationale": "Overlaps with the planned HomeOps lifecycle interface and has read-write Docker socket access; retain until replacement workflows are ready."
+      },
+      "watchtower": {
+        "classification": "retire_later",
+        "rationale": "Automatic updates conflict with planned pinned, approval-gated upgrades; retain until HomeOps upgrade actions replace it."
+      }
+    }
+  }
+}

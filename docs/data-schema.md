@@ -82,6 +82,34 @@ Each server collection script should output a single JSON object:
     "installed": true,
     "containers_total": 12,
     "containers_running": 11,
+    "inventory_collected": true,
+    "containers": [
+      {
+        "name": "monitoring-prometheus-1",
+        "image": "prom/prometheus:v3",
+        "state": "running",
+        "health": "none",
+        "restart_policy": "unless-stopped",
+        "network_mode": "monitoring_default",
+        "compose_project": "monitoring",
+        "compose_service": "prometheus",
+        "ports": [
+          {
+            "container_port": "9090/tcp",
+            "host_ip": "0.0.0.0",
+            "host_port": "9090"
+          }
+        ],
+        "mounts": [
+          {
+            "type": "bind",
+            "source": "/srv/prometheus",
+            "destination": "/prometheus",
+            "read_only": false
+          }
+        ]
+      }
+    ],
     "unhealthy": [
       {
         "name": "watchtower",
@@ -130,8 +158,42 @@ Collected per-server JSON is accepted only when key sections have the expected s
 - `updates`, `docker`, and `security` must be objects.
 - numeric counters and percentages must be numbers.
 - boolean state fields such as `updates.reboot_required` and `docker.installed` must be booleans.
+- `docker.inventory_collected` distinguishes a successful detailed inventory
+  from older evidence that only contains aggregate Docker counts.
+- `docker.containers` contains only the allowlisted identity, state, published
+  port, Compose identity, restart policy, network mode, and mount fields shown
+  above. Collection excludes logs, environment variables, and all other labels.
 
 Invalid shapes are recorded as collection failures instead of being passed to local rules or report rendering.
+
+## Desired Workload Manifest
+
+`config/workloads.yaml` is JSON-compatible YAML that records planned services
+without making them executable. Workloads are scoped to an inventory server and
+normalized into this report-safe shape:
+
+```json
+{
+  "network_scope": "lan_only",
+  "workloads": [
+    {
+      "workload_id": "documents",
+      "phase": 4,
+      "state": "planned",
+      "services": ["paperless-ngx", "postgresql", "redis"],
+      "storage_class": "mixed",
+      "backup_required": true,
+      "deployment_enabled": false,
+      "prerequisites": ["attach and identify the 1 TB USB drive"],
+      "acceptance": ["missing USB storage blocks startup"]
+    }
+  ]
+}
+```
+
+The manifest contains no credentials or arbitrary Compose content. A true
+`deployment_enabled` value will not itself authorize a server change; a future
+stack action must still validate policy and exact approval.
 
 ## Fleet Catalog JSON
 

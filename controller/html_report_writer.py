@@ -8,6 +8,11 @@ from pathlib import Path
 from typing import Any
 
 from . import config, history, rules
+from .docker_inventory import (
+    inventory_collected,
+    load_container_classifications,
+    normalize_docker_inventory,
+)
 
 
 ROLE_LABELS = {
@@ -178,6 +183,13 @@ def _server_section(dashboard_servers: list[dict[str, Any]]) -> list[str]:
             "yes" if updates.get("reboot_required") else "no",
         )
         services = _server_services(server)
+        docker = server.get("docker") if isinstance(server.get("docker"), dict) else {}
+        docker_fact = ""
+        if docker.get("installed"):
+            docker_fact = (
+                f"<div><dt>Containers</dt><dd>{escape(str(docker.get('containers_running', 0)))}/"
+                f"{escape(str(docker.get('containers_total', 0)))}</dd></div>"
+            )
         lines.extend(
             [
                 f'<article class="server-card status-{_status_class(status)}">',
@@ -193,11 +205,13 @@ def _server_section(dashboard_servers: list[dict[str, Any]]) -> list[str]:
                 f"<div><dt>Collected</dt><dd>{escape(_collection_label(str(server.get('collection_status') or 'current')))}</dd></div>",
                 f"<div><dt>Updates</dt><dd>{escape(str(pending_total))}</dd></div>",
                 f"<div><dt>Reboot</dt><dd>{escape(reboot_required)}</dd></div>",
+                docker_fact,
                 "</dl>",
                 '<div class="service-block">',
                 "<h4>Services</h4>",
                 _service_list(services),
                 "</div>",
+                _dashboard_container_inventory(docker, server_id),
                 f"<p>{escape(note)}</p>",
                 "</article>",
             ]
@@ -485,6 +499,50 @@ def _service_list(services: list[dict[str, Any]]) -> str:
             "</li>"
         )
     return f'<ul class="service-list">{"".join(items)}</ul>'
+
+
+def _dashboard_container_inventory(
+    docker: dict[str, Any], server_id: str
+) -> str:
+    if not docker.get("installed"):
+        return ""
+    if not inventory_collected(docker):
+        return (
+            '<div class="service-block"><h4>Container Inventory</h4>'
+            '<p class="muted">Detailed inventory not collected.</p></div>'
+        )
+    classifications = load_container_classifications(
+        config.CONTAINER_CLASSIFICATIONS_PATH,
+        server_id,
+    )
+    containers = normalize_docker_inventory(docker, classifications)
+    if not containers:
+        return (
+            '<div class="service-block"><h4>Container Inventory</h4>'
+            '<p class="muted">No containers found.</p></div>'
+        )
+    items = []
+    for container in containers:
+        state = str(container.get("state") or "unknown")
+        health = str(container.get("health") or "none")
+        state_class = "ok" if state == "running" and health != "unhealthy" else "bad"
+        detail = str(
+            container.get("classification")
+            or container.get("compose_project")
+            or container.get("exposure")
+            or "standalone"
+        )
+        items.append(
+            '<li class="service-row">'
+            f"<code>{escape(str(container.get('name') or 'unknown'))}</code>"
+            f'<span class="service-state service-{state_class}">{escape(state)}</span>'
+            f"<small>{escape(detail)}</small>"
+            "</li>"
+        )
+    return (
+        '<div class="service-block"><h4>Container Inventory</h4>'
+        f'<ul class="service-list">{"".join(items)}</ul></div>'
+    )
 
 
 def _history_section(runs: list[history.RunSummary]) -> list[str]:

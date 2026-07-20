@@ -81,6 +81,35 @@ class HtmlReportWriterTests(unittest.TestCase):
         self.assertIn("Container Review", html)
         self.assertIn("container-review.html", html)
 
+    def test_render_dashboard_surfaces_sanitized_container_inventory(self):
+        run = self._targeted_container_run()
+        run.servers[0]["docker"] = {
+            "installed": True,
+            "containers_total": 1,
+            "containers_running": 1,
+            "inventory_collected": True,
+            "containers": [
+                {
+                    "name": "monitoring-grafana-1",
+                    "image": "grafana/grafana:12",
+                    "state": "running",
+                    "health": "none",
+                    "restart_policy": "unless-stopped",
+                    "network_mode": "monitoring_default",
+                    "compose_project": "monitoring",
+                    "compose_service": "grafana",
+                    "ports": [],
+                    "mounts": [],
+                }
+            ],
+        }
+
+        html = render_dashboard([run], Path("reports/generated"))
+
+        self.assertIn("Container Inventory", html)
+        self.assertIn("monitoring-grafana-1", html)
+        self.assertIn("Containers</dt><dd>1/1", html)
+
     def test_render_dashboard_preserves_known_servers_for_targeted_run(self):
         latest = self._targeted_container_run()
         previous_failure = self._partial_full_run_with_ispy_failure()

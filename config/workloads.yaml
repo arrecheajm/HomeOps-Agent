@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "servers": {
+    "container-host": {
+      "network_scope": "lan_only",
+      "workloads": [
+        {
+          "workload_id": "monitoring",
+          "phase": 0,
+          "state": "redeploy",
+          "purpose": "Retain host and container metrics under pinned, reviewable desired state.",
+          "services": ["cadvisor", "grafana", "node-exporter", "prometheus"],
+          "current_containers": ["cadvisor", "monitoring-grafana-1", "monitoring-node_exporter-1", "monitoring-prometheus-1"],
+          "storage_class": "internal",
+          "backup_required": true,
+          "deployment_enabled": false,
+          "prerequisites": ["capture current Grafana and Prometheus data", "pin every image", "review LAN port bindings"],
+          "acceptance": ["all services survive reboot", "Grafana dashboards and Prometheus history are preserved", "configuration mounts are read-only where supported"]
+        },
+        {
+          "workload_id": "mission-control",
+          "phase": 1,
+          "state": "planned",
+          "purpose": "Provide one phone-friendly household landing page, reachability checks, and local notifications.",
+          "services": ["homepage", "uptime-kuma", "ntfy"],
+          "current_containers": [],
+          "storage_class": "internal",
+          "backup_required": true,
+          "deployment_enabled": false,
+          "prerequisites": ["choose local DNS name", "define LAN-only ingress", "define backup destination"],
+          "acceptance": ["usable from a phone on home Wi-Fi", "not reachable from the public internet", "service health appears in HomeOps"]
+        },
+        {
+          "workload_id": "smart-home",
+          "phase": 2,
+          "state": "planned",
+          "purpose": "Control compatible Wi-Fi switches and monitor the garage with conservative safety rules.",
+          "services": ["home-assistant"],
+          "current_containers": [],
+          "storage_class": "internal",
+          "backup_required": true,
+          "deployment_enabled": false,
+          "prerequisites": ["record switch brands and apps", "record garage-controller brand and sensor capability", "define backup destination"],
+          "acceptance": ["switches can be controlled on LAN", "garage state is reliable", "garage opening always requires deliberate confirmation"]
+        },
+        {
+          "workload_id": "recipes",
+          "phase": 3,
+          "state": "planned",
+          "purpose": "Provide shared recipes, meal planning, and shopping lists.",
+          "services": ["mealie"],
+          "current_containers": [],
+          "storage_class": "mixed",
+          "backup_required": true,
+          "deployment_enabled": false,
+          "prerequisites": ["define backup destination", "choose local DNS name"],
+          "acceptance": ["usable from a phone on home Wi-Fi", "recipe export and restore are verified"]
+        },
+        {
+          "workload_id": "documents",
+          "phase": 4,
+          "state": "planned",
+          "purpose": "Provide phone upload, OCR, organization, search, and durable household document storage.",
+          "services": ["paperless-ngx", "postgresql", "redis"],
+          "current_containers": [],
+          "storage_class": "mixed",
+          "backup_required": true,
+          "deployment_enabled": false,
+          "prerequisites": ["attach and identify the 1 TB USB drive", "format and mount it by UUID", "install the HomeOps sentinel", "choose an independent backup destination", "enable local HTTPS"],
+          "acceptance": ["a phone can upload a scanned PDF on home Wi-Fi", "missing USB storage blocks startup", "database and document restore are verified"]
+        },
+        {
+          "workload_id": "developer-lab",
+          "phase": 5,
+          "state": "planned",
+          "purpose": "Host private Git repositories and optional tightly limited CI.",
+          "services": ["forgejo"],
+          "current_containers": [],
+          "storage_class": "mixed",
+          "backup_required": true,
+          "deployment_enabled": false,
+          "prerequisites": ["define repository backup destination", "choose whether CI is needed", "define runner CPU and memory limits"],
+          "acceptance": ["repository backup and restore are verified", "runner has no unrestricted host Docker socket", "at most one CI job runs at a time"]
+        }
+      ]
+    }
+  }
+}

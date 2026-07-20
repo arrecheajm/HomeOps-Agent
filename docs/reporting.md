@@ -99,6 +99,37 @@ Container host review:
 python -m controller.main container-review --server container-host
 ```
 
+When the deployed health script supports sanitized Docker inventory, the main
+dashboard, fleet catalog, and container review show container names, images,
+state/health, restart policy, Compose identity, published port bindings, and
+mount paths. They do not collect container logs, environment values, or
+arbitrary labels. Older evidence is labeled as inventory not collected rather
+than being treated as an empty Docker host.
+
+The container review also reads sanitized point-in-time storage and legacy
+database evidence from:
+
+```text
+config/container-review-evidence.yaml
+```
+
+This record contains device geometry, aggregate path and volume sizes,
+filesystem identity, database names and sizes, and application-network peers.
+It excludes file names, file contents, credentials, environment values, logs,
+and table contents. The report labels the observation time so this evidence is
+not confused with continuously collected health data.
+
+The same review renders the ordered LAN-only desired workload manifest from:
+
+```text
+config/workloads.yaml
+```
+
+Each workload records its phase, intended services, storage class, backup
+requirement, prerequisites, and acceptance checks. `deployment_enabled` is a
+planning gate only; executable deployment still requires a registered,
+approval-gated HomeOps action.
+
 iSpy/AgentDVR review:
 
 ```bash

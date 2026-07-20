@@ -59,6 +59,36 @@ def validate_server_health(health: dict[str, Any]) -> None:
         _optional_number(docker, "containers_running", "docker")
         _optional_list_of_objects(docker, "unhealthy", "docker")
         _optional_list_of_objects(docker, "expected_stopped", "docker")
+        if "inventory_collected" in docker and not isinstance(
+            docker["inventory_collected"], bool
+        ):
+            raise ValueError("docker.inventory_collected must be a boolean.")
+        _optional_list_of_objects(docker, "containers", "docker")
+        for index, container in enumerate(docker.get("containers") or []):
+            parent = f"docker.containers[{index}]"
+            for key in (
+                "name",
+                "image",
+                "state",
+                "health",
+                "restart_policy",
+                "network_mode",
+                "compose_project",
+                "compose_service",
+            ):
+                _optional_str(container, key, parent)
+            _optional_list_of_objects(container, "ports", parent)
+            for port_index, port in enumerate(container.get("ports") or []):
+                port_parent = f"{parent}.ports[{port_index}]"
+                for key in ("container_port", "host_ip", "host_port"):
+                    _optional_str(port, key, port_parent)
+            _optional_list_of_objects(container, "mounts", parent)
+            for mount_index, mount in enumerate(container.get("mounts") or []):
+                mount_parent = f"{parent}.mounts[{mount_index}]"
+                for key in ("type", "source", "destination"):
+                    _optional_str(mount, key, mount_parent)
+                if "read_only" in mount and not isinstance(mount["read_only"], bool):
+                    raise ValueError(f"{mount_parent}.read_only must be a boolean.")
 
     security = health.get("security")
     if isinstance(security, dict):

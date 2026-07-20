@@ -209,6 +209,99 @@ class ContainerReviewTests(unittest.TestCase):
         self.assertIn("Recommended Next Steps", html)
         self.assertIn("Inspect watchtower restart loop", html)
         self.assertIn("container-review.json", html)
+        self.assertIn("Container Inventory", html)
+        self.assertIn("monitoring-prometheus-1", html)
+        self.assertIn("0.0.0.0:9090", html)
+        self.assertIn("/srv/prometheus", html)
+
+    def test_render_container_review_includes_sanitized_storage_evidence(self):
+        review = build_container_review(
+            self._run_summary(),
+            "container-host",
+            evidence={
+                "observed_at": "2026-07-20T18:36:00Z",
+                "method": "read-only test probe",
+                "storage": {
+                    "external_device_detected": False,
+                    "host_disk": {"model": "Test SSD", "size_bytes": 250000000000},
+                    "root_filesystem": {
+                        "filesystem": "ext4",
+                        "size_bytes": 100000000000,
+                        "available_bytes": 80000000000,
+                        "used_percent": 20,
+                    },
+                    "targets": [
+                        {
+                            "path": "/mnt/storage1",
+                            "backing_target": "/",
+                            "source": "/dev/mapper/root",
+                            "filesystem": "ext4",
+                            "aggregate_bytes": 12288,
+                            "top_level_directories": 2,
+                            "sentinel_present": False,
+                        }
+                    ],
+                },
+                "databases": [
+                    {
+                        "container": "nonprofit-postgres",
+                        "engine": "PostgreSQL 15",
+                        "volume": "nonprofit_postgres_data",
+                        "volume_bytes": 47820800,
+                        "query_status": "success",
+                        "databases": [{"name": "nonprofit_app", "size_bytes": 7504387}],
+                    }
+                ],
+            },
+        )
+
+        html = render_container_review(review)
+        titles = [item["title"] for item in review["recommendations"]]
+
+        self.assertIn("Storage and Database Evidence", html)
+        self.assertIn("/mnt/storage1", html)
+        self.assertIn("nonprofit_app", html)
+        self.assertIn(
+            "Reserve real external storage before household data deployment",
+            titles,
+        )
+
+    def test_render_container_review_includes_gated_desired_workloads(self):
+        review = build_container_review(
+            self._run_summary(),
+            "container-host",
+            workloads={
+                "network_scope": "lan_only",
+                "workloads": [
+                    {
+                        "workload_id": "documents",
+                        "phase": 4,
+                        "state": "planned",
+                        "purpose": "Household document center",
+                        "services": ["paperless-ngx"],
+                        "storage_class": "mixed",
+                        "deployment_enabled": False,
+                        "prerequisites": ["attach the 1 TB USB drive"],
+                    }
+                ],
+            },
+        )
+
+        html = render_container_review(review)
+
+        self.assertIn("Desired Workloads", html)
+        self.assertIn("paperless-ngx", html)
+        self.assertIn("attach the 1 TB USB drive", html)
+        self.assertIn("gated", html)
+
+    def test_build_container_review_uses_local_disposition_recommendations(self):
+        review = build_container_review(self._run_summary(), "container-host")
+
+        titles = [item["title"] for item in review["recommendations"]]
+        self.assertIn("Move useful monitoring services into desired state", titles)
+        container = review["server"]["docker"]["containers"][0]
+        self.assertEqual(container["classification"], "redeploy")
+        self.assertIn("pinned image", container["classification_rationale"])
 
     def test_write_container_review_writes_json_and_html(self):
         output_dir = Path("tests/.tmp/container-review")
@@ -291,6 +384,34 @@ class ContainerReviewTests(unittest.TestCase):
                         "installed": True,
                         "containers_total": 9,
                         "containers_running": 9,
+                        "inventory_collected": True,
+                        "containers": [
+                            {
+                                "name": "monitoring-prometheus-1",
+                                "image": "prom/prometheus:v3",
+                                "state": "running",
+                                "health": "none",
+                                "restart_policy": "unless-stopped",
+                                "network_mode": "monitoring_default",
+                                "compose_project": "monitoring",
+                                "compose_service": "prometheus",
+                                "ports": [
+                                    {
+                                        "container_port": "9090/tcp",
+                                        "host_ip": "0.0.0.0",
+                                        "host_port": "9090",
+                                    }
+                                ],
+                                "mounts": [
+                                    {
+                                        "type": "bind",
+                                        "source": "/srv/prometheus",
+                                        "destination": "/prometheus",
+                                        "read_only": False,
+                                    }
+                                ],
+                            }
+                        ],
                         "unhealthy": [
                             {
                                 "name": "watchtower",

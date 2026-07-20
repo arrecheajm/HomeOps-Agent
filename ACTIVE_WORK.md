@@ -64,8 +64,10 @@ Recommended thinking level for the next work:
 ## Current Resume State
 
 - Check `git status --short --branch` at session start for branch cleanliness.
-- Latest fleet report run: `2026-07-18T18-47-49Z`; all 3 servers collected
-  without errors.
+- Latest fleet report run: `2026-07-20T18-33-39Z`; all 3 servers collected
+  without errors after granting the collector access to the configured SSH key.
+- Latest targeted `container-host` run: `2026-07-20T17-12-50Z`; sanitized
+  inventory collected 9 of 9 running containers with no findings.
 - Latest fleet status: 0 critical, 0 warning, and 1 informational finding.
 - `openvpn-server` has 2 non-security package updates pending; no reboot is
   required.
@@ -82,6 +84,31 @@ Recommended thinking level for the next work:
   the Paperless web dashboard.
 - Existing containers may be removed if sanitized inventory shows they are not
   useful.
+- Sanitized Docker inventory is implemented locally in the health script,
+  validated by the controller, and rendered in the dashboard, fleet catalog,
+  and container review.
+- Updated health script deployment completed through the approval-gated action:
+  `history/actions/2026-07-20T17-12-38Z-container-host-deploy_health_script.json`.
+- Current disposition recommendations: keep `cadvisor`; redeploy Grafana,
+  node-exporter, and Prometheus from desired state; review `filebrowser`,
+  `mysql57`, and `nonprofit-postgres`; retire Portainer and Watchtower only
+  after HomeOps replacements exist.
+- Read-only evidence confirmed `/mnt/storage1`, `/mnt/storage2`, and
+  `/mnt/storageWD320` are nearly empty directories on the 100 GB root
+  filesystem, not external mounts. The host currently exposes only its internal
+  250 GB Samsung SATA SSD; the planned 1 TB USB drive is not attached.
+- `mysql57` has about 210 MiB in `dev-db_mysql_data`, no application network
+  peer, and its database enumeration query was unavailable. The Compose file is
+  under `/home/containerserver/docker_lab/dev-db/`.
+- `nonprofit-postgres` has about 46 MiB in `nonprofit_postgres_data`, including
+  a small `nonprofit_app` database, and no application network peer.
+- Sanitized point-in-time evidence is tracked in
+  `config/container-review-evidence.yaml` and rendered in the container review.
+- Desired workload intent is tracked in `config/workloads.yaml`: monitoring,
+  Mission Control, smart home, recipes, documents, and developer lab are ordered
+  into phases with storage, backup, and acceptance prerequisites. Deployment is
+  gated for every workload until pinned Compose bundles and preflights exist.
+- Full regression coverage now passes with 105 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -95,16 +122,20 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Add sanitized Docker inventory and classify all 9 current containers as
-   keep, replace, or remove.
-2. Record the smart-switch and garage-controller brands/apps, phone platform,
+1. Design approval-gated logical backup and restore-verification workflows for
+   `mysql57` and `nonprofit-postgres`; do not retire their volumes beforehand.
+2. Decide whether `filebrowser` is useful for household/Paperless intake and,
+   if retained, narrow its current broad read-write storage access.
+3. Define desired-state Compose bundles for the retained monitoring services
+   with pinned images, restart policies, and reviewed LAN port bindings.
+4. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-3. Define `config/workloads.yaml`, version-controlled Compose bundles, and
-   approval-gated stack lifecycle operations.
-4. Implement USB mount/sentinel preflight before storage-dependent deployment.
-5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+5. Define version-pinned Compose bundle metadata and approval-gated stack
+   lifecycle operations from `config/workloads.yaml`.
+6. Implement USB mount/sentinel preflight before storage-dependent deployment.
+7. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-6. Prove reboot persistence and backup/restore for each stateful application
+8. Prove reboot persistence and backup/restore for each stateful application
    before expanding its use.
 
 ## Relevant Files

@@ -63,6 +63,25 @@ Live status:
   in `docs/container-host-house-os-plan.md`: smart-home control, Paperless-ngx
   and Mealie, Forgejo, a 1 TB USB data drive, and HomeOps-managed lifecycle and
   recovery workflows.
+- Sanitized Docker inventory is implemented locally in `health_summary.sh`,
+  validated as nested health data, and surfaced in the dashboard, fleet
+  catalog, and container review without logs, environment values, or arbitrary
+  labels. The updated script was deployed through the approval-gated action on
+  2026-07-20 and a targeted run successfully collected all 9 containers.
+- Local container disposition recommendations are tracked in
+  `config/container-classifications.yaml` and rendered with rationale in the
+  fleet catalog and container review.
+- A sanitized read-only storage/database probe confirmed that the legacy
+  `/mnt/storage*` paths are nearly empty root-filesystem directories, not
+  external mounts. Point-in-time evidence is tracked in
+  `config/container-review-evidence.yaml` and rendered in the container review.
+- Legacy database review found about 210 MiB in the MySQL 5.7 volume and about
+  46 MiB in the PostgreSQL 15 volume. PostgreSQL contains `nonprofit_app`; no
+  application container peers were found for either database.
+- Desired workload configuration is implemented in `config/workloads.yaml` and
+  normalized by `controller/workloads.py`. The focused container review renders
+  six ordered LAN-only workloads and keeps deployment gated until prerequisites
+  and version-pinned Compose definitions exist.
 
 Current operating model:
 
@@ -184,9 +203,11 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next implementation item is sanitized Docker inventory for
-`container-host`, followed by desired-state workload configuration and
-approval-gated stack lifecycle design. Use
+The next operational item is designing logical backup and restore verification
+for the two legacy database volumes before any retirement decision. The next
+code item is version-pinned Compose bundle metadata and approval-gated stack
+lifecycle design from `config/workloads.yaml`, followed by the USB
+mount/sentinel preflight. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

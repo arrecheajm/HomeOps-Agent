@@ -1,8 +1,8 @@
 # Container Host House OS Plan
 
-Status: accepted direction; implementation not started.
+Status: implementation in progress.
 
-Last updated: 2026-07-18.
+Last updated: 2026-07-20.
 
 ## Goal
 
@@ -30,16 +30,20 @@ and auditable through the controller.
 
 ## Current Host Evidence
 
-Source run: `2026-07-18T18-47-49Z`.
+Source run: `2026-07-20T18-33-39Z`.
 
 - Ubuntu 24.04 on an Intel Core i5-4210U with 4 CPU threads and about 8 GB RAM.
 - Root disk is about 98 GB with about 80 GB free.
 - Docker is active with 9 of 9 containers running and no unhealthy containers.
 - Host load and memory use are low, package maintenance is current, and no
   current host finding requires remediation.
-- Recent repository history records Prometheus, Grafana, node-exporter, and
-  Watchtower activity. The current health schema does not enumerate every
-  container name, image, port, volume, or purpose.
+- Sanitized inventory enumerates all 9 running containers, their images,
+  restart policies, Compose identity, published ports, and mount paths.
+- A read-only storage probe found only the internal 250 GB Samsung SATA SSD.
+  The root logical volume is about 100 GB with about 81 GiB available.
+- `/mnt/storage1`, `/mnt/storage2`, and `/mnt/storageWD320` are nearly empty
+  directories backed by `/`, not mounted external disks. None has the planned
+  HomeOps sentinel.
 
 This is enough capacity for several lightweight household services. OCR and CI
 jobs should be resource-limited and not intentionally scheduled together.
@@ -147,29 +151,73 @@ The USB drive is primary storage, not an independent backup. Irreplaceable
 data needs a second copy on another drive, computer, NAS, or approved remote
 backup target.
 
+## Implementation Progress
+
+- Sanitized Docker inventory is implemented in the read-only health script.
+- The controller validates the nested container, port, and mount shapes.
+- The main dashboard, fleet catalog, and container review render inventory and
+  explicitly distinguish older evidence where it was not collected.
+- Collection excludes logs, environment values, and labels other than Compose
+  project/service identity.
+- Python regression suite passes with 105 tests, and the health script passes
+  Bash syntax validation.
+- Deployment completed through the approval-gated action on 2026-07-20.
+- Targeted run `2026-07-20T17-12-50Z` collected all 9 running containers with
+  no findings and populated the enhanced reports.
+- Local disposition recommendations are stored in
+  `config/container-classifications.yaml` and do not trigger cleanup actions.
+- Sanitized point-in-time storage and database evidence is stored in
+  `config/container-review-evidence.yaml` and rendered in the focused review.
+- Ordered desired workload intent is stored in `config/workloads.yaml` and
+  rendered in the focused review. All deployment flags remain disabled until
+  pinned Compose definitions and workload prerequisites are implemented.
+
+## Current Container Disposition
+
+| Container | Recommendation | Reason |
+|---|---|---|
+| `cadvisor` | keep | Useful container metrics; later pin the image and review LAN exposure. |
+| `monitoring-grafana-1` | redeploy | Preserve Grafana data while adding a pinned image and restart policy. |
+| `monitoring-node_exporter-1` | redeploy | Preserve host metrics with a pinned image, restart policy, and reviewed port binding. |
+| `monitoring-prometheus-1` | redeploy | Preserve metrics history; pin the image, add restart policy, and make the config mount read-only. |
+| `filebrowser` | review | Potential household intake tool, but its three read-write paths are root-disk directories rather than external storage. |
+| `mysql57` | review | MySQL 5.7 `dev-db` has about 210 MiB in `dev-db_mysql_data`, no application network peer, and an unavailable read-only database query; capture a logical backup first. |
+| `nonprofit-postgres` | review | PostgreSQL 15 has about 46 MiB in `nonprofit_postgres_data`, including a small `nonprofit_app` database, but no application network peer; capture a logical backup first. |
+| `portainer` | retire later | Overlaps with planned HomeOps management and has read-write Docker socket access. |
+| `watchtower` | retire later | Replace automatic updates with pinned, approval-gated HomeOps upgrades. |
+
+No container has been stopped, removed, or reconfigured. Read-only evidence
+confirmed that `/mnt/storage1`, `/mnt/storage2`, and `/mnt/storageWD320` are
+nearly empty directories on the root filesystem. They must not be treated as
+external storage. The planned 1 TB USB drive still needs to be attached,
+formatted, mounted by UUID, and protected by a sentinel preflight through an
+explicit approval-gated workflow.
+
 ## HomeOps Capabilities To Add
 
-These are proposed capabilities, not currently implemented action IDs:
+Inventory collection is implemented locally; the remaining lifecycle items are
+proposed capabilities, not currently implemented action IDs:
 
-1. Sanitized Docker inventory containing container names, images, health,
-   ports, restart policy, Compose project, and volume paths without logs or
-   secrets.
-2. Desired-state workload configuration, likely `config/workloads.yaml`.
-3. Version-controlled Compose bundles under `stacks/<stack-name>/`.
-4. Storage preflight that validates the USB mount, sentinel, space, ownership,
-   and expected directories.
-5. Dedicated lifecycle operations for stack preflight, deployment, backup,
-   restore, upgrade, rollback, and removal.
-6. Health verification after deployment, upgrade, host reboot, and restore.
-7. Pinned application versions and controlled HomeOps upgrades. Automatic
-   Watchtower updates should remain opt-in and should not be enabled for
-   stateful applications without a tested backup path.
-8. Secrets stored outside Git and never included in reports or action history.
+- [x] Sanitized Docker inventory containing container names, images, health,
+  ports, restart policy, Compose project, and volume paths without logs or
+  secrets.
+- [x] Desired-state workload configuration in `config/workloads.yaml`.
+- [ ] Version-controlled Compose bundles under `stacks/<stack-name>/`.
+- [ ] Storage preflight that validates the USB mount, sentinel, space,
+  ownership, and expected directories.
+- [ ] Dedicated lifecycle operations for stack preflight, deployment, backup,
+  restore, upgrade, rollback, and removal.
+- [ ] Health verification after deployment, upgrade, host reboot, and restore.
+- [ ] Pinned application versions and controlled HomeOps upgrades. Automatic
+  Watchtower updates should remain opt-in and should not be enabled for
+  stateful applications without a tested backup path.
+- [ ] Secrets stored outside Git and never included in reports or action
+  history.
 
 ## Delivery Order
 
-1. Inventory the 9 existing containers and classify each as keep, replace, or
-   remove.
+1. Inventory the 9 existing containers and classify each as keep, redeploy,
+   review, or retire later. Completed on 2026-07-20 without cleanup.
 2. Capture a fresh before-state snapshot before any destructive cleanup.
 3. Implement desired-state stack definitions, sanitized inventory, and the
    USB-storage preflight.

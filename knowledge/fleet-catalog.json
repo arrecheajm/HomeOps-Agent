@@ -9,7 +9,7 @@
     "running_containers": 9,
     "servers": 3
   },
-  "generated_at": "2026-07-18T18:47:49Z",
+  "generated_at": "2026-07-20T18:33:39Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
@@ -24,7 +24,7 @@
         "Low background workload",
         "Small CPU footprint"
       ],
-      "collected_at": "2026-07-18T18:47:59Z",
+      "collected_at": "2026-07-20T18:33:44Z",
       "constraints": [
         "2 package updates pending",
         "VPN availability affects remote access"
@@ -37,9 +37,11 @@
         }
       ],
       "docker": {
+        "containers": [],
         "containers_running": 0,
         "containers_total": 0,
         "installed": false,
+        "inventory_collected": false,
         "unhealthy": []
       },
       "hardware": {
@@ -65,10 +67,10 @@
       ],
       "resources": {
         "cpu_count": 2,
-        "load_1m": 0.52,
-        "memory_used_percent": 18.9,
+        "load_1m": 0.86,
+        "memory_used_percent": 19.5,
         "swap_used_percent": 0.0,
-        "uptime_days": 0.1
+        "uptime_days": 2.1
       },
       "role": "openvpn_server",
       "role_label": "VPN",
@@ -111,15 +113,17 @@
         "AgentDVR workload",
         "Moderate CPU headroom"
       ],
-      "collected_at": "2026-07-18T18:48:02Z",
+      "collected_at": "2026-07-20T18:33:47Z",
       "constraints": [
         "Camera recording interruption risk"
       ],
       "current_findings": [],
       "docker": {
+        "containers": [],
         "containers_running": 0,
         "containers_total": 0,
         "installed": false,
+        "inventory_collected": false,
         "unhealthy": []
       },
       "hardware": {
@@ -145,10 +149,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.53,
-        "memory_used_percent": 9.7,
+        "load_1m": 0.13,
+        "memory_used_percent": 10.2,
         "swap_used_percent": 0.0,
-        "uptime_days": 0.1
+        "uptime_days": 2.1
       },
       "role": "ispy_server",
       "role_label": "Security Cameras",
@@ -199,13 +203,375 @@
         "Moderate CPU headroom",
         "Docker installed with 9 running containers"
       ],
-      "collected_at": "2026-07-18T18:48:04Z",
+      "collected_at": "2026-07-20T18:33:49Z",
       "constraints": [],
       "current_findings": [],
       "docker": {
+        "containers": [
+          {
+            "classification": "keep",
+            "classification_rationale": "Useful container metrics source; retain while moving it to a pinned image and reviewed LAN exposure.",
+            "compose_project": "monitoring",
+            "compose_service": "cadvisor",
+            "exposure": "published",
+            "health": "healthy",
+            "image": "gcr.io/cadvisor/cadvisor:latest",
+            "mounts": [
+              {
+                "destination": "/rootfs",
+                "read_only": true,
+                "source": "/",
+                "type": "bind"
+              },
+              {
+                "destination": "/sys",
+                "read_only": true,
+                "source": "/sys",
+                "type": "bind"
+              },
+              {
+                "destination": "/var/lib/docker",
+                "read_only": true,
+                "source": "/var/lib/docker",
+                "type": "bind"
+              },
+              {
+                "destination": "/var/run",
+                "read_only": true,
+                "source": "/var/run",
+                "type": "bind"
+              }
+            ],
+            "name": "cadvisor",
+            "network_mode": "monitor",
+            "ports": [
+              {
+                "container_port": "8080/tcp",
+                "host_ip": "0.0.0.0",
+                "host_port": "8080"
+              },
+              {
+                "container_port": "8080/tcp",
+                "host_ip": "::",
+                "host_port": "8080"
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          },
+          {
+            "classification": "review",
+            "classification_rationale": "Potentially useful for household file intake, but its three read-write /mnt paths are nearly empty directories on the root filesystem, not external storage.",
+            "compose_project": "dashboards",
+            "compose_service": "filebrowser",
+            "exposure": "published",
+            "health": "healthy",
+            "image": "filebrowser/filebrowser:latest",
+            "mounts": [
+              {
+                "destination": "/config",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/56aca2c15847f740407dfe0c34a00fd565724b21f2d19b09315015b1a428c424/_data",
+                "type": "volume"
+              },
+              {
+                "destination": "/database",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/dashboards_filebrowser_data/_data",
+                "type": "volume"
+              },
+              {
+                "destination": "/srv",
+                "read_only": false,
+                "source": "/mnt/storage1",
+                "type": "bind"
+              },
+              {
+                "destination": "/srv/storage1",
+                "read_only": false,
+                "source": "/mnt/storage2",
+                "type": "bind"
+              },
+              {
+                "destination": "/srv/storage2",
+                "read_only": false,
+                "source": "/mnt/storageWD320",
+                "type": "bind"
+              }
+            ],
+            "name": "filebrowser",
+            "network_mode": "dashboards_default",
+            "ports": [
+              {
+                "container_port": "80/tcp",
+                "host_ip": "0.0.0.0",
+                "host_port": "8081"
+              },
+              {
+                "container_port": "80/tcp",
+                "host_ip": "::",
+                "host_port": "8081"
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          },
+          {
+            "classification": "redeploy",
+            "classification_rationale": "Keep Grafana capability, but redeploy from desired state with a pinned image and restart policy.",
+            "compose_project": "monitoring",
+            "compose_service": "grafana",
+            "exposure": "published",
+            "health": "none",
+            "image": "grafana/grafana:latest",
+            "mounts": [
+              {
+                "destination": "/var/lib/grafana",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/monitoring_grafana-data/_data",
+                "type": "volume"
+              }
+            ],
+            "name": "monitoring-grafana-1",
+            "network_mode": "monitor",
+            "ports": [
+              {
+                "container_port": "3000/tcp",
+                "host_ip": "0.0.0.0",
+                "host_port": "3000"
+              },
+              {
+                "container_port": "3000/tcp",
+                "host_ip": "::",
+                "host_port": "3000"
+              }
+            ],
+            "restart_policy": "no",
+            "state": "running"
+          },
+          {
+            "classification": "redeploy",
+            "classification_rationale": "Keep host metrics, but redeploy from desired state with a pinned image, restart policy, and reviewed port binding.",
+            "compose_project": "monitoring",
+            "compose_service": "node_exporter",
+            "exposure": "published",
+            "health": "none",
+            "image": "prom/node-exporter:latest",
+            "mounts": [],
+            "name": "monitoring-node_exporter-1",
+            "network_mode": "monitor",
+            "ports": [
+              {
+                "container_port": "9100/tcp",
+                "host_ip": "0.0.0.0",
+                "host_port": "9100"
+              },
+              {
+                "container_port": "9100/tcp",
+                "host_ip": "::",
+                "host_port": "9100"
+              }
+            ],
+            "restart_policy": "no",
+            "state": "running"
+          },
+          {
+            "classification": "redeploy",
+            "classification_rationale": "Keep metrics history, but redeploy from desired state with a pinned image, restart policy, and read-only configuration mount.",
+            "compose_project": "monitoring",
+            "compose_service": "prometheus",
+            "exposure": "published",
+            "health": "none",
+            "image": "prom/prometheus:latest",
+            "mounts": [
+              {
+                "destination": "/etc/prometheus/prometheus.yml",
+                "read_only": false,
+                "source": "/home/containerserver/docker_lab/monitoring/prometheus.yml",
+                "type": "bind"
+              },
+              {
+                "destination": "/prometheus",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/monitoring_prometheus-data/_data",
+                "type": "volume"
+              }
+            ],
+            "name": "monitoring-prometheus-1",
+            "network_mode": "monitor",
+            "ports": [
+              {
+                "container_port": "9090/tcp",
+                "host_ip": "0.0.0.0",
+                "host_port": "9090"
+              },
+              {
+                "container_port": "9090/tcp",
+                "host_ip": "::",
+                "host_port": "9090"
+              }
+            ],
+            "restart_policy": "no",
+            "state": "running"
+          },
+          {
+            "classification": "review",
+            "classification_rationale": "Legacy MySQL 5.7 dev-db container with about 210 MiB in a named volume, no application network peer, and a LAN-published port; logical backup is required before retirement.",
+            "compose_project": "dev-db",
+            "compose_service": "mysql",
+            "exposure": "published",
+            "health": "none",
+            "image": "mysql:5.7",
+            "mounts": [
+              {
+                "destination": "/var/lib/mysql",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/dev-db_mysql_data/_data",
+                "type": "volume"
+              }
+            ],
+            "name": "mysql57",
+            "network_mode": "dev-db_default",
+            "ports": [
+              {
+                "container_port": "3306/tcp",
+                "host_ip": "0.0.0.0",
+                "host_port": "3306"
+              },
+              {
+                "container_port": "3306/tcp",
+                "host_ip": "::",
+                "host_port": "3306"
+              },
+              {
+                "container_port": "33060/tcp",
+                "host_ip": "",
+                "host_port": ""
+              }
+            ],
+            "restart_policy": "always",
+            "state": "running"
+          },
+          {
+            "classification": "review",
+            "classification_rationale": "Standalone PostgreSQL 15 container with about 46 MiB in its volume and a small nonprofit_app database, but no application network peer; logical backup is required before any change.",
+            "compose_project": "",
+            "compose_service": "",
+            "exposure": "published",
+            "health": "none",
+            "image": "postgres:15",
+            "mounts": [
+              {
+                "destination": "/var/lib/postgresql/data",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/nonprofit_postgres_data/_data",
+                "type": "volume"
+              }
+            ],
+            "name": "nonprofit-postgres",
+            "network_mode": "bridge",
+            "ports": [
+              {
+                "container_port": "5432/tcp",
+                "host_ip": "0.0.0.0",
+                "host_port": "5432"
+              },
+              {
+                "container_port": "5432/tcp",
+                "host_ip": "::",
+                "host_port": "5432"
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          },
+          {
+            "classification": "retire_later",
+            "classification_rationale": "Overlaps with the planned HomeOps lifecycle interface and has read-write Docker socket access; retain until replacement workflows are ready.",
+            "compose_project": "dashboards",
+            "compose_service": "portainer",
+            "exposure": "published",
+            "health": "none",
+            "image": "portainer/portainer-ce:latest",
+            "mounts": [
+              {
+                "destination": "/data",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/dashboards_portainer_data/_data",
+                "type": "volume"
+              },
+              {
+                "destination": "/var/run/docker.sock",
+                "read_only": false,
+                "source": "/var/run/docker.sock",
+                "type": "bind"
+              }
+            ],
+            "name": "portainer",
+            "network_mode": "monitor",
+            "ports": [
+              {
+                "container_port": "8000/tcp",
+                "host_ip": "0.0.0.0",
+                "host_port": "8000"
+              },
+              {
+                "container_port": "8000/tcp",
+                "host_ip": "::",
+                "host_port": "8000"
+              },
+              {
+                "container_port": "9000/tcp",
+                "host_ip": "0.0.0.0",
+                "host_port": "9000"
+              },
+              {
+                "container_port": "9000/tcp",
+                "host_ip": "::",
+                "host_port": "9000"
+              },
+              {
+                "container_port": "9443/tcp",
+                "host_ip": "",
+                "host_port": ""
+              }
+            ],
+            "restart_policy": "always",
+            "state": "running"
+          },
+          {
+            "classification": "retire_later",
+            "classification_rationale": "Automatic updates conflict with planned pinned, approval-gated upgrades; retain until HomeOps upgrade actions replace it.",
+            "compose_project": "",
+            "compose_service": "",
+            "exposure": "internal only",
+            "health": "healthy",
+            "image": "nickfedor/watchtower",
+            "mounts": [
+              {
+                "destination": "/var/run/docker.sock",
+                "read_only": false,
+                "source": "/var/run/docker.sock",
+                "type": "bind"
+              }
+            ],
+            "name": "watchtower",
+            "network_mode": "bridge",
+            "ports": [
+              {
+                "container_port": "8080/tcp",
+                "host_ip": "",
+                "host_port": ""
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          }
+        ],
         "containers_running": 9,
         "containers_total": 9,
         "installed": true,
+        "inventory_collected": true,
         "unhealthy": []
       },
       "hardware": {
@@ -231,10 +597,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.19,
-        "memory_used_percent": 14.9,
+        "load_1m": 0.25,
+        "memory_used_percent": 15.6,
         "swap_used_percent": 0.0,
-        "uptime_days": 0.1
+        "uptime_days": 2.1
       },
       "role": "container_host",
       "role_label": "Containers",
@@ -254,7 +620,7 @@
       "storage": {
         "disks": [
           {
-            "free_gb": 80,
+            "free_gb": 81,
             "mount": "/",
             "size_gb": 98,
             "used_percent": 14
@@ -272,15 +638,15 @@
             "used_percent": 1
           }
         ],
-        "root_free_gb": 80,
+        "root_free_gb": 81,
         "root_used_percent": 14,
-        "total_reported_free_gb": 84
+        "total_reported_free_gb": 85
       }
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-18T18-47-49Z/fleet-health.json",
-    "generated_at": "2026-07-18T18:47:49Z",
-    "run_id": "2026-07-18T18-47-49Z"
+    "fleet_path": "history/runs/2026-07-20T18-33-39Z/fleet-health.json",
+    "generated_at": "2026-07-20T18:33:39Z",
+    "run_id": "2026-07-20T18-33-39Z"
   }
 }

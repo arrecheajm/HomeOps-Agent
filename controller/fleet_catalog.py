@@ -10,6 +10,12 @@ from pathlib import Path
 from typing import Any
 
 from . import config, history
+from .docker_inventory import (
+    inventory_collected,
+    load_container_classifications,
+    normalize_docker_inventory,
+    port_labels,
+)
 from .html_report_writer import ROLE_LABELS
 
 
@@ -147,6 +153,10 @@ def _server_catalog(
     server_findings = [
         finding for finding in findings if str(finding.get("server_id")) == server_id
     ]
+    classifications = load_container_classifications(
+        config.CONTAINER_CLASSIFICATIONS_PATH,
+        server_id,
+    )
     catalog = {
         "server_id": server_id,
         "hostname": str(server.get("hostname") or "unknown"),
@@ -182,6 +192,8 @@ def _server_catalog(
             "installed": bool(docker.get("installed")),
             "containers_total": _as_int(docker.get("containers_total")),
             "containers_running": _as_int(docker.get("containers_running")),
+            "inventory_collected": inventory_collected(docker),
+            "containers": normalize_docker_inventory(docker, classifications),
             "unhealthy": [
                 {
                     "name": str(item.get("name") or "unknown"),
@@ -390,6 +402,7 @@ def _server_card(server: dict[str, Any]) -> str:
         f"{_list_block('Constraints', server['constraints'])}"
         f"{_list_block('Placement', server['placement_guidance'])}"
         f"{_service_block(server['services'])}"
+        f"{_container_inventory_block(docker)}"
         "</article>"
     )
 
@@ -434,6 +447,54 @@ def _service_block(services: list[dict[str, Any]]) -> str:
         "<tbody>"
         + "".join(rows)
         + "</tbody></table>"
+    )
+
+
+def _container_inventory_block(docker: dict[str, Any]) -> str:
+    if not docker.get("installed"):
+        return ""
+    if not docker.get("inventory_collected"):
+        return (
+            '<h3>Container Inventory</h3>'
+            '<p class="muted">Detailed inventory was not collected in this run.</p>'
+        )
+    containers = docker.get("containers")
+    if not isinstance(containers, list) or not containers:
+        return '<h3>Container Inventory</h3><p class="muted">No containers found.</p>'
+
+    rows = []
+    for container in containers:
+        if not isinstance(container, dict):
+            continue
+        project = str(container.get("compose_project") or "standalone")
+        service = str(container.get("compose_service") or "")
+        if service:
+            project = f"{project}/{service}"
+        ports = port_labels(container)
+        exposure = str(container.get("exposure") or "unknown")
+        if ports:
+            exposure = f"{exposure}: {', '.join(ports)}"
+        state = str(container.get("state") or "unknown")
+        health = str(container.get("health") or "none")
+        if health != "none":
+            state = f"{state} / {health}"
+        rows.append(
+            "<tr>"
+            f"<td><code>{escape(str(container.get('name') or 'unknown'))}</code></td>"
+            f"<td><code>{escape(str(container.get('image') or 'unknown'))}</code></td>"
+            f"<td>{escape(state)}</td>"
+            f"<td>{escape(project)}</td>"
+            f"<td>{escape(exposure)}</td>"
+            f"<td><strong>{escape(str(container.get('classification') or 'unclassified'))}</strong><br>{escape(str(container.get('classification_rationale') or ''))}</td>"
+            "</tr>"
+        )
+    return (
+        "<h3>Container Inventory</h3>"
+        '<div class="table-wrap"><table class="service-table">'
+        "<thead><tr><th>Name</th><th>Image</th><th>State</th><th>Compose</th><th>Exposure</th><th>Review</th></tr></thead>"
+        "<tbody>"
+        + "".join(rows)
+        + "</tbody></table></div>"
     )
 
 
@@ -626,6 +687,8 @@ def _failed_server_catalog(
             "installed": False,
             "containers_total": 0,
             "containers_running": 0,
+            "inventory_collected": False,
+            "containers": [],
             "unhealthy": [],
         },
         "maintenance": {
@@ -710,7 +773,7 @@ h1 { font-size: 32px; margin-bottom: 4px; }
 h2 { font-size: 20px; margin-bottom: 12px; }
 h3 { font-size: 15px; margin: 16px 0 8px; }
 p, small, span, td, th, li, dd, dt { font-size: 14px; }
-.topbar p, .metric small, .server-card p { color: var(--muted); }
+.topbar p, .metric small, .server-card p, .muted { color: var(--muted); }
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -776,6 +839,7 @@ ul { padding-left: 20px; margin-bottom: 0; }
   width: 100%;
   border-collapse: collapse;
 }
+.table-wrap { overflow-x: auto; }
 th, td {
   border-bottom: 1px solid var(--border);
   padding: 8px;

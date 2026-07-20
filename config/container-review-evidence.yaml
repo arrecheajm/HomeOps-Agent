@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0",
+  "servers": {
+    "container-host": {
+      "observed_at": "2026-07-20T18:36:00Z",
+      "method": "Sanitized read-only SSH probe over the HomeOps VPN connection",
+      "sensitive_content_collected": false,
+      "storage": {
+        "external_device_detected": false,
+        "host_disk": {
+          "model": "Samsung SSD 870",
+          "size_bytes": 250059350016,
+          "transport": "sata"
+        },
+        "root_filesystem": {
+          "source": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+          "filesystem": "ext4",
+          "size_bytes": 105089261568,
+          "used_bytes": 13004136448,
+          "available_bytes": 86699638784,
+          "used_percent": 14
+        },
+        "targets": [
+          {
+            "path": "/mnt/storage1",
+            "backing_target": "/",
+            "source": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+            "filesystem": "ext4",
+            "aggregate_bytes": 12288,
+            "top_level_directories": 2,
+            "sentinel_present": false
+          },
+          {
+            "path": "/mnt/storage2",
+            "backing_target": "/",
+            "source": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+            "filesystem": "ext4",
+            "aggregate_bytes": 4096,
+            "top_level_directories": 0,
+            "sentinel_present": false
+          },
+          {
+            "path": "/mnt/storageWD320",
+            "backing_target": "/",
+            "source": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+            "filesystem": "ext4",
+            "aggregate_bytes": 4096,
+            "top_level_directories": 0,
+            "sentinel_present": false
+          }
+        ]
+      },
+      "databases": [
+        {
+          "container": "mysql57",
+          "engine": "MySQL 5.7",
+          "image": "mysql:5.7",
+          "created": "2025-11-02T02:24:54Z",
+          "compose_project": "dev-db",
+          "compose_path": "/home/containerserver/docker_lab/dev-db/docker-compose.yml",
+          "volume": "dev-db_mysql_data",
+          "volume_bytes": 220450816,
+          "network_peers": [],
+          "application_peers": [],
+          "query_status": "unavailable",
+          "databases": []
+        },
+        {
+          "container": "nonprofit-postgres",
+          "engine": "PostgreSQL 15",
+          "image": "postgres:15",
+          "created": "2026-01-01T17:56:45Z",
+          "compose_project": "",
+          "compose_path": "",
+          "volume": "nonprofit_postgres_data",
+          "volume_bytes": 47820800,
+          "network_peers": [
+            "watchtower"
+          ],
+          "application_peers": [],
+          "query_status": "success",
+          "databases": [
+            {
+              "name": "nonprofit_app",
+              "size_bytes": 7504387
+            },
+            {
+              "name": "postgres",
+              "size_bytes": 7664431
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

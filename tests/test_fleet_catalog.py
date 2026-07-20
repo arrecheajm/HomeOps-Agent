@@ -26,6 +26,11 @@ class FleetCatalogTests(unittest.TestCase):
         self.assertEqual(container["hardware"]["virtualization"], "none")
         self.assertEqual(container["services"][1]["state"], "failed")
         self.assertIn("Service issue: docker", container["constraints"])
+        self.assertTrue(container["docker"]["inventory_collected"])
+        self.assertEqual(
+            container["docker"]["containers"][0]["name"],
+            "monitoring-prometheus-1",
+        )
 
     def test_render_fleet_catalog_includes_server_cards(self):
         catalog = build_fleet_catalog(self._run_summary())
@@ -35,6 +40,9 @@ class FleetCatalogTests(unittest.TestCase):
         self.assertIn("Fleet Placement Guidance", html)
         self.assertIn("container-host", html)
         self.assertIn("openvpn-server", html)
+        self.assertIn("Container Inventory", html)
+        self.assertIn("monitoring-prometheus-1", html)
+        self.assertIn("published: 0.0.0.0:9090", html)
 
     def test_build_fleet_catalog_preserves_failed_server_from_fallback(self):
         partial_run = RunSummary(
@@ -290,6 +298,27 @@ class FleetCatalogTests(unittest.TestCase):
                         "installed": True,
                         "containers_total": 9,
                         "containers_running": 9,
+                        "inventory_collected": True,
+                        "containers": [
+                            {
+                                "name": "monitoring-prometheus-1",
+                                "image": "prom/prometheus:v3",
+                                "state": "running",
+                                "health": "none",
+                                "restart_policy": "unless-stopped",
+                                "network_mode": "monitoring_default",
+                                "compose_project": "monitoring",
+                                "compose_service": "prometheus",
+                                "ports": [
+                                    {
+                                        "container_port": "9090/tcp",
+                                        "host_ip": "0.0.0.0",
+                                        "host_port": "9090",
+                                    }
+                                ],
+                                "mounts": [],
+                            }
+                        ],
                         "unhealthy": [
                             {
                                 "name": "watchtower",

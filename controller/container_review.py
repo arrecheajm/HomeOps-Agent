@@ -9,6 +9,18 @@ from pathlib import Path
 from typing import Any
 
 from . import config, history, rules
+from .container_evidence import (
+    load_container_review_evidence,
+    normalize_container_review_evidence,
+)
+from .docker_inventory import (
+    inventory_collected,
+    load_container_classifications,
+    mount_labels,
+    normalize_docker_inventory,
+    port_labels,
+)
+from .workloads import load_workloads, normalize_workloads
 
 
 DEFAULT_CONTAINER_SERVER_ID = "container-host"
@@ -27,6 +39,8 @@ def build_container_review(
     actions: list[history.ActionSummary] | None = None,
     *,
     generated_at: str | None = None,
+    evidence: dict[str, Any] | None = None,
+    workloads: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a deterministic review for one container host."""
 
@@ -41,12 +55,26 @@ def build_container_review(
             }
         ]
     recent_actions = _recent_actions(actions or [], server_id)
+    review_evidence = (
+        normalize_container_review_evidence(evidence)
+        if evidence is not None
+        else load_container_review_evidence(
+            config.CONTAINER_REVIEW_EVIDENCE_PATH,
+            server_id,
+        )
+    )
+    desired_workloads = (
+        normalize_workloads(workloads)
+        if workloads is not None
+        else load_workloads(config.WORKLOADS_PATH, server_id)
+    )
     recommendations = _recommendations(
         server_id,
         server,
         server_findings,
         collection_errors,
         recent_actions,
+        review_evidence,
     )
     return {
         "schema_version": "1.0",
@@ -62,6 +90,8 @@ def build_container_review(
         "findings": server_findings,
         "collection_errors": collection_errors,
         "recent_actions": recent_actions,
+        "evidence": review_evidence,
+        "desired_state": desired_workloads,
         "recommendations": recommendations,
         "verification": [
             f"python -m controller.main collect --server {server_id}",
@@ -77,6 +107,8 @@ def write_container_review(
     *,
     output_dir: Path | None = None,
     generated_at: str | None = None,
+    evidence: dict[str, Any] | None = None,
+    workloads: dict[str, Any] | None = None,
 ) -> ContainerReview:
     """Write JSON and HTML container review reports."""
 
@@ -85,6 +117,8 @@ def write_container_review(
         server_id,
         actions,
         generated_at=generated_at,
+        evidence=evidence,
+        workloads=workloads,
     )
     actual_output_dir = output_dir or config.GENERATED_REPORTS_DIR
     actual_output_dir.mkdir(parents=True, exist_ok=True)
@@ -125,6 +159,9 @@ def render_container_review(review: dict[str, Any]) -> str:
         '<nav class="actions"><a href="index.html">Dashboard</a><a href="container-review.json">JSON</a></nav>',
         "</header>",
         _server_panel(server),
+        _evidence_panel(_dict(review.get("evidence"))),
+        _workloads_panel(_dict(review.get("desired_state"))),
+        _container_inventory_panel(server),
         _findings_panel(findings),
         _recommendations_panel(recommendations),
         _verification_panel(_list(review.get("verification"))),
@@ -203,6 +240,10 @@ def _server_summary(server: dict[str, Any]) -> dict[str, Any]:
     updates = _dict(server.get("updates"))
     docker = _dict(server.get("docker"))
     resources = _dict(server.get("resources"))
+    classifications = load_container_classifications(
+        config.CONTAINER_CLASSIFICATIONS_PATH,
+        str(server.get("server_id") or DEFAULT_CONTAINER_SERVER_ID),
+    )
     return {
         "hostname": str(server.get("hostname") or "unknown"),
         "role": str(server.get("role") or "unknown"),
@@ -216,6 +257,8 @@ def _server_summary(server: dict[str, Any]) -> dict[str, Any]:
             "installed": bool(docker.get("installed")),
             "containers_total": _as_int(docker.get("containers_total")),
             "containers_running": _as_int(docker.get("containers_running")),
+            "inventory_collected": inventory_collected(docker),
+            "containers": normalize_docker_inventory(docker, classifications),
             "unhealthy": [
                 {
                     "name": str(item.get("name") or "unknown"),
@@ -249,6 +292,7 @@ def _recommendations(
     findings: list[dict[str, Any]],
     collection_errors: list[dict[str, Any]],
     recent_actions: list[dict[str, Any]],
+    evidence: dict[str, Any],
 ) -> list[dict[str, Any]]:
     if collection_errors:
         return [
@@ -264,6 +308,11 @@ def _recommendations(
     recommendations: list[dict[str, Any]] = []
     docker = _dict(server.get("docker"))
     updates = _dict(server.get("updates"))
+    classifications = load_container_classifications(
+        config.CONTAINER_CLASSIFICATIONS_PATH,
+        server_id,
+    )
+    inventory = normalize_docker_inventory(docker, classifications)
 
     if _sudo_password_blocked(recent_actions):
         recommendations.append(
@@ -410,6 +459,99 @@ def _recommendations(
             )
         )
 
+    evidence_storage = _dict(evidence.get("storage"))
+    storage_targets = [
+        item
+        for item in _list(evidence_storage.get("targets"))
+        if isinstance(item, dict)
+    ]
+    if storage_targets and all(
+        str(item.get("backing_target") or "") == "/" for item in storage_targets
+    ):
+        paths = ", ".join(str(item.get("path") or "unknown") for item in storage_targets)
+        recommendations.append(
+            _recommendation(
+                priority=55,
+                severity="info",
+                title="Reserve real external storage before household data deployment",
+                rationale=(
+                    f"{paths} are directories on the root filesystem, not external "
+                    "storage, and no storage sentinel is present. Keep the planned "
+                    "1 TB USB filesystem separate and require a mount/sentinel "
+                    "preflight before Paperless or document data starts."
+                ),
+            )
+        )
+
+    database_evidence = [
+        item for item in _list(evidence.get("databases")) if isinstance(item, dict)
+    ]
+    if database_evidence:
+        database_summary = ", ".join(
+            f"{item.get('container', 'unknown')} ({_format_bytes(_as_int(item.get('volume_bytes')))})"
+            for item in database_evidence
+        )
+        recommendations.append(
+            _recommendation(
+                priority=58,
+                severity="info",
+                title="Capture logical backups before deciding legacy database fate",
+                rationale=(
+                    f"Point-in-time evidence found {database_summary}. No application "
+                    "container peers were identified. Export and restore-test each "
+                    "database before removing either container or named volume."
+                ),
+            )
+        )
+
+    disposition_groups: dict[str, list[str]] = {}
+    for container in inventory:
+        disposition = str(container.get("classification") or "unclassified")
+        disposition_groups.setdefault(disposition, []).append(
+            str(container.get("name") or "unknown")
+        )
+    if disposition_groups.get("review"):
+        names = ", ".join(disposition_groups["review"])
+        recommendations.append(
+            _recommendation(
+                priority=60,
+                severity="info",
+                title="Resolve containers that need ownership and data review",
+                rationale=(
+                    f"Review {names} before cleanup. These containers expose broad "
+                    "storage or persistent database data that must be identified and "
+                    "backed up before a keep/remove decision."
+                ),
+            )
+        )
+    if disposition_groups.get("redeploy"):
+        names = ", ".join(disposition_groups["redeploy"])
+        recommendations.append(
+            _recommendation(
+                priority=70,
+                severity="info",
+                title="Move useful monitoring services into desired state",
+                rationale=(
+                    f"Redeploy {names} with pinned images, restart policies, and "
+                    "reviewed LAN bindings while preserving useful data."
+                ),
+            )
+        )
+    if disposition_groups.get("retire_later"):
+        names = ", ".join(disposition_groups["retire_later"])
+        recommendations.append(
+            _recommendation(
+                priority=80,
+                severity="info",
+                title="Retire management overlap after HomeOps replacements exist",
+                rationale=(
+                    f"Keep {names} temporarily, then retire them after HomeOps "
+                    "provides the replacement management and controlled-upgrade "
+                    "workflows."
+                ),
+            )
+        )
+
     if not recommendations and findings:
         recommendations.append(
             _recommendation(
@@ -537,6 +679,156 @@ def _server_panel(server: dict[str, Any]) -> str:
     )
 
 
+def _evidence_panel(evidence: dict[str, Any]) -> str:
+    if not evidence:
+        return ""
+    storage = _dict(evidence.get("storage"))
+    root = _dict(storage.get("root_filesystem"))
+    disk = _dict(storage.get("host_disk"))
+    target_rows = []
+    for target in _list(storage.get("targets")):
+        if not isinstance(target, dict):
+            continue
+        target_rows.append(
+            "<tr>"
+            f"<td><code>{escape(str(target.get('path') or 'unknown'))}</code></td>"
+            f"<td><code>{escape(str(target.get('backing_target') or 'unknown'))}</code><br>{escape(str(target.get('source') or 'unknown'))}</td>"
+            f"<td>{escape(str(target.get('filesystem') or 'unknown'))}</td>"
+            f"<td>{escape(_format_bytes(_as_int(target.get('aggregate_bytes'))))}</td>"
+            f"<td>{_as_int(target.get('top_level_directories'))}</td>"
+            f"<td>{'present' if target.get('sentinel_present') else 'absent'}</td>"
+            "</tr>"
+        )
+
+    database_rows = []
+    for database in _list(evidence.get("databases")):
+        if not isinstance(database, dict):
+            continue
+        peers = ", ".join(str(item) for item in _list(database.get("application_peers"))) or "none"
+        discovered = ", ".join(
+            f"{item.get('name', 'unknown')} ({_format_bytes(_as_int(item.get('size_bytes')))})"
+            for item in _list(database.get("databases"))
+            if isinstance(item, dict)
+        ) or "not enumerated"
+        database_rows.append(
+            "<tr>"
+            f"<td><code>{escape(str(database.get('container') or 'unknown'))}</code></td>"
+            f"<td>{escape(str(database.get('engine') or 'unknown'))}</td>"
+            f"<td><code>{escape(str(database.get('volume') or 'unknown'))}</code><br>{escape(_format_bytes(_as_int(database.get('volume_bytes'))))}</td>"
+            f"<td>{escape(peers)}</td>"
+            f"<td>{escape(str(database.get('query_status') or 'unknown'))}<br>{escape(discovered)}</td>"
+            "</tr>"
+        )
+
+    return (
+        '<section class="panel"><h2>Storage and Database Evidence</h2>'
+        f'<p class="muted">Observed {escape(str(evidence.get("observed_at") or "unknown"))} using {escape(str(evidence.get("method") or "read-only inspection"))}. File names, file contents, credentials, and environment values were not collected.</p>'
+        '<dl class="facts">'
+        f"<div><dt>Host disk</dt><dd>{escape(str(disk.get('model') or 'unknown'))}<br>{escape(_format_bytes(_as_int(disk.get('size_bytes'))))}</dd></div>"
+        f"<div><dt>Root filesystem</dt><dd>{escape(str(root.get('filesystem') or 'unknown'))}<br>{escape(_format_bytes(_as_int(root.get('size_bytes'))))}</dd></div>"
+        f"<div><dt>Root available</dt><dd>{escape(_format_bytes(_as_int(root.get('available_bytes'))))}</dd></div>"
+        f"<div><dt>Root used</dt><dd>{_as_int(root.get('used_percent'))}%</dd></div>"
+        f"<div><dt>External device</dt><dd>{'detected' if storage.get('external_device_detected') else 'not detected'}</dd></div>"
+        f"<div><dt>Sensitive content</dt><dd>{'collected' if evidence.get('sensitive_content_collected') else 'not collected'}</dd></div>"
+        "</dl>"
+        '<h3>Legacy storage paths</h3><div class="table-wrap"><table>'
+        '<thead><tr><th>Path</th><th>Backing mount</th><th>Filesystem</th><th>Aggregate data</th><th>Top-level dirs</th><th>Sentinel</th></tr></thead><tbody>'
+        + "".join(target_rows)
+        + "</tbody></table></div>"
+        '<h3>Legacy databases</h3><div class="table-wrap"><table>'
+        '<thead><tr><th>Container</th><th>Engine</th><th>Volume</th><th>Application peers</th><th>Read-only query</th></tr></thead><tbody>'
+        + "".join(database_rows)
+        + "</tbody></table></div></section>"
+    )
+
+
+def _container_inventory_panel(server: dict[str, Any]) -> str:
+    docker = _dict(server.get("docker"))
+    if not docker.get("installed"):
+        return ""
+    if not docker.get("inventory_collected"):
+        return (
+            '<section class="panel"><h2>Container Inventory</h2>'
+            '<p class="muted">Detailed inventory was not collected in the source run. '
+            "Deploy the updated read-only health script before classifying containers.</p>"
+            "</section>"
+        )
+    containers = _list(docker.get("containers"))
+    if not containers:
+        return (
+            '<section class="panel"><h2>Container Inventory</h2>'
+            "<p>No containers found.</p></section>"
+        )
+
+    rows = []
+    for container in containers:
+        if not isinstance(container, dict):
+            continue
+        state = str(container.get("state") or "unknown")
+        health = str(container.get("health") or "none")
+        if health != "none":
+            state = f"{state} / {health}"
+        compose = str(container.get("compose_project") or "standalone")
+        compose_service = str(container.get("compose_service") or "")
+        if compose_service:
+            compose = f"{compose}/{compose_service}"
+        ports = port_labels(container)
+        mounts = mount_labels(container)
+        rows.append(
+            "<tr>"
+            f"<td><code>{escape(str(container.get('name') or 'unknown'))}</code></td>"
+            f"<td><code>{escape(str(container.get('image') or 'unknown'))}</code></td>"
+            f"<td>{escape(state)}</td>"
+            f"<td>{escape(compose)}</td>"
+            f"<td>{escape(str(container.get('restart_policy') or 'unknown'))}</td>"
+            f"<td>{escape(str(container.get('exposure') or 'unknown'))}<br>{'<br>'.join(escape(item) for item in ports) if ports else 'none'}</td>"
+            f"<td>{'<br>'.join(escape(item) for item in mounts) if mounts else 'none'}</td>"
+            f"<td><strong>{escape(str(container.get('classification') or 'unclassified'))}</strong><br>{escape(str(container.get('classification_rationale') or ''))}</td>"
+            "</tr>"
+        )
+    return (
+        '<section class="panel"><h2>Container Inventory</h2>'
+        '<p class="muted">Sanitized inventory excludes logs, environment values, and secret data.</p>'
+        '<div class="table-wrap"><table>'
+        "<thead><tr><th>Name</th><th>Image</th><th>State</th><th>Compose</th><th>Restart</th><th>Exposure</th><th>Mounts</th><th>Review</th></tr></thead>"
+        "<tbody>"
+        + "".join(rows)
+        + "</tbody></table></div></section>"
+    )
+
+
+def _workloads_panel(desired_state: dict[str, Any]) -> str:
+    workloads = _list(desired_state.get("workloads"))
+    if not workloads:
+        return ""
+    rows = []
+    for workload in workloads:
+        if not isinstance(workload, dict):
+            continue
+        services = ", ".join(str(item) for item in _list(workload.get("services"))) or "none"
+        prerequisites = "<br>".join(
+            escape(str(item)) for item in _list(workload.get("prerequisites"))
+        ) or "none"
+        rows.append(
+            "<tr>"
+            f"<td>{_as_int(workload.get('phase'))}</td>"
+            f"<td><code>{escape(str(workload.get('workload_id') or 'unknown'))}</code><br>{escape(str(workload.get('purpose') or ''))}</td>"
+            f"<td>{escape(str(workload.get('state') or 'planned'))}</td>"
+            f"<td>{escape(services)}</td>"
+            f"<td>{escape(str(workload.get('storage_class') or 'internal'))}</td>"
+            f"<td>{prerequisites}</td>"
+            f"<td>{'enabled' if workload.get('deployment_enabled') else 'gated'}</td>"
+            "</tr>"
+        )
+    return (
+        '<section class="panel"><h2>Desired Workloads</h2>'
+        f'<p class="muted">Network scope: {escape(str(desired_state.get("network_scope") or "lan_only"))}. Deployment remains gated until each workload has version-pinned Compose definitions and its listed prerequisites pass.</p>'
+        '<div class="table-wrap"><table><thead><tr><th>Phase</th><th>Workload</th><th>State</th><th>Services</th><th>Storage</th><th>Prerequisites</th><th>Deployment</th></tr></thead><tbody>'
+        + "".join(rows)
+        + "</tbody></table></div></section>"
+    )
+
+
 def _findings_panel(findings: list[Any]) -> str:
     if not findings:
         return '<section class="panel"><h2>Findings</h2><p>No findings for this server.</p></section>'
@@ -619,6 +911,16 @@ def _as_float(value: Any) -> float:
         return 0.0
 
 
+def _format_bytes(value: int) -> str:
+    amount = float(max(0, value))
+    units = ["B", "KiB", "MiB", "GiB", "TiB"]
+    for unit in units:
+        if amount < 1024 or unit == units[-1]:
+            return f"{amount:.1f} {unit}" if unit != "B" else f"{int(amount)} B"
+        amount /= 1024
+    return f"{int(value)} B"
+
+
 def _clean_text(value: Any, default: str) -> str:
     cleaned = " ".join(str(value or "").split())
     return cleaned or default
@@ -669,7 +971,7 @@ h1, h2, p { margin-top: 0; }
 h1 { font-size: 32px; margin-bottom: 4px; }
 h2 { font-size: 20px; }
 p, td, th, li, dd, dt { font-size: 14px; }
-.topbar p, dt { color: var(--muted); }
+.topbar p, dt, .muted { color: var(--muted); }
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -709,6 +1011,7 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
+.table-wrap { overflow-x: auto; }
 th, td {
   border-bottom: 1px solid var(--border);
   padding: 8px;

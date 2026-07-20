@@ -160,6 +160,8 @@ docker_installed=false
 containers_total=0
 containers_running=0
 docker_unhealthy_json=""
+docker_inventory_collected=false
+docker_containers_json='[]'
 if command_exists docker; then
   docker_installed=true
   if docker info >/dev/null 2>&1; then
@@ -174,6 +176,87 @@ if command_exists docker; then
       fi
       docker_unhealthy_json="$docker_unhealthy_json{\"name\":$name_json,\"status\":$status_json}"
     done < <(docker ps --filter health=unhealthy --format '{{.Names}}|{{.Status}}' 2>/dev/null)
+
+    container_ids="$(docker ps -aq 2>/dev/null || true)"
+    if [ -z "$container_ids" ]; then
+      docker_inventory_collected=true
+    else
+      # Only emit explicitly allowlisted fields. Environment values, labels other
+      # than Compose identity, logs, and container configuration are discarded.
+      # shellcheck disable=SC2086
+      if docker_containers_json="$(
+        docker inspect $container_ids 2>/dev/null | python3 -c '
+import json
+import sys
+
+payload = json.load(sys.stdin)
+containers = []
+for item in payload:
+    config = item.get("Config") or {}
+    state = item.get("State") or {}
+    host = item.get("HostConfig") or {}
+    labels = config.get("Labels") or {}
+    ports = []
+    for container_port, bindings in sorted(
+        ((item.get("NetworkSettings") or {}).get("Ports") or {}).items()
+    ):
+        if not bindings:
+            ports.append(
+                {
+                    "container_port": str(container_port),
+                    "host_ip": "",
+                    "host_port": "",
+                }
+            )
+            continue
+        for binding in bindings:
+            binding = binding or {}
+            ports.append(
+                {
+                    "container_port": str(container_port),
+                    "host_ip": str(binding.get("HostIp") or ""),
+                    "host_port": str(binding.get("HostPort") or ""),
+                }
+            )
+    mounts = []
+    for mount in item.get("Mounts") or []:
+        mounts.append(
+            {
+                "type": str(mount.get("Type") or "unknown"),
+                "source": str(mount.get("Source") or "unknown"),
+                "destination": str(mount.get("Destination") or "unknown"),
+                "read_only": not bool(mount.get("RW")),
+            }
+        )
+    health = state.get("Health") or {}
+    containers.append(
+        {
+            "name": str(item.get("Name") or "").lstrip("/") or "unknown",
+            "image": str(config.get("Image") or item.get("Image") or "unknown"),
+            "state": str(state.get("Status") or "unknown"),
+            "health": str(health.get("Status") or "none"),
+            "restart_policy": str(
+                (host.get("RestartPolicy") or {}).get("Name") or "unknown"
+            ),
+            "network_mode": str(host.get("NetworkMode") or "unknown"),
+            "compose_project": str(
+                labels.get("com.docker.compose.project") or ""
+            ),
+            "compose_service": str(
+                labels.get("com.docker.compose.service") or ""
+            ),
+            "ports": ports,
+            "mounts": mounts,
+        }
+    )
+print(json.dumps(sorted(containers, key=lambda value: value["name"])))
+'
+      )"; then
+        docker_inventory_collected=true
+      else
+        docker_containers_json='[]'
+      fi
+    fi
   fi
 fi
 
@@ -242,7 +325,9 @@ cat <<JSON
     "installed": $(json_bool "$docker_installed"),
     "containers_total": $(safe_number "$containers_total"),
     "containers_running": $(safe_number "$containers_running"),
-    "unhealthy": [$docker_unhealthy_json]
+    "unhealthy": [$docker_unhealthy_json],
+    "inventory_collected": $(json_bool "$docker_inventory_collected"),
+    "containers": $docker_containers_json
   },
   "security": {
     "failed_ssh_logins_24h": $(safe_number "$failed_ssh_logins_24h"),
