@@ -6,10 +6,10 @@
     "not_collected": 0,
     "pending_updates": 2,
     "reboots_required": 0,
-    "running_containers": 9,
+    "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-07-20T18:33:39Z",
+  "generated_at": "2026-07-20T19:14:29Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
@@ -24,7 +24,7 @@
         "Low background workload",
         "Small CPU footprint"
       ],
-      "collected_at": "2026-07-20T18:33:44Z",
+      "collected_at": "2026-07-20T19:14:32Z",
       "constraints": [
         "2 package updates pending",
         "VPN availability affects remote access"
@@ -67,8 +67,8 @@
       ],
       "resources": {
         "cpu_count": 2,
-        "load_1m": 0.86,
-        "memory_used_percent": 19.5,
+        "load_1m": 0.25,
+        "memory_used_percent": 19.8,
         "swap_used_percent": 0.0,
         "uptime_days": 2.1
       },
@@ -113,7 +113,7 @@
         "AgentDVR workload",
         "Moderate CPU headroom"
       ],
-      "collected_at": "2026-07-20T18:33:47Z",
+      "collected_at": "2026-07-20T19:14:38Z",
       "constraints": [
         "Camera recording interruption risk"
       ],
@@ -149,8 +149,8 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.13,
-        "memory_used_percent": 10.2,
+        "load_1m": 0.15,
+        "memory_used_percent": 10.1,
         "swap_used_percent": 0.0,
         "uptime_days": 2.1
       },
@@ -201,9 +201,9 @@
         "Docker application host",
         "Container consolidation target",
         "Moderate CPU headroom",
-        "Docker installed with 9 running containers"
+        "Docker installed with 6 running containers"
       ],
-      "collected_at": "2026-07-20T18:33:49Z",
+      "collected_at": "2026-07-20T19:14:43Z",
       "constraints": [],
       "current_findings": [],
       "docker": {
@@ -254,63 +254,6 @@
                 "container_port": "8080/tcp",
                 "host_ip": "::",
                 "host_port": "8080"
-              }
-            ],
-            "restart_policy": "unless-stopped",
-            "state": "running"
-          },
-          {
-            "classification": "retire_now",
-            "classification_rationale": "The operator confirmed File Browser is empty and not wanted; retire its container and data volumes through the bounded HomeOps action.",
-            "compose_project": "dashboards",
-            "compose_service": "filebrowser",
-            "exposure": "published",
-            "health": "healthy",
-            "image": "filebrowser/filebrowser:latest",
-            "mounts": [
-              {
-                "destination": "/config",
-                "read_only": false,
-                "source": "/var/lib/docker/volumes/56aca2c15847f740407dfe0c34a00fd565724b21f2d19b09315015b1a428c424/_data",
-                "type": "volume"
-              },
-              {
-                "destination": "/database",
-                "read_only": false,
-                "source": "/var/lib/docker/volumes/dashboards_filebrowser_data/_data",
-                "type": "volume"
-              },
-              {
-                "destination": "/srv",
-                "read_only": false,
-                "source": "/mnt/storage1",
-                "type": "bind"
-              },
-              {
-                "destination": "/srv/storage1",
-                "read_only": false,
-                "source": "/mnt/storage2",
-                "type": "bind"
-              },
-              {
-                "destination": "/srv/storage2",
-                "read_only": false,
-                "source": "/mnt/storageWD320",
-                "type": "bind"
-              }
-            ],
-            "name": "filebrowser",
-            "network_mode": "dashboards_default",
-            "ports": [
-              {
-                "container_port": "80/tcp",
-                "host_ip": "0.0.0.0",
-                "host_port": "8081"
-              },
-              {
-                "container_port": "80/tcp",
-                "host_ip": "::",
-                "host_port": "8081"
               }
             ],
             "restart_policy": "unless-stopped",
@@ -415,77 +358,6 @@
             "state": "running"
           },
           {
-            "classification": "retire_now",
-            "classification_rationale": "The operator confirmed this legacy MySQL 5.7 volume contains disposable application-development test data.",
-            "compose_project": "dev-db",
-            "compose_service": "mysql",
-            "exposure": "published",
-            "health": "none",
-            "image": "mysql:5.7",
-            "mounts": [
-              {
-                "destination": "/var/lib/mysql",
-                "read_only": false,
-                "source": "/var/lib/docker/volumes/dev-db_mysql_data/_data",
-                "type": "volume"
-              }
-            ],
-            "name": "mysql57",
-            "network_mode": "dev-db_default",
-            "ports": [
-              {
-                "container_port": "3306/tcp",
-                "host_ip": "0.0.0.0",
-                "host_port": "3306"
-              },
-              {
-                "container_port": "3306/tcp",
-                "host_ip": "::",
-                "host_port": "3306"
-              },
-              {
-                "container_port": "33060/tcp",
-                "host_ip": "",
-                "host_port": ""
-              }
-            ],
-            "restart_policy": "always",
-            "state": "running"
-          },
-          {
-            "classification": "retire_now",
-            "classification_rationale": "The operator confirmed the nonprofit_app PostgreSQL data was disposable application-development test data.",
-            "compose_project": "",
-            "compose_service": "",
-            "exposure": "published",
-            "health": "none",
-            "image": "postgres:15",
-            "mounts": [
-              {
-                "destination": "/var/lib/postgresql/data",
-                "read_only": false,
-                "source": "/var/lib/docker/volumes/nonprofit_postgres_data/_data",
-                "type": "volume"
-              }
-            ],
-            "name": "nonprofit-postgres",
-            "network_mode": "bridge",
-            "ports": [
-              {
-                "container_port": "5432/tcp",
-                "host_ip": "0.0.0.0",
-                "host_port": "5432"
-              },
-              {
-                "container_port": "5432/tcp",
-                "host_ip": "::",
-                "host_port": "5432"
-              }
-            ],
-            "restart_policy": "unless-stopped",
-            "state": "running"
-          },
-          {
             "classification": "retire_later",
             "classification_rationale": "Overlaps with the planned HomeOps lifecycle interface and has read-write Docker socket access; retain until replacement workflows are ready.",
             "compose_project": "dashboards",
@@ -568,8 +440,8 @@
             "state": "running"
           }
         ],
-        "containers_running": 9,
-        "containers_total": 9,
+        "containers_running": 6,
+        "containers_total": 6,
         "installed": true,
         "inventory_collected": true,
         "unhealthy": []
@@ -597,8 +469,8 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.25,
-        "memory_used_percent": 15.6,
+        "load_1m": 0.29,
+        "memory_used_percent": 13.2,
         "swap_used_percent": 0.0,
         "uptime_days": 2.1
       },
@@ -620,10 +492,10 @@
       "storage": {
         "disks": [
           {
-            "free_gb": 81,
+            "free_gb": 82,
             "mount": "/",
             "size_gb": 98,
-            "used_percent": 14
+            "used_percent": 13
           },
           {
             "free_gb": 2,
@@ -638,15 +510,15 @@
             "used_percent": 1
           }
         ],
-        "root_free_gb": 81,
-        "root_used_percent": 14,
-        "total_reported_free_gb": 85
+        "root_free_gb": 82,
+        "root_used_percent": 13,
+        "total_reported_free_gb": 86
       }
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-20T18-33-39Z/fleet-health.json",
-    "generated_at": "2026-07-20T18:33:39Z",
-    "run_id": "2026-07-20T18-33-39Z"
+    "fleet_path": "history/runs/2026-07-20T19-14-29Z/fleet-health.json",
+    "generated_at": "2026-07-20T19:14:29Z",
+    "run_id": "2026-07-20T19-14-29Z"
   }
 }

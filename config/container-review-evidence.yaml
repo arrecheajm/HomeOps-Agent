@@ -61,6 +61,8 @@
           "volume": "dev-db_mysql_data",
           "volume_bytes": 220450816,
           "preservation_required": false,
+          "status": "retired",
+          "retired_at": "2026-07-20T19:12:32Z",
           "network_peers": [],
           "application_peers": [],
           "query_status": "unavailable",
@@ -76,6 +78,8 @@
           "volume": "nonprofit_postgres_data",
           "volume_bytes": 47820800,
           "preservation_required": false,
+          "status": "retired",
+          "retired_at": "2026-07-20T19:12:32Z",
           "network_peers": [
             "watchtower"
           ],

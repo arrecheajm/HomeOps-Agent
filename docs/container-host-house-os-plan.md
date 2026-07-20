@@ -175,7 +175,8 @@ backup target.
   disposable application-development test data. No backup is required for
   these three workloads.
 - `retire_disposable_containers` is implemented as an approval-gated fixed
-  bundle. Its dry run passed; execution still requires the exact approval phrase.
+  bundle. The approved action completed on 2026-07-20, and fresh inventory
+  verified 6 of 6 remaining containers with no container-host findings.
 
 ## Current Container Disposition
 
@@ -185,14 +186,15 @@ backup target.
 | `monitoring-grafana-1` | redeploy | Preserve Grafana data while adding a pinned image and restart policy. |
 | `monitoring-node_exporter-1` | redeploy | Preserve host metrics with a pinned image, restart policy, and reviewed port binding. |
 | `monitoring-prometheus-1` | redeploy | Preserve metrics history; pin the image, add restart policy, and make the config mount read-only. |
-| `filebrowser` | retire now | The operator confirmed it is empty and not wanted. The bounded action removes its container and Docker volumes without deleting bind-mounted directories. |
-| `mysql57` | retire now | The operator confirmed its MySQL 5.7 data is disposable development-test data. |
-| `nonprofit-postgres` | retire now | The operator confirmed the `nonprofit_app` database is disposable development-test data. |
+| `filebrowser` | retired | Removed with its Docker volumes after the operator confirmed it was empty. Bind-mounted directories were left intact. |
+| `mysql57` | retired | Removed with `dev-db_mysql_data` after the operator confirmed it was disposable test data. |
+| `nonprofit-postgres` | retired | Removed with `nonprofit_postgres_data` after the operator confirmed it was disposable test data. |
 | `portainer` | retire later | Overlaps with planned HomeOps management and has read-write Docker socket access. |
 | `watchtower` | retire later | Replace automatic updates with pinned, approval-gated HomeOps upgrades. |
 
-No container has yet been stopped, removed, or reconfigured. Read-only evidence
-confirmed that `/mnt/storage1`, `/mnt/storage2`, and `/mnt/storageWD320` are
+The approved cleanup removed only the three confirmed disposable containers and
+their Docker data volumes. Read-only evidence confirmed that `/mnt/storage1`,
+`/mnt/storage2`, and `/mnt/storageWD320` are
 nearly empty directories on the root filesystem. They must not be treated as
 external storage. The planned 1 TB USB drive still needs to be attached,
 formatted, mounted by UUID, and protected by a sentinel preflight through an

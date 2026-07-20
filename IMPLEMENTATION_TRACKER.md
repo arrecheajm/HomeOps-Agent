@@ -47,8 +47,8 @@ Live status:
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
-  `2026-07-20T18-33-39Z`; all three servers collected successfully,
-  `container-host` has 9 of 9 containers running, and it has no current host
+  `2026-07-20T19-14-29Z`; all three servers collected successfully,
+  `container-host` has 6 of 6 containers running, and it has no current host
   finding.
 - The `run fleet review` operator workflow is documented for Codex: collect
   live health, refresh dashboard and catalog, check the latest run explicitly,
@@ -83,10 +83,11 @@ Live status:
   normalized by `controller/workloads.py`. The focused container review renders
   six ordered LAN-only workloads and keeps deployment gated until prerequisites
   and version-pinned Compose definitions exist.
-- The operator confirmed `filebrowser` is empty and the MySQL/PostgreSQL volumes
-  contain disposable development-test data. `retire_disposable_containers` is
-  implemented and dry-run verified as a fixed approval-gated bundle; it has not
-  been executed.
+- The operator confirmed `filebrowser` was empty and the MySQL/PostgreSQL
+  volumes contained disposable development-test data. The approved
+  `retire_disposable_containers` action removed those three containers and their
+  fixed data-volume bundle on 2026-07-20; targeted and full-fleet collections
+  verified 6 of 6 remaining containers with no container-host findings.
 
 Current operating model:
 
@@ -210,12 +211,9 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next operational item is executing the dry-run-verified disposable
-container retirement after exact approval, then collecting fresh health to
-confirm the host has 6 expected containers. The next code item is
-version-pinned Compose bundle metadata and approval-gated stack lifecycle
-design from `config/workloads.yaml`, followed by the USB mount/sentinel
-preflight. Use
+The next code item is version-pinned Compose bundle metadata for the retained
+monitoring stack and approval-gated stack lifecycle design from
+`config/workloads.yaml`, followed by the USB mount/sentinel preflight. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

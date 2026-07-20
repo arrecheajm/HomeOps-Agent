@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 import shutil
 import unittest
+from unittest.mock import patch
 
 from controller.container_review import (
     build_container_review,
@@ -318,7 +319,16 @@ class ContainerReviewTests(unittest.TestCase):
             }
         )
 
-        review = build_container_review(run, "container-host", evidence={})
+        with patch(
+            "controller.container_review.load_container_classifications",
+            return_value={
+                "filebrowser": {
+                    "classification": "retire_now",
+                    "rationale": "confirmed disposable",
+                }
+            },
+        ):
+            review = build_container_review(run, "container-host", evidence={})
         retirement = next(
             item
             for item in review["recommendations"]

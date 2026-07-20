@@ -738,6 +738,7 @@ def _evidence_panel(evidence: dict[str, Any]) -> str:
             "<tr>"
             f"<td><code>{escape(str(database.get('container') or 'unknown'))}</code></td>"
             f"<td>{escape(str(database.get('engine') or 'unknown'))}</td>"
+            f"<td>{escape(str(database.get('status') or 'observed'))}<br>{escape(str(database.get('retired_at') or ''))}</td>"
             f"<td><code>{escape(str(database.get('volume') or 'unknown'))}</code><br>{escape(_format_bytes(_as_int(database.get('volume_bytes'))))}</td>"
             f"<td>{escape(peers)}</td>"
             f"<td>{'yes' if database.get('preservation_required') else 'no'}</td>"
@@ -761,7 +762,7 @@ def _evidence_panel(evidence: dict[str, Any]) -> str:
         + "".join(target_rows)
         + "</tbody></table></div>"
         '<h3>Legacy databases</h3><div class="table-wrap"><table>'
-        '<thead><tr><th>Container</th><th>Engine</th><th>Volume</th><th>Application peers</th><th>Preserve</th><th>Read-only query</th></tr></thead><tbody>'
+        '<thead><tr><th>Container</th><th>Engine</th><th>Status</th><th>Volume</th><th>Application peers</th><th>Preserve</th><th>Read-only query</th></tr></thead><tbody>'
         + "".join(database_rows)
         + "</tbody></table></div></section>"
     )

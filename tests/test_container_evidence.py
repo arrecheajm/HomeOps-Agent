@@ -31,6 +31,8 @@ class ContainerEvidenceTests(unittest.TestCase):
                         "container": "mysql57",
                         "volume_bytes": "220450816",
                         "preservation_required": False,
+                        "status": "retired",
+                        "retired_at": "2026-07-20T19:12:32Z",
                         "environment": {"MYSQL_ROOT_PASSWORD": "secret"},
                     }
                 ],
@@ -43,6 +45,7 @@ class ContainerEvidenceTests(unittest.TestCase):
         self.assertEqual(evidence["storage"]["targets"][0]["aggregate_bytes"], 12288)
         self.assertEqual(evidence["databases"][0]["volume_bytes"], 220450816)
         self.assertFalse(evidence["databases"][0]["preservation_required"])
+        self.assertEqual(evidence["databases"][0]["status"], "retired")
 
     def test_loads_evidence_for_requested_server_only(self):
         path = Path("tests/.tmp/container-review-evidence.json")

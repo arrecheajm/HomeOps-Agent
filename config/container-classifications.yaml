@@ -7,8 +7,8 @@
         "rationale": "Useful container metrics source; retain while moving it to a pinned image and reviewed LAN exposure."
       },
       "filebrowser": {
-        "classification": "retire_now",
-        "rationale": "The operator confirmed File Browser is empty and not wanted; retire its container and data volumes through the bounded HomeOps action."
+        "classification": "retired",
+        "rationale": "Removed through retire_disposable_containers on 2026-07-20 after the operator confirmed File Browser was empty and not wanted."
       },
       "monitoring-grafana-1": {
         "classification": "redeploy",
@@ -23,12 +23,12 @@
         "rationale": "Keep metrics history, but redeploy from desired state with a pinned image, restart policy, and read-only configuration mount."
       },
       "mysql57": {
-        "classification": "retire_now",
-        "rationale": "The operator confirmed this legacy MySQL 5.7 volume contains disposable application-development test data."
+        "classification": "retired",
+        "rationale": "Removed with dev-db_mysql_data on 2026-07-20 after the operator confirmed it contained disposable development-test data."
       },
       "nonprofit-postgres": {
-        "classification": "retire_now",
-        "rationale": "The operator confirmed the nonprofit_app PostgreSQL data was disposable application-development test data."
+        "classification": "retired",
+        "rationale": "Removed with nonprofit_postgres_data on 2026-07-20 after the operator confirmed nonprofit_app was disposable development-test data."
       },
       "portainer": {
         "classification": "retire_later",

@@ -64,15 +64,15 @@ Recommended thinking level for the next work:
 ## Current Resume State
 
 - Check `git status --short --branch` at session start for branch cleanliness.
-- Latest fleet report run: `2026-07-20T18-33-39Z`; all 3 servers collected
-  without errors after granting the collector access to the configured SSH key.
-- Latest targeted `container-host` run: `2026-07-20T17-12-50Z`; sanitized
-  inventory collected 9 of 9 running containers with no findings.
+- Latest fleet report run: `2026-07-20T19-14-29Z`; all 3 servers collected
+  without errors.
+- Latest targeted `container-host` run: `2026-07-20T19-12-53Z`; sanitized
+  inventory collected 6 of 6 running containers with no findings after cleanup.
 - Latest fleet status: 0 critical, 0 warning, and 1 informational finding.
 - `openvpn-server` has 2 non-security package updates pending; no reboot is
   required.
 - `ispy-server` is current and AgentDVR is active with no fleet finding.
-- `container-host` is current with Docker active, 9 of 9 containers running,
+- `container-host` is current with Docker active, 6 of 6 containers running,
   and no unhealthy containers or host finding.
 - `container-host` has an i5-4210U with 4 CPU threads, about 8 GB RAM, and about
   80 GB free on the root disk. Current load and memory use are low.
@@ -90,9 +90,8 @@ Recommended thinking level for the next work:
 - Updated health script deployment completed through the approval-gated action:
   `history/actions/2026-07-20T17-12-38Z-container-host-deploy_health_script.json`.
 - Current disposition recommendations: keep `cadvisor`; redeploy Grafana,
-  node-exporter, and Prometheus from desired state; retire `filebrowser`,
-  `mysql57`, and `nonprofit-postgres` now that the operator confirmed their data
-  is disposable; retire Portainer and Watchtower only after replacements exist.
+  node-exporter, and Prometheus from desired state; retire Portainer and
+  Watchtower only after replacements exist.
 - Read-only evidence confirmed `/mnt/storage1`, `/mnt/storage2`, and
   `/mnt/storageWD320` are nearly empty directories on the 100 GB root
   filesystem, not external mounts. The host currently exposes only its internal
@@ -105,10 +104,12 @@ Recommended thinking level for the next work:
 - The operator confirmed both databases were application-development test data
   and File Browser is empty. No backup or preservation is required for these
   three containers.
-- The approval-gated `retire_disposable_containers` action is implemented and
-  its dry run passed. It removes only the three fixed containers plus their
-  anonymous and explicitly named data volumes; it does not prune Docker or
-  delete bind-mounted paths, networks, or Compose files.
+- The approved `retire_disposable_containers` action completed at
+  `2026-07-20T19:12:32Z`. It removed `filebrowser`, `mysql57`, and
+  `nonprofit-postgres`, their anonymous attached volume, and the named volumes
+  `dashboards_filebrowser_data`, `dev-db_mysql_data`, and
+  `nonprofit_postgres_data`. It did not prune Docker or delete bind-mounted
+  paths, networks, or Compose files.
 - Sanitized point-in-time evidence is tracked in
   `config/container-review-evidence.yaml` and rendered in the container review.
 - Desired workload intent is tracked in `config/workloads.yaml`: monitoring,
@@ -129,18 +130,16 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. After exact approval, execute `retire_disposable_containers`, collect fresh
-   health, and confirm the host has 6 expected running containers.
-2. Define desired-state Compose bundles for the retained monitoring services
+1. Define desired-state Compose bundles for the retained monitoring services
    with pinned images, restart policies, and reviewed LAN port bindings.
-3. Record the smart-switch and garage-controller brands/apps, phone platform,
+2. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-4. Define version-pinned Compose bundle metadata and approval-gated stack
+3. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-5. Implement USB mount/sentinel preflight before storage-dependent deployment.
-6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+4. Implement USB mount/sentinel preflight before storage-dependent deployment.
+5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-7. Prove reboot persistence and backup/restore for each new stateful application
+6. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

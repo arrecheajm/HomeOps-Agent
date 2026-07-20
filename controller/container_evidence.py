@@ -83,6 +83,8 @@ def _database(value: dict[str, Any]) -> dict[str, Any]:
         "volume": _text(value.get("volume")),
         "volume_bytes": _integer(value.get("volume_bytes")),
         "preservation_required": value.get("preservation_required") is not False,
+        "status": _text(value.get("status")) or "observed",
+        "retired_at": _text(value.get("retired_at")),
         "network_peers": sorted(_text(item) for item in _list(value.get("network_peers")) if _text(item)),
         "application_peers": sorted(_text(item) for item in _list(value.get("application_peers")) if _text(item)),
         "query_status": _text(value.get("query_status")),
