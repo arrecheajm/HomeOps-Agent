@@ -60,6 +60,7 @@
           "compose_path": "/home/containerserver/docker_lab/dev-db/docker-compose.yml",
           "volume": "dev-db_mysql_data",
           "volume_bytes": 220450816,
+          "preservation_required": false,
           "network_peers": [],
           "application_peers": [],
           "query_status": "unavailable",
@@ -74,6 +75,7 @@
           "compose_path": "",
           "volume": "nonprofit_postgres_data",
           "volume_bytes": 47820800,
+          "preservation_required": false,
           "network_peers": [
             "watchtower"
           ],

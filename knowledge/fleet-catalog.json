@@ -260,8 +260,8 @@
             "state": "running"
           },
           {
-            "classification": "review",
-            "classification_rationale": "Potentially useful for household file intake, but its three read-write /mnt paths are nearly empty directories on the root filesystem, not external storage.",
+            "classification": "retire_now",
+            "classification_rationale": "The operator confirmed File Browser is empty and not wanted; retire its container and data volumes through the bounded HomeOps action.",
             "compose_project": "dashboards",
             "compose_service": "filebrowser",
             "exposure": "published",
@@ -415,8 +415,8 @@
             "state": "running"
           },
           {
-            "classification": "review",
-            "classification_rationale": "Legacy MySQL 5.7 dev-db container with about 210 MiB in a named volume, no application network peer, and a LAN-published port; logical backup is required before retirement.",
+            "classification": "retire_now",
+            "classification_rationale": "The operator confirmed this legacy MySQL 5.7 volume contains disposable application-development test data.",
             "compose_project": "dev-db",
             "compose_service": "mysql",
             "exposure": "published",
@@ -453,8 +453,8 @@
             "state": "running"
           },
           {
-            "classification": "review",
-            "classification_rationale": "Standalone PostgreSQL 15 container with about 46 MiB in its volume and a small nonprofit_app database, but no application network peer; logical backup is required before any change.",
+            "classification": "retire_now",
+            "classification_rationale": "The operator confirmed the nonprofit_app PostgreSQL data was disposable application-development test data.",
             "compose_project": "",
             "compose_service": "",
             "exposure": "published",

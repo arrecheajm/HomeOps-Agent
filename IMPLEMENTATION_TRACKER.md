@@ -38,6 +38,7 @@ Live status:
   before-state snapshots.
 - `inspect_docker_container`, `replace_watchtower_container`,
   `migrate_watchtower_container`, `deploy_health_script`,
+  `retire_disposable_containers`,
   `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
   `apply_package_updates`, `apply_security_updates`, and `reboot_server`
   support dry-run, exact approval, execution, and action history.
@@ -46,7 +47,7 @@ Live status:
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
-  `2026-07-18T18-47-49Z`; all three servers collected successfully,
+  `2026-07-20T18-33-39Z`; all three servers collected successfully,
   `container-host` has 9 of 9 containers running, and it has no current host
   finding.
 - The `run fleet review` operator workflow is documented for Codex: collect
@@ -82,6 +83,10 @@ Live status:
   normalized by `controller/workloads.py`. The focused container review renders
   six ordered LAN-only workloads and keeps deployment gated until prerequisites
   and version-pinned Compose definitions exist.
+- The operator confirmed `filebrowser` is empty and the MySQL/PostgreSQL volumes
+  contain disposable development-test data. `retire_disposable_containers` is
+  implemented and dry-run verified as a fixed approval-gated bundle; it has not
+  been executed.
 
 Current operating model:
 
@@ -176,7 +181,8 @@ currently runs through `python -m controller.main collect`.
 Approval-required action IDs are registered. `restart_docker_container`,
 `restart_service`, `deploy_health_script`, `deploy_sudoers_profile`,
 `inspect_docker_container`, `replace_watchtower_container`,
-`migrate_watchtower_container`, `apply_package_updates`,
+`migrate_watchtower_container`, `retire_disposable_containers`,
+`apply_package_updates`,
 `apply_security_updates`, and `reboot_server` are executable after exact
 approval. `run_admin_command` is also executable after exact approval on
 `experimental` and `lab` profiles.
@@ -186,6 +192,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `inspect_docker_container`
 - [x] `replace_watchtower_container`
 - [x] `migrate_watchtower_container`
+- [x] `retire_disposable_containers`
 - [x] `restart_service`
 - [x] `restart_docker_container`
 - [x] `reboot_server`
@@ -203,11 +210,12 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next operational item is designing logical backup and restore verification
-for the two legacy database volumes before any retirement decision. The next
-code item is version-pinned Compose bundle metadata and approval-gated stack
-lifecycle design from `config/workloads.yaml`, followed by the USB
-mount/sentinel preflight. Use
+The next operational item is executing the dry-run-verified disposable
+container retirement after exact approval, then collecting fresh health to
+confirm the host has 6 expected containers. The next code item is
+version-pinned Compose bundle metadata and approval-gated stack lifecycle
+design from `config/workloads.yaml`, followed by the USB mount/sentinel
+preflight. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

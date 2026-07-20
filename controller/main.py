@@ -812,7 +812,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     actions_run_parser.add_argument(
         "--container",
-        help="Docker container name for restart_docker_container.",
+        help="Docker container name for container-scoped actions.",
     )
     actions_run_parser.add_argument(
         "--service",

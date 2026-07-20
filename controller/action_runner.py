@@ -59,6 +59,16 @@ ADMIN_INTENT_MAX_LENGTH = 240
 WATCHTOWER_IMAGE = "containrrr/watchtower"
 WATCHTOWER_MIGRATION_IMAGE = "nickfedor/watchtower"
 WATCHTOWER_NAME = "watchtower"
+DISPOSABLE_CONTAINERS = {
+    "filebrowser": "filebrowser/filebrowser:latest",
+    "mysql57": "mysql:5.7",
+    "nonprofit-postgres": "postgres:15",
+}
+DISPOSABLE_VOLUMES = (
+    "dashboards_filebrowser_data",
+    "dev-db_mysql_data",
+    "nonprofit_postgres_data",
+)
 
 
 class ActionError(RuntimeError):
@@ -223,6 +233,14 @@ def build_action_commands(
     if action_id == "migrate_watchtower_container":
         return _watchtower_recreate_commands(server, WATCHTOWER_MIGRATION_IMAGE)
 
+    if action_id == "retire_disposable_containers":
+        if arguments:
+            raise ActionError(
+                "retire_disposable_containers does not accept arguments; its exact "
+                "container and volume bundle is hard-coded."
+            )
+        return _retire_disposable_container_commands(server)
+
     if action_id == "restart_service":
         service = _approved_service_name(server, arguments)
         return [
@@ -342,6 +360,57 @@ def _watchtower_recreate_commands(
                 "--label-enable",
                 "--cleanup",
             ),
+        ],
+    ]
+
+
+def _retire_disposable_container_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    preflight_parts = ["set -eu"]
+    for name, image in DISPOSABLE_CONTAINERS.items():
+        preflight_parts.append(
+            "test \"$(docker inspect --type container --format "
+            f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}"
+        )
+    for volume in DISPOSABLE_VOLUMES:
+        preflight_parts.append(
+            "test \"$(docker volume inspect --format '{{.Name}}' "
+            f"{quote(volume)})\" = {quote(volume)}"
+        )
+    preflight_parts.append("printf 'retirement_preflight_ok\\n'")
+
+    names = tuple(DISPOSABLE_CONTAINERS)
+    verify_script = (
+        "set -eu; "
+        f"for name in {' '.join(quote(name) for name in names)}; do "
+        "if docker container inspect \"$name\" >/dev/null 2>&1; then exit 1; fi; "
+        "done; "
+        f"for volume in {' '.join(quote(volume) for volume in DISPOSABLE_VOLUMES)}; do "
+        "if docker volume inspect \"$volume\" >/dev/null 2>&1; then exit 1; fi; "
+        "done; printf 'retirement_verified\\n'"
+    )
+
+    return [
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("sh", "-lc", "; ".join(preflight_parts)),
+        ],
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("docker", "rm", "--force", "--volumes", "--", *names),
+        ],
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("docker", "volume", "rm", "--", *DISPOSABLE_VOLUMES),
+        ],
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("sh", "-lc", verify_script),
         ],
     ]
 

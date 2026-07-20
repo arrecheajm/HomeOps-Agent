@@ -140,6 +140,73 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(attempt.record["exit_code"], 0)
         self.assertEqual(subprocess_run.call_count, 4)
 
+    def test_retire_disposable_containers_dry_run_is_exactly_bounded(self):
+        attempt = run_action(
+            "retire_disposable_containers",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 4)
+        self.assertIn("filebrowser/filebrowser:latest", record["commands"][0][-1])
+        self.assertEqual(
+            record["commands"][1][-1],
+            "docker rm --force --volumes -- filebrowser mysql57 nonprofit-postgres",
+        )
+        self.assertEqual(
+            record["commands"][2][-1],
+            "docker volume rm -- dashboards_filebrowser_data dev-db_mysql_data nonprofit_postgres_data",
+        )
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action retire_disposable_containers on container-host",
+        )
+
+    def test_retire_disposable_containers_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "retire_disposable_containers",
+                "container-host",
+                [self._container_server()],
+                {"container": "anything"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_retire_disposable_containers_executes_after_exact_approval(self):
+        approval = approvals.approval_phrase(
+            "retire_disposable_containers",
+            "container-host",
+            {},
+        )
+        completed = subprocess.CompletedProcess(
+            args=["ssh"],
+            returncode=0,
+            stdout="ok\n",
+            stderr="",
+        )
+
+        with patch(
+            "controller.action_runner.subprocess.run",
+            side_effect=[completed, completed, completed, completed],
+        ) as subprocess_run:
+            attempt = run_action(
+                "retire_disposable_containers",
+                "container-host",
+                [self._container_server()],
+                {},
+                approval_text=approval,
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(subprocess_run.call_count, 4)
+
     def test_migrate_watchtower_container_dry_run_uses_maintained_image(self):
         attempt = run_action(
             "migrate_watchtower_container",

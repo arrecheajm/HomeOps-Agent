@@ -486,10 +486,15 @@ def _recommendations(
     database_evidence = [
         item for item in _list(evidence.get("databases")) if isinstance(item, dict)
     ]
-    if database_evidence:
+    databases_requiring_preservation = [
+        item
+        for item in database_evidence
+        if item.get("preservation_required") is not False
+    ]
+    if databases_requiring_preservation:
         database_summary = ", ".join(
             f"{item.get('container', 'unknown')} ({_format_bytes(_as_int(item.get('volume_bytes')))})"
-            for item in database_evidence
+            for item in databases_requiring_preservation
         )
         recommendations.append(
             _recommendation(
@@ -521,6 +526,25 @@ def _recommendations(
                     f"Review {names} before cleanup. These containers expose broad "
                     "storage or persistent database data that must be identified and "
                     "backed up before a keep/remove decision."
+                ),
+            )
+        )
+    if disposition_groups.get("retire_now"):
+        names = ", ".join(disposition_groups["retire_now"])
+        recommendations.append(
+            _recommendation(
+                priority=65,
+                severity="info",
+                title="Retire confirmed disposable containers",
+                rationale=(
+                    f"The operator confirmed {names} and their application data "
+                    "are disposable. The bounded action checks the expected images "
+                    "and named volumes before removing only this fixed bundle."
+                ),
+                action_id="retire_disposable_containers",
+                dry_run_command=(
+                    "python -m controller.main actions run "
+                    "retire_disposable_containers --server container-host --dry-run"
                 ),
             )
         )
@@ -716,6 +740,7 @@ def _evidence_panel(evidence: dict[str, Any]) -> str:
             f"<td>{escape(str(database.get('engine') or 'unknown'))}</td>"
             f"<td><code>{escape(str(database.get('volume') or 'unknown'))}</code><br>{escape(_format_bytes(_as_int(database.get('volume_bytes'))))}</td>"
             f"<td>{escape(peers)}</td>"
+            f"<td>{'yes' if database.get('preservation_required') else 'no'}</td>"
             f"<td>{escape(str(database.get('query_status') or 'unknown'))}<br>{escape(discovered)}</td>"
             "</tr>"
         )
@@ -736,7 +761,7 @@ def _evidence_panel(evidence: dict[str, Any]) -> str:
         + "".join(target_rows)
         + "</tbody></table></div>"
         '<h3>Legacy databases</h3><div class="table-wrap"><table>'
-        '<thead><tr><th>Container</th><th>Engine</th><th>Volume</th><th>Application peers</th><th>Read-only query</th></tr></thead><tbody>'
+        '<thead><tr><th>Container</th><th>Engine</th><th>Volume</th><th>Application peers</th><th>Preserve</th><th>Read-only query</th></tr></thead><tbody>'
         + "".join(database_rows)
         + "</tbody></table></div></section>"
     )

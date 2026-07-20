@@ -82,6 +82,7 @@ def _database(value: dict[str, Any]) -> dict[str, Any]:
         "compose_path": _text(value.get("compose_path")),
         "volume": _text(value.get("volume")),
         "volume_bytes": _integer(value.get("volume_bytes")),
+        "preservation_required": value.get("preservation_required") is not False,
         "network_peers": sorted(_text(item) for item in _list(value.get("network_peers")) if _text(item)),
         "application_peers": sorted(_text(item) for item in _list(value.get("application_peers")) if _text(item)),
         "query_status": _text(value.get("query_status")),

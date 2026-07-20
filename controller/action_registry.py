@@ -84,6 +84,13 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "implemented": True,
     },
     {
+        "action_id": "retire_disposable_containers",
+        "risk": "approval_required",
+        "description": "Remove the confirmed disposable File Browser and test database containers plus their named data volumes.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+    },
+    {
         "action_id": "restart_service",
         "risk": "approval_required",
         "description": "Restart one approved system service.",

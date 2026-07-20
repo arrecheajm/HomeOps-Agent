@@ -303,6 +303,31 @@ class ContainerReviewTests(unittest.TestCase):
         self.assertEqual(container["classification"], "redeploy")
         self.assertIn("pinned image", container["classification_rationale"])
 
+    def test_build_container_review_recommends_bounded_disposable_retirement(self):
+        run = self._run_summary()
+        run.servers[0]["docker"]["containers"].append(
+            {
+                "name": "filebrowser",
+                "image": "filebrowser/filebrowser:latest",
+                "state": "running",
+                "health": "healthy",
+                "restart_policy": "unless-stopped",
+                "network_mode": "dashboards_default",
+                "ports": [],
+                "mounts": [],
+            }
+        )
+
+        review = build_container_review(run, "container-host", evidence={})
+        retirement = next(
+            item
+            for item in review["recommendations"]
+            if item["title"] == "Retire confirmed disposable containers"
+        )
+
+        self.assertEqual(retirement["action_id"], "retire_disposable_containers")
+        self.assertIn("--dry-run", retirement["dry_run_command"])
+
     def test_write_container_review_writes_json_and_html(self):
         output_dir = Path("tests/.tmp/container-review")
         if output_dir.exists():

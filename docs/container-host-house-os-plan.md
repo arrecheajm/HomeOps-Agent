@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 105 tests, and the health script passes
+- Python regression suite passes with 109 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Targeted run `2026-07-20T17-12-50Z` collected all 9 running containers with
@@ -171,6 +171,11 @@ backup target.
 - Ordered desired workload intent is stored in `config/workloads.yaml` and
   rendered in the focused review. All deployment flags remain disabled until
   pinned Compose definitions and workload prerequisites are implemented.
+- The operator confirmed File Browser is empty and both legacy databases contain
+  disposable application-development test data. No backup is required for
+  these three workloads.
+- `retire_disposable_containers` is implemented as an approval-gated fixed
+  bundle. Its dry run passed; execution still requires the exact approval phrase.
 
 ## Current Container Disposition
 
@@ -180,13 +185,13 @@ backup target.
 | `monitoring-grafana-1` | redeploy | Preserve Grafana data while adding a pinned image and restart policy. |
 | `monitoring-node_exporter-1` | redeploy | Preserve host metrics with a pinned image, restart policy, and reviewed port binding. |
 | `monitoring-prometheus-1` | redeploy | Preserve metrics history; pin the image, add restart policy, and make the config mount read-only. |
-| `filebrowser` | review | Potential household intake tool, but its three read-write paths are root-disk directories rather than external storage. |
-| `mysql57` | review | MySQL 5.7 `dev-db` has about 210 MiB in `dev-db_mysql_data`, no application network peer, and an unavailable read-only database query; capture a logical backup first. |
-| `nonprofit-postgres` | review | PostgreSQL 15 has about 46 MiB in `nonprofit_postgres_data`, including a small `nonprofit_app` database, but no application network peer; capture a logical backup first. |
+| `filebrowser` | retire now | The operator confirmed it is empty and not wanted. The bounded action removes its container and Docker volumes without deleting bind-mounted directories. |
+| `mysql57` | retire now | The operator confirmed its MySQL 5.7 data is disposable development-test data. |
+| `nonprofit-postgres` | retire now | The operator confirmed the `nonprofit_app` database is disposable development-test data. |
 | `portainer` | retire later | Overlaps with planned HomeOps management and has read-write Docker socket access. |
 | `watchtower` | retire later | Replace automatic updates with pinned, approval-gated HomeOps upgrades. |
 
-No container has been stopped, removed, or reconfigured. Read-only evidence
+No container has yet been stopped, removed, or reconfigured. Read-only evidence
 confirmed that `/mnt/storage1`, `/mnt/storage2`, and `/mnt/storageWD320` are
 nearly empty directories on the root filesystem. They must not be treated as
 external storage. The planned 1 TB USB drive still needs to be attached,
@@ -202,6 +207,8 @@ proposed capabilities, not currently implemented action IDs:
   ports, restart policy, Compose project, and volume paths without logs or
   secrets.
 - [x] Desired-state workload configuration in `config/workloads.yaml`.
+- [x] Bounded approval-gated removal for the three confirmed disposable legacy
+  containers and their named data volumes.
 - [ ] Version-controlled Compose bundles under `stacks/<stack-name>/`.
 - [ ] Storage preflight that validates the USB mount, sentinel, space,
   ownership, and expected directories.

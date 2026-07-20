@@ -30,6 +30,7 @@ class ContainerEvidenceTests(unittest.TestCase):
                     {
                         "container": "mysql57",
                         "volume_bytes": "220450816",
+                        "preservation_required": False,
                         "environment": {"MYSQL_ROOT_PASSWORD": "secret"},
                     }
                 ],
@@ -41,6 +42,7 @@ class ContainerEvidenceTests(unittest.TestCase):
         self.assertNotIn("environment", evidence["databases"][0])
         self.assertEqual(evidence["storage"]["targets"][0]["aggregate_bytes"], 12288)
         self.assertEqual(evidence["databases"][0]["volume_bytes"], 220450816)
+        self.assertFalse(evidence["databases"][0]["preservation_required"])
 
     def test_loads_evidence_for_requested_server_only(self):
         path = Path("tests/.tmp/container-review-evidence.json")

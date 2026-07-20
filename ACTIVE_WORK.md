@@ -90,9 +90,9 @@ Recommended thinking level for the next work:
 - Updated health script deployment completed through the approval-gated action:
   `history/actions/2026-07-20T17-12-38Z-container-host-deploy_health_script.json`.
 - Current disposition recommendations: keep `cadvisor`; redeploy Grafana,
-  node-exporter, and Prometheus from desired state; review `filebrowser`,
-  `mysql57`, and `nonprofit-postgres`; retire Portainer and Watchtower only
-  after HomeOps replacements exist.
+  node-exporter, and Prometheus from desired state; retire `filebrowser`,
+  `mysql57`, and `nonprofit-postgres` now that the operator confirmed their data
+  is disposable; retire Portainer and Watchtower only after replacements exist.
 - Read-only evidence confirmed `/mnt/storage1`, `/mnt/storage2`, and
   `/mnt/storageWD320` are nearly empty directories on the 100 GB root
   filesystem, not external mounts. The host currently exposes only its internal
@@ -102,13 +102,20 @@ Recommended thinking level for the next work:
   under `/home/containerserver/docker_lab/dev-db/`.
 - `nonprofit-postgres` has about 46 MiB in `nonprofit_postgres_data`, including
   a small `nonprofit_app` database, and no application network peer.
+- The operator confirmed both databases were application-development test data
+  and File Browser is empty. No backup or preservation is required for these
+  three containers.
+- The approval-gated `retire_disposable_containers` action is implemented and
+  its dry run passed. It removes only the three fixed containers plus their
+  anonymous and explicitly named data volumes; it does not prune Docker or
+  delete bind-mounted paths, networks, or Compose files.
 - Sanitized point-in-time evidence is tracked in
   `config/container-review-evidence.yaml` and rendered in the container review.
 - Desired workload intent is tracked in `config/workloads.yaml`: monitoring,
   Mission Control, smart home, recipes, documents, and developer lab are ordered
   into phases with storage, backup, and acceptance prerequisites. Deployment is
   gated for every workload until pinned Compose bundles and preflights exist.
-- Full regression coverage now passes with 105 tests.
+- Full regression coverage now passes with 109 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -122,20 +129,18 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Design approval-gated logical backup and restore-verification workflows for
-   `mysql57` and `nonprofit-postgres`; do not retire their volumes beforehand.
-2. Decide whether `filebrowser` is useful for household/Paperless intake and,
-   if retained, narrow its current broad read-write storage access.
-3. Define desired-state Compose bundles for the retained monitoring services
+1. After exact approval, execute `retire_disposable_containers`, collect fresh
+   health, and confirm the host has 6 expected running containers.
+2. Define desired-state Compose bundles for the retained monitoring services
    with pinned images, restart policies, and reviewed LAN port bindings.
-4. Record the smart-switch and garage-controller brands/apps, phone platform,
+3. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-5. Define version-pinned Compose bundle metadata and approval-gated stack
+4. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-6. Implement USB mount/sentinel preflight before storage-dependent deployment.
-7. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+5. Implement USB mount/sentinel preflight before storage-dependent deployment.
+6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-8. Prove reboot persistence and backup/restore for each stateful application
+7. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

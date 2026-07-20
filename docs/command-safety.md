@@ -211,6 +211,25 @@ The corresponding approval phrase is:
 Approve action migrate_watchtower_container on container-host
 ```
 
+Confirmed disposable development services use a dedicated bounded retirement
+action instead of `run_admin_command`:
+
+```powershell
+python -m controller.main actions run retire_disposable_containers --server container-host --dry-run
+```
+
+The action first verifies the expected images and named volumes. It then removes
+only `filebrowser`, `mysql57`, and `nonprofit-postgres`, their anonymous attached
+volumes, and the named volumes `dashboards_filebrowser_data`,
+`dev-db_mysql_data`, and `nonprofit_postgres_data`. It does not prune Docker,
+delete bind-mounted directories, remove networks, or delete Compose files.
+
+The corresponding approval phrase is:
+
+```text
+Approve action retire_disposable_containers on container-host
+```
+
 Health script deployment is also approval-gated and only copies the known
 repository script to the approved remote path:
 
