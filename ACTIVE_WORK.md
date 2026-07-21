@@ -66,7 +66,7 @@ Recommended thinking level for the next work:
 - Check `git status --short --branch` at session start for branch cleanliness.
 - Latest fleet report run: `2026-07-21T12-13-24Z`; all 3 servers collected
   without errors.
-- Latest targeted `container-host` run: `2026-07-21T12-58-05Z`; sanitized
+- Latest targeted `container-host` run: `2026-07-21T14-14-23Z`; sanitized
   inventory confirmed the four new monitoring containers plus Portainer and
   Watchtower running. The four stopped legacy monitoring containers remain as
   rollback state.
@@ -186,7 +186,7 @@ Recommended thinking level for the next work:
   clean startup, protected login, rejected `admin/admin`, the HomeOps dashboard,
   five of five targets up, only port 3000 exposed, and unchanged metric-service
   identities.
-- Full regression coverage now passes with 125 tests.
+- Full regression coverage now passes with 126 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.

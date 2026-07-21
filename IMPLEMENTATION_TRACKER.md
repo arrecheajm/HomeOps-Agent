@@ -97,10 +97,11 @@ Live status:
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 - The live monitoring preflight is complete and the first
   `stacks/monitoring/` replacement bundle is implemented. Docker Compose
-  renders it successfully; 124 tests cover version pinning, LAN exposure,
+  renders it successfully; 126 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
   Linux/amd64 registry digests. Exact-image checks and the approved cutover have
-  passed; Grafana startup cleanup, reboot, and rollback acceptance remain.
+  passed; Grafana startup cleanup passed, while reboot and rollback acceptance
+  remain.
 - The approved `preflight_monitoring_images` execution passed on 2026-07-21;
   targeted inventory afterward confirmed the same 6 of 6 original containers
   running. The fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`

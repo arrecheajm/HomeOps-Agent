@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 124 tests, and the health script passes
+- Python regression suite passes with 126 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
@@ -214,7 +214,7 @@ backup target.
 | Container | Recommendation | Reason |
 |---|---|---|
 | `homeops-monitoring-cadvisor-1` | keep | Active pinned, healthy, private desired-state container metrics collector. |
-| `homeops-monitoring-grafana-1` | keep | Active authenticated LAN UI with Git-provisioned dashboard and data source; startup cleanup repair remains. |
+| `homeops-monitoring-grafana-1` | keep | Active authenticated LAN UI with Git-provisioned dashboard and data source; startup cleanup repair passed. |
 | `homeops-monitoring-node-exporter-1` | keep | Active pinned, healthy host metrics collector on the private monitoring network. |
 | `homeops-monitoring-prometheus-1` | keep | Active pinned service with read-only configuration, bounded retention, and five healthy targets. |
 | `cadvisor` | rollback hold | Stopped legacy container retained only through rollback acceptance. |

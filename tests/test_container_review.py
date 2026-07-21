@@ -300,16 +300,38 @@ class ContainerReviewTests(unittest.TestCase):
 
         titles = [item["title"] for item in review["recommendations"]]
         self.assertNotIn("Move useful monitoring services into desired state", titles)
-        self.assertIn("Complete monitoring acceptance cleanup", titles)
+        self.assertIn("Prove monitoring reboot persistence", titles)
+        reboot = next(
+            item
+            for item in review["recommendations"]
+            if item["title"] == "Prove monitoring reboot persistence"
+        )
+        self.assertEqual(reboot["action_id"], "reboot_server")
+        container = review["server"]["docker"]["containers"][0]
+        self.assertEqual(container["classification"], "rollback_hold")
+        self.assertIn("rollback", container["classification_rationale"])
+
+    def test_build_container_review_keeps_repair_gate_when_prerequisite_remains(self):
+        review = build_container_review(
+            self._run_summary(),
+            "container-host",
+            workloads={
+                "workloads": [
+                    {
+                        "workload_id": "monitoring",
+                        "state": "acceptance_pending",
+                        "prerequisites": ["approve repair_monitoring_grafana"],
+                    }
+                ]
+            },
+        )
+
         repair = next(
             item
             for item in review["recommendations"]
             if item["title"] == "Complete monitoring acceptance cleanup"
         )
         self.assertEqual(repair["action_id"], "repair_monitoring_grafana")
-        container = review["server"]["docker"]["containers"][0]
-        self.assertEqual(container["classification"], "rollback_hold")
-        self.assertIn("rollback", container["classification_rationale"])
 
     def test_build_container_review_recommends_bounded_disposable_retirement(self):
         run = self._run_summary()

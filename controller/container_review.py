@@ -561,24 +561,65 @@ def _recommendations(
     if isinstance(monitoring_workload, dict) and (
         monitoring_workload.get("state") == "acceptance_pending"
     ):
-        recommendations.append(
-            _recommendation(
-                priority=68,
-                severity="info",
-                title="Complete monitoring acceptance cleanup",
-                rationale=(
-                    "The pinned monitoring stack is healthy and LAN isolation, "
-                    "authentication, dashboard provisioning, and scrape targets "
-                    "passed. Apply the bounded Grafana startup repair before "
-                    "reboot and rollback acceptance."
-                ),
-                action_id="repair_monitoring_grafana",
-                dry_run_command=(
-                    "python -m controller.main actions run "
-                    "repair_monitoring_grafana --server container-host --dry-run"
-                ),
+        prerequisites = {
+            str(item) for item in _list(monitoring_workload.get("prerequisites"))
+        }
+        if "approve repair_monitoring_grafana" in prerequisites:
+            recommendations.append(
+                _recommendation(
+                    priority=68,
+                    severity="info",
+                    title="Complete monitoring acceptance cleanup",
+                    rationale=(
+                        "The pinned monitoring stack is healthy and LAN isolation, "
+                        "authentication, dashboard provisioning, and scrape targets "
+                        "passed. Apply the bounded Grafana startup repair before "
+                        "reboot and rollback acceptance."
+                    ),
+                    action_id="repair_monitoring_grafana",
+                    dry_run_command=(
+                        "python -m controller.main actions run "
+                        "repair_monitoring_grafana --server container-host --dry-run"
+                    ),
+                )
             )
-        )
+        elif "verify reboot persistence" in prerequisites:
+            recommendations.append(
+                _recommendation(
+                    priority=68,
+                    severity="info",
+                    title="Prove monitoring reboot persistence",
+                    rationale=(
+                        "The Grafana repair and independent monitoring checks passed. "
+                        "Use the separately approved reboot action, then collect fresh "
+                        "inventory and repeat authentication, dashboard, target, port, "
+                        "and container-health checks before rollback acceptance."
+                    ),
+                    action_id="reboot_server",
+                    dry_run_command=(
+                        "python -m controller.main actions run reboot_server "
+                        "--server container-host --dry-run"
+                    ),
+                )
+            )
+        elif "test rollback before removing legacy state" in prerequisites:
+            recommendations.append(
+                _recommendation(
+                    priority=68,
+                    severity="info",
+                    title="Test the preserved monitoring rollback",
+                    rationale=(
+                        "Reboot persistence has passed, but the stopped legacy stack "
+                        "and old volumes must remain until the separately approved "
+                        "rollback workflow is tested and the desired stack is restored."
+                    ),
+                    action_id="rollback_monitoring_stack",
+                    dry_run_command=(
+                        "python -m controller.main actions run "
+                        "rollback_monitoring_stack --server container-host --dry-run"
+                    ),
+                )
+            )
     if disposition_groups.get("redeploy"):
         names = ", ".join(disposition_groups["redeploy"])
         recommendations.append(
