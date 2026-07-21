@@ -181,8 +181,11 @@ Recommended thinking level for the next work:
   recovery restored the prior Compose file. All services and protected login
   remained healthy. The corrected repair is dry-run verified with loopback
   bootstrap, host-side authentication checks, Compose recovery, and guards that
-  preserve cAdvisor, Node Exporter, and Prometheus identities. It requires a
-  fresh exact approval.
+  preserve cAdvisor, Node Exporter, and Prometheus identities. The second
+  approved execution completed successfully. Independent checks confirmed
+  clean startup, protected login, rejected `admin/admin`, the HomeOps dashboard,
+  five of five targets up, only port 3000 exposed, and unchanged metric-service
+  identities.
 - Full regression coverage now passes with 125 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
@@ -197,11 +200,10 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. After exact approval, run `repair_monitoring_grafana`; verify clean startup
-   logs, protected login, rejected default login, and unchanged metric-service
-   container identities.
-2. Prove monitoring reboot persistence and separately test
-   `rollback_monitoring_stack`; do not delete legacy containers or volumes yet.
+1. Prove monitoring reboot persistence; do not delete legacy containers or
+   volumes yet.
+2. Separately decide when to test `rollback_monitoring_stack`, which restores
+   the legacy stack and removes the new candidate volumes by design.
 3. Schedule the five `ispy-server` security package updates through the
    existing approval gate, followed by service and recording verification.
 4. Record the smart-switch and garage-controller brands/apps, phone platform,

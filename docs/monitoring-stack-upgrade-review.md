@@ -219,7 +219,10 @@ file. Its recovery trap restored the prior Compose file; protected login,
 default-login rejection, and all four service health checks remained intact.
 The corrected action is dry-run verified to use loopback bootstrap and
 host-side authentication, preserve the other three monitoring container
-identities, and restore the prior Compose file if verification fails. It needs
-a fresh exact approval. Reboot and rollback acceptance remain separate gates;
-no legacy container or volume should be removed
+identities, and restore the prior Compose file if verification fails. Its
+second approved execution completed successfully. Independent acceptance
+confirmed the protected login, rejected default login, clean startup logs,
+HomeOps dashboard, five of five scrape targets up, Grafana as the only exposed
+monitoring port, and unchanged metric-service identities. Reboot and rollback
+acceptance remain separate gates; no legacy container or volume should be removed
 before both are proven.

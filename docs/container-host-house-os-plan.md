@@ -205,7 +205,9 @@ backup target.
   writes and includes the directories. `repair_monitoring_grafana` is bounded,
   recovery-aware, and dry-run verified. Its first approved attempt safely
   recovered after discovering that the container could not read the host-owned
-  `0600` secret. The corrected loopback/bootstrap design awaits fresh approval.
+  `0600` secret. The corrected loopback/bootstrap execution subsequently
+  completed and passed independent authentication, dashboard, target, port,
+  health, identity, and startup-log checks.
 
 ## Current Container Disposition
 

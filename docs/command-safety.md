@@ -297,8 +297,8 @@ change. Its failure trap restores the prior Compose file:
 
 The first approved repair attempt failed at a container-side read of the
 host-owned `0600` secret and automatically restored the prior Compose file. The
-corrected action performs host-side authentication checks and requires a fresh
-approval.
+corrected action performs host-side authentication checks. Its second approved
+execution completed successfully on 2026-07-21.
 
 ```powershell
 python -m controller.main actions run repair_monitoring_grafana --server container-host --dry-run

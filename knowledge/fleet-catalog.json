@@ -9,7 +9,7 @@
     "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-07-21T12:58:05Z",
+  "generated_at": "2026-07-21T14:14:23Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
@@ -204,7 +204,7 @@
         "Moderate CPU headroom",
         "Docker installed with 6 running containers"
       ],
-      "collected_at": "2026-07-21T12:58:14Z",
+      "collected_at": "2026-07-21T14:14:29Z",
       "constraints": [
         "1 package updates pending"
       ],
@@ -322,12 +322,6 @@
                 "destination": "/etc/grafana/provisioning",
                 "read_only": true,
                 "source": "/home/containerserver/.local/share/homeops/stacks/monitoring/grafana/provisioning",
-                "type": "bind"
-              },
-              {
-                "destination": "/run/secrets/grafana_admin_password",
-                "read_only": true,
-                "source": "/home/containerserver/.config/homeops/secrets/monitoring/grafana_admin_password",
                 "type": "bind"
               },
               {
@@ -600,8 +594,8 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.66,
-        "memory_used_percent": 12.7,
+        "load_1m": 0.44,
+        "memory_used_percent": 13.4,
         "swap_used_percent": 0.0,
         "uptime_days": 2.9
       },
@@ -648,8 +642,8 @@
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-21T12-58-05Z/fleet-health.json",
-    "generated_at": "2026-07-21T12:58:05Z",
-    "run_id": "2026-07-21T12-58-05Z"
+    "fleet_path": "history/runs/2026-07-21T14-14-23Z/fleet-health.json",
+    "generated_at": "2026-07-21T14:14:23Z",
+    "run_id": "2026-07-21T14-14-23Z"
   }
 }

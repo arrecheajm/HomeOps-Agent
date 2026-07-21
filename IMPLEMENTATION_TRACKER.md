@@ -129,7 +129,9 @@ Live status:
   The first approved `repair_monitoring_grafana` execution failed at its
   container-side secret read and automatically restored the prior Compose file.
   The corrected action is dry-run verified with host-side authentication and
-  rollback to the prior Compose file; it awaits fresh approval.
+  rollback to the prior Compose file. Its second approved execution completed;
+  protected/default authentication, clean startup logs, final LAN binding, and
+  unchanged cAdvisor, Node Exporter, and Prometheus identities all passed.
 
 Current operating model:
 
@@ -261,9 +263,8 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next operational item is separately approving
-`repair_monitoring_grafana`, then verifying monitoring reboot persistence and
-rollback before old monitoring state is removed. The USB
+The next operational item is verifying monitoring reboot persistence, then
+separately testing rollback before old monitoring state is removed. The USB
 mount/sentinel preflight follows. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.

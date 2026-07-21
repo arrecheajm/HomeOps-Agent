@@ -62,6 +62,6 @@ Before any server change:
    unreadable secret-mount startup errors. The first approved repair safely
    restored the prior Compose file when its verifier reproduced the secret
    permission problem. The corrected loopback/bootstrap repair is dry-run
-   verified and needs fresh approval.
-7. Keep the old monitoring containers and volumes available until the repair,
-   reboot persistence, and rollback test pass.
+   verified, approved, and completed with all acceptance checks passing.
+7. Keep the old monitoring containers and volumes available until reboot
+   persistence and the rollback test pass.

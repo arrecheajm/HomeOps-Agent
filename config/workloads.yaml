@@ -14,7 +14,7 @@
           "storage_class": "internal",
           "backup_required": false,
           "deployment_enabled": true,
-          "prerequisites": ["approve repair_monitoring_grafana", "verify reboot persistence", "test rollback before removing legacy state"],
+          "prerequisites": ["verify reboot persistence", "test rollback before removing legacy state"],
           "acceptance": ["all services survive reboot", "only Grafana is published to the LAN", "the Prometheus data source and HomeOps dashboard are provisioned from Git", "configuration mounts are read-only where supported", "old volumes remain available until rollback acceptance"]
         },
         {
