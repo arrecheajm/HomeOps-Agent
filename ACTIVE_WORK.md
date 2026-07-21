@@ -191,8 +191,9 @@ Recommended thinking level for the next work:
   and target health: `192.168.86.25:9100` maps to `openvpn-server`,
   `192.168.86.27:9100` to `ispy-server`, and `node-exporter:9100` to
   `container-host`. The generated HomeOps HTML dashboard links directly to the
-  Grafana HomeOps Overview. The repository update is validated and committed;
-  live Grafana synchronization remains approval-gated.
+  Grafana HomeOps Overview. The approved live synchronization completed, and
+  the Grafana API confirmed `{{server_id}}` legends, a friendly `Server` target
+  column, and hidden raw instances.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -206,9 +207,8 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Synchronize the friendly-label dashboard update through the bounded
-   monitoring repair action, then prove monitoring reboot persistence; do not
-   delete legacy containers or volumes yet.
+1. Prove monitoring reboot persistence; do not delete legacy containers or
+   volumes yet.
 2. Separately decide when to test `rollback_monitoring_stack`, which restores
    the legacy stack and removes the new candidate volumes by design.
 3. Schedule the five `ispy-server` security package updates through the
