@@ -190,7 +190,9 @@ remained running.
 
 `deploy_monitoring_stack` and `rollback_monitoring_stack` are now implemented
 and dry-run verified. Neither has been executed. Deployment still requires the
-server-side Grafana secret and the exact phrase `Approve action
-deploy_monitoring_stack on container-host`. Rollback has its own separate exact
-approval. The old containers and old volumes remain untouched until a future
-approved cutover.
+server-side Grafana secret. `provision_monitoring_secret` is implemented and
+dry-run verified to create it without logging its value and retain an ignored
+local recovery copy; it has not been executed. Deployment requires the exact
+phrase `Approve action deploy_monitoring_stack on container-host`. Rollback has
+its own separate exact approval. The old containers and old volumes remain
+untouched until a future approved cutover.

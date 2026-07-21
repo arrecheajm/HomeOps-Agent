@@ -20,6 +20,7 @@ DEFAULT_POLICY: dict[str, Any] = {
         "migrate_watchtower_container",
         "retire_disposable_containers",
         "preflight_monitoring_images",
+        "provision_monitoring_secret",
         "deploy_monitoring_stack",
         "rollback_monitoring_stack",
         "deploy_health_script",

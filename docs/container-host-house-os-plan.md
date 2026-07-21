@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 118 tests, and the health script passes
+- Python regression suite passes with 120 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
@@ -192,6 +192,9 @@ backup target.
   Targeted inventory afterward confirmed all six original containers remained
   running. The fixed deployment and rollback actions are implemented and
   dry-run verified, but neither cutover nor rollback has been executed.
+- The fixed `provision_monitoring_secret` action is implemented and dry-run
+  verified. It generates or validates the password without logging its value
+  and retains a Git-ignored recovery copy; execution still requires approval.
 
 ## Current Container Disposition
 

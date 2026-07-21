@@ -74,6 +74,9 @@ Recommended thinking level for the next work:
   required.
 - `ispy-server` has 6 package updates pending, including 5 security updates;
   AgentDVR remains active and no reboot is required.
+- Read-only package inspection identified the five security entries as
+  `libde265-0` (amd64 and i386), `libsqlite3-0` (amd64 and i386), and `wget`.
+  The sixth entry is a normal `snapd` update; AgentDVR itself is not pending.
 - `container-host` has 1 non-security package update with Docker active, 6 of 6
   original containers running, and no unhealthy containers or required reboot.
 - `container-host` has an i5-4210U with 4 CPU threads, about 8 GB RAM, and about
@@ -149,7 +152,12 @@ Recommended thinking level for the next work:
   old and new identities, and automatically restores the old containers if
   cutover fails. Rollback proves the old stack can restart before removing only
   the new candidate containers and volumes. Neither action has been executed.
-- Full regression coverage now passes with 118 tests.
+- `provision_monitoring_secret` is implemented and dry-run verified. It
+  idempotently generates a 32-byte URL-safe Grafana password at the fixed
+  server path, validates owner/mode/non-symlink constraints, never prints the
+  value, and copies it to the Git-ignored local recovery path. It has not been
+  executed and still requires exact approval.
+- Full regression coverage now passes with 120 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -163,19 +171,21 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Create the untracked Grafana admin-password secret on `container-host` with
-   directory mode `0700` and file mode `0600`; do not print it in action history.
+1. After exact approval, run `provision_monitoring_secret` and verify the
+   server and ignored local recovery files exist without printing their value.
 2. Review and, only after a separate exact approval, run
    `deploy_monitoring_stack`; then verify Grafana login, targets, dashboard,
    private metrics ports, and recovery before any cleanup.
-3. Record the smart-switch and garage-controller brands/apps, phone platform,
+3. Schedule the five `ispy-server` security package updates through the
+   existing approval gate, followed by service and recording verification.
+4. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-4. Define version-pinned Compose bundle metadata and approval-gated stack
+5. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-5. Implement USB mount/sentinel preflight before storage-dependent deployment.
-6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+6. Implement USB mount/sentinel preflight before storage-dependent deployment.
+7. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-7. Prove reboot persistence and backup/restore for each new stateful application
+8. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

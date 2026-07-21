@@ -11,4 +11,5 @@ history/before-state/
 history/rebuild-plans/
 
 stacks/**/.env
-stacks/**/secrets/
+stacks/**/secrets/*
+!stacks/**/secrets/README.md

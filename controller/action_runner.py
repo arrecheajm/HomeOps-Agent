@@ -77,6 +77,9 @@ MONITORING_IMAGE_REFS = {
     "prometheus": "prom/prometheus:v3.12.0@sha256:dd4bced05dfaddf23a7ec50f87334993a4149f7fcfbf58456d1c8bafce91cd13",
 }
 LOCAL_MONITORING_DIR = config.BASE_DIR / "stacks" / "monitoring"
+LOCAL_MONITORING_SECRET = (
+    LOCAL_MONITORING_DIR / "secrets" / "grafana_admin_password"
+)
 LOCAL_PROMETHEUS_CONFIG_PATH = LOCAL_MONITORING_DIR / "prometheus" / "prometheus.yml"
 LOCAL_PROMETHEUS_RULES_PATH = (
     LOCAL_MONITORING_DIR / "prometheus" / "rules" / "host.rules.yml"
@@ -329,6 +332,14 @@ def build_action_commands(
                 "images and validation files are hard-coded."
             )
         return _preflight_monitoring_image_commands(server)
+
+    if action_id == "provision_monitoring_secret":
+        if arguments:
+            raise ActionError(
+                "provision_monitoring_secret does not accept arguments; the "
+                "secret paths and generation method are fixed."
+            )
+        return _provision_monitoring_secret_commands(server)
 
     if action_id == "deploy_monitoring_stack":
         if arguments:
@@ -758,6 +769,52 @@ def _deploy_monitoring_stack_commands(
         + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(verify_parts))]
     )
     return commands
+
+
+def _provision_monitoring_secret_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Generate a secret without logging its value and retain an ignored copy."""
+
+    local_secret_dir = LOCAL_MONITORING_SECRET.parent
+    if not local_secret_dir.is_dir():
+        raise ActionError(
+            "Local monitoring secret directory not found: "
+            f"{local_secret_dir}"
+        )
+
+    remote_secret_dir = REMOTE_MONITORING_SECRET.rsplit("/", 1)[0]
+    generation = "import secrets; print(secrets.token_urlsafe(32))"
+    script = (
+        "set -eu; "
+        f"secret_dir={quote(remote_secret_dir)}; "
+        f"secret={quote(REMOTE_MONITORING_SECRET)}; "
+        "install -d -m 0700 \"$secret_dir\"; "
+        "test \"$(stat -c %a \"$secret_dir\")\" = 700; "
+        "test \"$(stat -c %u \"$secret_dir\")\" = \"$(id -u)\"; "
+        "if [ -e \"$secret\" ] || [ -L \"$secret\" ]; then "
+        "test -f \"$secret\"; test ! -L \"$secret\"; "
+        "else "
+        "tmp=$(mktemp \"$secret_dir/.grafana_admin_password.XXXXXX\"); "
+        "trap 'rm -f \"$tmp\"' HUP INT TERM EXIT; "
+        f"python3 -c {_shell_single_quote(generation)} > \"$tmp\"; "
+        "chmod 0600 \"$tmp\"; mv \"$tmp\" \"$secret\"; "
+        "trap - HUP INT TERM EXIT; "
+        "fi; "
+        "test -s \"$secret\"; test ! -L \"$secret\"; "
+        "test \"$(stat -c %a \"$secret\")\" = 600; "
+        "test \"$(stat -c %u \"$secret\")\" = \"$(id -u)\"; "
+        "printf 'monitoring_secret_provisioned\\n'"
+    )
+    return [
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", script)],
+        _build_scp_base_command(server)
+        + [
+            f"{server.ssh_target}:{REMOTE_MONITORING_SECRET}",
+            str(LOCAL_MONITORING_SECRET),
+        ],
+    ]
 
 
 def _rollback_monitoring_stack_commands(

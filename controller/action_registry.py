@@ -98,6 +98,13 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "implemented": True,
     },
     {
+        "action_id": "provision_monitoring_secret",
+        "risk": "approval_required",
+        "description": "Generate or validate the server-side Grafana admin secret without printing it, then copy it to the ignored local recovery path.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+    },
+    {
         "action_id": "deploy_monitoring_stack",
         "risk": "approval_required",
         "description": "Stage the fixed monitoring bundle, verify the old stack and secret, then cut over with automatic recovery to the old containers on failure.",

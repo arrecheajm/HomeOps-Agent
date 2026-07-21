@@ -39,7 +39,8 @@ Live status:
 - `inspect_docker_container`, `replace_watchtower_container`,
   `migrate_watchtower_container`, `deploy_health_script`,
   `retire_disposable_containers`, `preflight_monitoring_images`,
-  `deploy_monitoring_stack`, `rollback_monitoring_stack`,
+  `provision_monitoring_secret`, `deploy_monitoring_stack`,
+  `rollback_monitoring_stack`,
   `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
   `apply_package_updates`, `apply_security_updates`, and `reboot_server`
   support dry-run, exact approval, execution, and action history.
@@ -104,6 +105,12 @@ Live status:
   targeted inventory afterward confirmed the same 6 of 6 original containers
   running. The fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`
   lifecycle is implemented and dry-run verified but has not been executed.
+- Read-only inspection identified the five `ispy-server` security entries as
+  two architectures each of `libde265-0` and `libsqlite3-0`, plus `wget`.
+  `snapd` is the one non-security entry; AgentDVR is not itself pending.
+- `provision_monitoring_secret` is implemented and dry-run verified. It creates
+  or validates the fixed server-side secret without logging its value and
+  copies it to the ignored local recovery path. It has not been executed.
 
 Current operating model:
 
@@ -199,7 +206,7 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `restart_service`, `deploy_health_script`, `deploy_sudoers_profile`,
 `inspect_docker_container`, `replace_watchtower_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
-`preflight_monitoring_images`, `deploy_monitoring_stack`,
+`preflight_monitoring_images`, `provision_monitoring_secret`, `deploy_monitoring_stack`,
 `rollback_monitoring_stack`,
 `apply_package_updates`,
 `apply_security_updates`, and `reboot_server` are executable after exact
@@ -213,6 +220,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `migrate_watchtower_container`
 - [x] `retire_disposable_containers`
 - [x] `preflight_monitoring_images`
+- [x] `provision_monitoring_secret`
 - [x] `deploy_monitoring_stack`
 - [x] `rollback_monitoring_stack`
 - [x] `restart_service`
@@ -232,8 +240,8 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next operational item is preparing the untracked Grafana password secret,
-then separately approving `deploy_monitoring_stack`. After cutover, verify the
+The next operational item is separately approving
+`provision_monitoring_secret`, then `deploy_monitoring_stack`. After cutover, verify the
 Grafana login, Prometheus targets, dashboard, private port boundary, reboot
 persistence, and rollback before old monitoring state is removed. The USB
 mount/sentinel preflight follows. Use

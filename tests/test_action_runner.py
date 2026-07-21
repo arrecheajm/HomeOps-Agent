@@ -268,6 +268,45 @@ class ActionRunnerTests(unittest.TestCase):
             "Approve action deploy_monitoring_stack on container-host",
         )
 
+    def test_provision_monitoring_secret_dry_run_never_prints_secret_value(self):
+        attempt = run_action(
+            "provision_monitoring_secret",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        generation = record["commands"][0][-1]
+        recovery = record["commands"][1]
+
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 2)
+        self.assertIn("secrets.token_urlsafe(32)", generation)
+        self.assertIn('> "$tmp"', generation)
+        self.assertIn("test ! -L", generation)
+        self.assertIn("stat -c %a", generation)
+        self.assertNotIn("cat ", generation)
+        self.assertEqual(recovery[0], "scp")
+        self.assertTrue(recovery[-1].endswith("grafana_admin_password"))
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action provision_monitoring_secret on container-host",
+        )
+
+    def test_provision_monitoring_secret_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "provision_monitoring_secret",
+                "container-host",
+                [self._container_server()],
+                {"password": "must-not-be-accepted"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
     def test_deploy_monitoring_stack_rejects_arguments(self):
         with self.assertRaisesRegex(ActionError, "does not accept arguments"):
             run_action(

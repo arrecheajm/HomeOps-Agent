@@ -249,6 +249,23 @@ Approve action preflight_monitoring_images on container-host
 That preflight completed successfully on 2026-07-21 and a targeted collection
 confirmed that all six original containers were still running afterward.
 
+Grafana secret provisioning is its own approval boundary. The action creates a
+32-byte URL-safe random password only when the fixed server path is absent,
+validates an existing regular file without changing its value, requires mode
+`0600` and ownership by the SSH user, and copies it to the Git-ignored local
+recovery path. The password is redirected directly to the file and never
+written to stdout, arguments, reports, or action history:
+
+```powershell
+python -m controller.main actions run provision_monitoring_secret --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action provision_monitoring_secret on container-host
+```
+
 Monitoring deployment and rollback are separate fixed actions. Deployment
 uploads only the six committed runtime files, verifies their SHA-256 hashes,
 requires the untracked Grafana secret to be a non-symlink owned by the SSH user
