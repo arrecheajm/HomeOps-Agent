@@ -110,7 +110,8 @@ Live status:
   `snapd` is the one non-security entry; AgentDVR is not itself pending.
 - `provision_monitoring_secret` is implemented and dry-run verified. It creates
   or validates the fixed server-side secret without logging its value and
-  copies it to the ignored local recovery path. It has not been executed.
+  copies it to the ignored local recovery path. Its approved execution passed
+  on 2026-07-21, and the ignored local copy was verified without displaying it.
 
 Current operating model:
 
@@ -241,7 +242,7 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 ## Next Implementation Step
 
 The next operational item is separately approving
-`provision_monitoring_secret`, then `deploy_monitoring_stack`. After cutover, verify the
+`deploy_monitoring_stack`. After cutover, verify the
 Grafana login, Prometheus targets, dashboard, private port boundary, reboot
 persistence, and rollback before old monitoring state is removed. The USB
 mount/sentinel preflight follows. Use

@@ -50,6 +50,7 @@ Before any server change:
 4. Dry-run and separately approve `provision_monitoring_secret`. It creates or
    validates the server-side secret with directory mode `0700` and file mode
    `0600`, never prints the value, and retains an ignored local recovery copy.
+   This gate completed successfully on 2026-07-21.
 5. Review the fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`
    dry runs. Deployment remains separately approval-gated.
 6. Keep the current monitoring containers and old volumes available until the

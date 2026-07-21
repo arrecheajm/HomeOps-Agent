@@ -155,8 +155,9 @@ Recommended thinking level for the next work:
 - `provision_monitoring_secret` is implemented and dry-run verified. It
   idempotently generates a 32-byte URL-safe Grafana password at the fixed
   server path, validates owner/mode/non-symlink constraints, never prints the
-  value, and copies it to the Git-ignored local recovery path. It has not been
-  executed and still requires exact approval.
+  value, and copies it to the Git-ignored local recovery path. Its approved
+  execution passed on 2026-07-21; the local recovery file exists, is non-empty,
+  and is confirmed ignored by Git.
 - Full regression coverage now passes with 120 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
@@ -171,21 +172,19 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. After exact approval, run `provision_monitoring_secret` and verify the
-   server and ignored local recovery files exist without printing their value.
-2. Review and, only after a separate exact approval, run
+1. Review and, only after a separate exact approval, run
    `deploy_monitoring_stack`; then verify Grafana login, targets, dashboard,
    private metrics ports, and recovery before any cleanup.
-3. Schedule the five `ispy-server` security package updates through the
+2. Schedule the five `ispy-server` security package updates through the
    existing approval gate, followed by service and recording verification.
-4. Record the smart-switch and garage-controller brands/apps, phone platform,
+3. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-5. Define version-pinned Compose bundle metadata and approval-gated stack
+4. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-6. Implement USB mount/sentinel preflight before storage-dependent deployment.
-7. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+5. Implement USB mount/sentinel preflight before storage-dependent deployment.
+6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-8. Prove reboot persistence and backup/restore for each new stateful application
+7. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

@@ -194,7 +194,8 @@ backup target.
   dry-run verified, but neither cutover nor rollback has been executed.
 - The fixed `provision_monitoring_secret` action is implemented and dry-run
   verified. It generates or validates the password without logging its value
-  and retains a Git-ignored recovery copy; execution still requires approval.
+  and retains a Git-ignored recovery copy. Its approved execution passed on
+  2026-07-21, and the local copy was verified without displaying its contents.
 
 ## Current Container Disposition
 

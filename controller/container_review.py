@@ -557,14 +557,14 @@ def _recommendations(
                 title="Move useful monitoring services into desired state",
                 rationale=(
                     f"Redeploy {names} with pinned images, restart policies, and "
-                    "reviewed LAN bindings. The image/config preflight passed; "
-                    "next provision the non-logged Grafana secret before the "
-                    "separately approved cutover."
+                    "reviewed LAN bindings. The image/config preflight and "
+                    "non-logged Grafana secret provisioning passed; next review "
+                    "the separately approved cutover."
                 ),
-                action_id="provision_monitoring_secret",
+                action_id="deploy_monitoring_stack",
                 dry_run_command=(
                     "python -m controller.main actions run "
-                    "provision_monitoring_secret --server container-host --dry-run"
+                    "deploy_monitoring_stack --server container-host --dry-run"
                 ),
             )
         )
