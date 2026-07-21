@@ -3,7 +3,7 @@
 Purpose: this is the daily Codex handoff. Read this first before inspecting
 broader docs, history, generated reports, or source files.
 
-Last updated: 2026-07-18.
+Last updated: 2026-07-21.
 
 ## Session Start
 
@@ -66,10 +66,11 @@ Recommended thinking level for the next work:
 - Check `git status --short --branch` at session start for branch cleanliness.
 - Latest fleet report run: `2026-07-21T12-13-24Z`; all 3 servers collected
   without errors.
-- Latest targeted `container-host` run: `2026-07-21T15-18-21Z`; sanitized
-  inventory confirmed the four new monitoring containers plus Portainer and
-  Watchtower running. The four stopped legacy monitoring containers remain as
-  rollback state.
+- Latest targeted `container-host` run: `2026-07-21T20-01-26Z`; sanitized
+  inventory confirmed the four desired monitoring containers plus Portainer
+  and Watchtower running, with no legacy monitoring containers remaining.
+- Latest targeted `container-host` status: 0 critical, 0 warning, and 1
+  informational finding for its single non-security package update.
 - Latest fleet status: 0 critical, 1 warning, and 2 informational findings.
 - `openvpn-server` has 3 non-security package updates pending; no reboot is
   required.
@@ -78,9 +79,8 @@ Recommended thinking level for the next work:
 - Read-only package inspection identified the five security entries as
   `libde265-0` (amd64 and i386), `libsqlite3-0` (amd64 and i386), and `wget`.
   The sixth entry is a normal `snapd` update; AgentDVR itself is not pending.
-- `container-host` has 1 non-security package update with Docker active, 6 of 10
-  containers running, four intentionally stopped for rollback, no unhealthy
-  containers, and no required reboot.
+- `container-host` has 1 non-security package update with Docker active, 6 of 6
+  containers running, no unhealthy containers, and no required reboot.
 - `container-host` has an i5-4210U with 4 CPU threads, about 8 GB RAM, and about
   80 GB free on the root disk. Current load and memory use are low.
 - The accepted direction is a LAN-only House OS combining Home Assistant,
@@ -97,9 +97,9 @@ Recommended thinking level for the next work:
 - Updated health script deployment completed through the approval-gated action:
   `history/actions/2026-07-20T17-12-38Z-container-host-deploy_health_script.json`.
 - Current disposition recommendations: keep the four `homeops-monitoring-*`
-  desired-state containers; retire the four stopped legacy monitoring
-  containers and two old volumes through the final bounded cleanup action;
-  retire Portainer and Watchtower only after replacements exist.
+  desired-state containers; retire Portainer and Watchtower only after
+  replacements exist. The four legacy monitoring containers and two old data
+  volumes were removed after rollback acceptance.
 - Read-only evidence confirmed `/mnt/storage1`, `/mnt/storage2`, and
   `/mnt/storageWD320` are nearly empty directories on the 100 GB root
   filesystem, not external mounts. The host currently exposes only its internal
@@ -124,10 +124,10 @@ Recommended thinking level for the next work:
   Mission Control, smart home, recipes, documents, and developer lab are ordered
   into phases with storage, backup, and acceptance prerequisites. Deployment is
   gated for every workload until pinned Compose bundles and preflights exist.
-- The operator approved a clean monitoring rebuild: the current basic Grafana
-  configuration and Prometheus history do not need migration. Keep the current
-  stack running and its old volumes available until the replacement passes
-  health, LAN-exposure, dashboard, reboot, and rollback acceptance.
+- The operator approved a clean monitoring rebuild because the basic Grafana
+  configuration and Prometheus history did not need migration. The replacement
+  passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the
+  old state was then removed through the bounded cleanup action.
 - `docs/monitoring-stack-upgrade-review.md` is the required learning ledger for
   every old-to-new monitoring change and why it is needed.
 - The live non-secret monitoring preflight completed on 2026-07-21. It confirmed
@@ -138,7 +138,7 @@ Recommended thinking level for the next work:
 - `stacks/monitoring/` now contains a Compose-valid clean replacement using
   Grafana 13.1.0, Prometheus 3.12.0, Node Exporter 1.11.1, and cAdvisor 0.57.0,
   plus provisioning, rules, and a HomeOps overview dashboard. The approved
-  cutover completed on 2026-07-21 and the workload is now acceptance-pending.
+  cutover and final acceptance completed on 2026-07-21; the workload is active.
 - Linux/amd64 manifest digests for all four pinned monitoring images were
   resolved read-only and committed in Compose. Re-resolve them immediately
   before deployment to detect tag movement.
@@ -166,8 +166,7 @@ Recommended thinking level for the next work:
   Grafana as the only LAN port, private ports 8080/9090/9100 unreachable,
   the `HomeOps Overview` dashboard provisioned, and all five Prometheus targets
   up (`prometheus`, `node-exporter`, `cadvisor`, `openvpn-server`, and
-  `ispy-server`). The four stopped legacy containers and both old data volumes
-  remain available for rollback.
+  `ispy-server`).
 - Grafana's unprivileged process cannot read the host-owned `0600` secret bind
   mount. The password was immediately synchronized through Grafana's API
   without displaying it; the protected login returns 200 and the default
@@ -205,10 +204,12 @@ Recommended thinking level for the next work:
   that state, then the approved clean redeployment rebuilt the desired stack.
   Independent checks again confirmed protected authentication, friendly labels,
   5/5 targets, and private metric ports. Rollback acceptance is complete.
-- `retire_legacy_monitoring_stack` is implemented and dry-run verified to
-  remove only the four stopped legacy containers and two old named volumes
-  after rechecking desired-state health and Grafana authentication. Execution
-  remains approval-gated.
+- The approved `retire_legacy_monitoring_stack` execution completed at
+  `2026-07-21T20:00:36Z`. It reverified desired-state health and protected
+  Grafana authentication, then removed only the four stopped legacy containers
+  and two old named volumes. Final inventory shows 6 of 6 containers running;
+  protected authentication, the provisioned dashboard, 5/5 targets, and the
+  Grafana-only LAN boundary all still pass. Monitoring is operational.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -222,18 +223,16 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. After exact approval, run `retire_legacy_monitoring_stack`, collect fresh
-   inventory, and mark monitoring operational.
-2. Schedule the five `ispy-server` security package updates through the
+1. Schedule the five `ispy-server` security package updates through the
    existing approval gate, followed by service and recording verification.
-3. Record the smart-switch and garage-controller brands/apps, phone platform,
+2. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-4. Define version-pinned Compose bundle metadata and approval-gated stack
+3. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-5. Implement USB mount/sentinel preflight before storage-dependent deployment.
-6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+4. Implement USB mount/sentinel preflight before storage-dependent deployment.
+5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-7. Prove reboot persistence and backup/restore for each new stateful application
+6. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

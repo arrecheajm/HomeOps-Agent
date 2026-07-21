@@ -1,8 +1,8 @@
 # HomeOps Monitoring Stack
 
 This is the deployed desired-state replacement for the proof-of-concept
-monitoring containers. Cutover completed on 2026-07-21; the old containers and
-volumes remain available only until the approved final legacy cleanup runs.
+monitoring containers. Cutover, reboot persistence, destructive rollback,
+clean redeployment, and final legacy cleanup completed on 2026-07-21.
 
 Pinned review baseline:
 
@@ -68,5 +68,7 @@ Before any server change:
    permission problem. The corrected loopback/bootstrap repair is dry-run
    verified, approved, and completed with all acceptance checks passing.
 7. Controlled reboot persistence, destructive rollback, and subsequent clean
-   redeployment passed on 2026-07-21. Final removal of the stopped legacy
-   containers and old volumes remains a separate approval-gated action.
+   redeployment passed on 2026-07-21.
+8. The separately approved final cleanup reverified the desired stack and
+   authentication, then removed the four stopped legacy containers and two old
+   data volumes. Final inventory and acceptance checks passed.

@@ -1,6 +1,7 @@
 # Monitoring Stack Upgrade Review
 
-Status: clean rebuild selected; implementation and cutover not started.
+Status: operational; clean rebuild and all acceptance gates completed on
+2026-07-21.
 
 This document is the learning record for replacing the current cAdvisor,
 Grafana, Node Exporter, and Prometheus deployment. It lists what is different in
@@ -184,8 +185,10 @@ Grafana state and Prometheus time-series data stay in named Docker volumes.
 - [x] Log rotation and Prometheus retention are bounded.
 - [x] The stack returns successfully after an approved host reboot.
 - [x] Rollback is tested before old volumes or files are removed.
+- [x] Accepted legacy containers and old data volumes are removed through the
+  bounded cleanup action.
 
-## Deployment Result And Remaining Gates
+## Deployment Result
 
 `preflight_monitoring_images` completed successfully on 2026-07-21. The pinned
 images, health tooling, cAdvisor health metadata, and Prometheus configuration
@@ -196,8 +199,7 @@ remained running.
 their separate approval gates on 2026-07-21. The four pinned replacements are
 healthy, Grafana alone is reachable at `192.168.86.58:3000`, the three raw
 metric ports reject LAN connections, the HomeOps dashboard is provisioned, and
-all five Prometheus targets report up. The old containers are stopped and their
-old volumes remain intact for rollback.
+all five Prometheus targets report up.
 
 Post-cutover authentication testing found that Grafana's unprivileged process
 could not read the host-owned `0600` secret bind mount. The default was
@@ -240,5 +242,13 @@ accepted. The destructive rollback then restored all four legacy containers and
 removed the desired containers plus their new volumes. A subsequent approved
 clean deployment rebuilt the desired stack, and independent checks again passed
 authentication, friendly labels, 5/5 targets, health, and LAN isolation.
-Rollback acceptance is complete. Only the separately approved removal of the
-four stopped legacy containers and their two old volumes remains.
+Rollback acceptance is complete. The separately approved
+`retire_legacy_monitoring_stack` action completed at
+`2026-07-21T20:00:36Z` after rechecking all four desired container identities,
+health checks, new volumes, protected Grafana authentication, and default-login
+rejection. It removed the four stopped legacy containers and two old named
+volumes. Final inventory at `2026-07-21T20-01-26Z` shows the four desired
+monitoring services plus Portainer and Watchtower running, no legacy monitoring
+state, no unhealthy containers, and no container-host warnings. Independent
+acceptance again confirmed the HomeOps dashboard, friendly labels, 5/5 targets,
+protected authentication, and only Grafana port 3000 reachable on the LAN.

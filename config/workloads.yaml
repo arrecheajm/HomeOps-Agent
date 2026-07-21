@@ -7,14 +7,14 @@
         {
           "workload_id": "monitoring",
           "phase": 0,
-          "state": "cleanup_pending",
+          "state": "active",
           "purpose": "Cleanly rebuild host and container monitoring under pinned, reviewable desired state.",
           "services": ["cadvisor", "grafana", "node-exporter", "prometheus"],
           "current_containers": ["homeops-monitoring-cadvisor-1", "homeops-monitoring-grafana-1", "homeops-monitoring-node-exporter-1", "homeops-monitoring-prometheus-1"],
           "storage_class": "internal",
           "backup_required": false,
           "deployment_enabled": true,
-          "prerequisites": ["approve retire_legacy_monitoring_stack"],
+          "prerequisites": [],
           "acceptance": ["all services survive reboot", "only Grafana is published to the LAN", "the Prometheus data source and HomeOps dashboard are provisioned from Git", "configuration mounts are read-only where supported", "rollback is tested before old state is removed", "legacy monitoring containers and volumes are removed after rollback acceptance"]
         },
         {

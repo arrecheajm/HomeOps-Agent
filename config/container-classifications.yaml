@@ -2,25 +2,9 @@
   "schema_version": "1.0",
   "servers": {
     "container-host": {
-      "cadvisor": {
-        "classification": "rollback_hold",
-        "rationale": "Rollback passed; the stopped legacy cAdvisor container awaits bounded final cleanup."
-      },
       "filebrowser": {
         "classification": "retired",
         "rationale": "Removed through retire_disposable_containers on 2026-07-20 after the operator confirmed File Browser was empty and not wanted."
-      },
-      "monitoring-grafana-1": {
-        "classification": "rollback_hold",
-        "rationale": "Rollback passed; the stopped legacy Grafana container and disposable old data await bounded final cleanup."
-      },
-      "monitoring-node_exporter-1": {
-        "classification": "rollback_hold",
-        "rationale": "Rollback passed; the stopped legacy Node Exporter container awaits bounded final cleanup."
-      },
-      "monitoring-prometheus-1": {
-        "classification": "rollback_hold",
-        "rationale": "Rollback passed; the stopped legacy Prometheus container and disposable old data await bounded final cleanup."
       },
       "homeops-monitoring-cadvisor-1": {
         "classification": "keep",

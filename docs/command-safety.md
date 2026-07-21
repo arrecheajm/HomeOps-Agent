@@ -327,7 +327,9 @@ Approve action rollback_monitoring_stack on container-host
 After rollback and clean redeployment acceptance, final legacy cleanup is a
 separate fixed action. It re-verifies the desired containers, volumes, and
 Grafana authentication before removing only the four stopped legacy monitoring
-containers and `monitoring_grafana-data` / `monitoring_prometheus-data`:
+containers and `monitoring_grafana-data` / `monitoring_prometheus-data`. Its
+approved execution completed successfully on 2026-07-21; the command remains
+documented here for lifecycle reference:
 
 ```powershell
 python -m controller.main actions run retire_legacy_monitoring_stack --server container-host --dry-run

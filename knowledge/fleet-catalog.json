@@ -9,7 +9,7 @@
     "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-07-21T19:47:33Z",
+  "generated_at": "2026-07-21T20:01:26Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
@@ -204,7 +204,7 @@
         "Moderate CPU headroom",
         "Docker installed with 6 running containers"
       ],
-      "collected_at": "2026-07-21T19:47:35Z",
+      "collected_at": "2026-07-21T20:01:29Z",
       "constraints": [
         "1 package updates pending"
       ],
@@ -217,46 +217,6 @@
       ],
       "docker": {
         "containers": [
-          {
-            "classification": "rollback_hold",
-            "classification_rationale": "Rollback passed; the stopped legacy cAdvisor container awaits bounded final cleanup.",
-            "compose_project": "monitoring",
-            "compose_service": "cadvisor",
-            "exposure": "none reported",
-            "health": "unhealthy",
-            "image": "gcr.io/cadvisor/cadvisor:latest",
-            "mounts": [
-              {
-                "destination": "/rootfs",
-                "read_only": true,
-                "source": "/",
-                "type": "bind"
-              },
-              {
-                "destination": "/sys",
-                "read_only": true,
-                "source": "/sys",
-                "type": "bind"
-              },
-              {
-                "destination": "/var/lib/docker",
-                "read_only": true,
-                "source": "/var/lib/docker",
-                "type": "bind"
-              },
-              {
-                "destination": "/var/run",
-                "read_only": true,
-                "source": "/var/run",
-                "type": "bind"
-              }
-            ],
-            "name": "cadvisor",
-            "network_mode": "monitor",
-            "ports": [],
-            "restart_policy": "unless-stopped",
-            "state": "exited"
-          },
           {
             "classification": "keep",
             "classification_rationale": "Active desired-state cAdvisor using the reviewed pinned image, private network, health check, and bounded resources.",
@@ -418,71 +378,6 @@
             "state": "running"
           },
           {
-            "classification": "rollback_hold",
-            "classification_rationale": "Rollback passed; the stopped legacy Grafana container and disposable old data await bounded final cleanup.",
-            "compose_project": "monitoring",
-            "compose_service": "grafana",
-            "exposure": "none reported",
-            "health": "none",
-            "image": "grafana/grafana:latest",
-            "mounts": [
-              {
-                "destination": "/var/lib/grafana",
-                "read_only": false,
-                "source": "/var/lib/docker/volumes/monitoring_grafana-data/_data",
-                "type": "volume"
-              }
-            ],
-            "name": "monitoring-grafana-1",
-            "network_mode": "monitor",
-            "ports": [],
-            "restart_policy": "no",
-            "state": "exited"
-          },
-          {
-            "classification": "rollback_hold",
-            "classification_rationale": "Rollback passed; the stopped legacy Node Exporter container awaits bounded final cleanup.",
-            "compose_project": "monitoring",
-            "compose_service": "node_exporter",
-            "exposure": "none reported",
-            "health": "none",
-            "image": "prom/node-exporter:latest",
-            "mounts": [],
-            "name": "monitoring-node_exporter-1",
-            "network_mode": "monitor",
-            "ports": [],
-            "restart_policy": "no",
-            "state": "exited"
-          },
-          {
-            "classification": "rollback_hold",
-            "classification_rationale": "Rollback passed; the stopped legacy Prometheus container and disposable old data await bounded final cleanup.",
-            "compose_project": "monitoring",
-            "compose_service": "prometheus",
-            "exposure": "none reported",
-            "health": "none",
-            "image": "prom/prometheus:latest",
-            "mounts": [
-              {
-                "destination": "/etc/prometheus/prometheus.yml",
-                "read_only": false,
-                "source": "/home/containerserver/docker_lab/monitoring/prometheus.yml",
-                "type": "bind"
-              },
-              {
-                "destination": "/prometheus",
-                "read_only": false,
-                "source": "/var/lib/docker/volumes/monitoring_prometheus-data/_data",
-                "type": "volume"
-              }
-            ],
-            "name": "monitoring-prometheus-1",
-            "network_mode": "monitor",
-            "ports": [],
-            "restart_policy": "no",
-            "state": "exited"
-          },
-          {
             "classification": "retire_later",
             "classification_rationale": "Overlaps with the planned HomeOps lifecycle interface and has read-write Docker socket access; retain until replacement workflows are ready.",
             "compose_project": "dashboards",
@@ -566,7 +461,7 @@
           }
         ],
         "containers_running": 6,
-        "containers_total": 10,
+        "containers_total": 6,
         "installed": true,
         "inventory_collected": true,
         "unhealthy": []
@@ -594,8 +489,8 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.87,
-        "memory_used_percent": 11.5,
+        "load_1m": 0.25,
+        "memory_used_percent": 11.4,
         "swap_used_percent": 0.0,
         "uptime_days": 0.2
       },
@@ -642,8 +537,8 @@
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-21T19-47-33Z/fleet-health.json",
-    "generated_at": "2026-07-21T19:47:33Z",
-    "run_id": "2026-07-21T19-47-33Z"
+    "fleet_path": "history/runs/2026-07-21T20-01-26Z/fleet-health.json",
+    "generated_at": "2026-07-21T20:01:26Z",
+    "run_id": "2026-07-21T20-01-26Z"
   }
 }

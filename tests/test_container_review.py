@@ -296,7 +296,30 @@ class ContainerReviewTests(unittest.TestCase):
         self.assertIn("gated", html)
 
     def test_build_container_review_recognizes_legacy_monitoring_rollback_hold(self):
-        review = build_container_review(self._run_summary(), "container-host")
+        with patch(
+            "controller.container_review.load_container_classifications",
+            return_value={
+                "monitoring-prometheus-1": {
+                    "classification": "rollback_hold",
+                    "rationale": "Rollback passed; legacy state awaits cleanup.",
+                }
+            },
+        ):
+            review = build_container_review(
+                self._run_summary(),
+                "container-host",
+                workloads={
+                    "workloads": [
+                        {
+                            "workload_id": "monitoring",
+                            "state": "cleanup_pending",
+                            "prerequisites": [
+                                "approve retire_legacy_monitoring_stack"
+                            ],
+                        }
+                    ]
+                },
+            )
 
         titles = [item["title"] for item in review["recommendations"]]
         self.assertNotIn("Move useful monitoring services into desired state", titles)

@@ -101,8 +101,8 @@ Live status:
   renders it successfully; 130 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
   Linux/amd64 registry digests. Exact-image checks and the approved cutover have
-  passed; Grafana startup cleanup and reboot persistence passed, while rollback
-  acceptance remains.
+  passed. Grafana startup cleanup, reboot persistence, destructive rollback,
+  clean redeployment, and final legacy-state removal all passed.
 - The approved `preflight_monitoring_images` execution passed on 2026-07-21;
   targeted inventory afterward confirmed the same 6 of 6 original containers
   running. The fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`
@@ -118,8 +118,7 @@ Live status:
   on 2026-07-21, and the ignored local copy was verified without displaying it.
 - Post-cutover verification confirmed all four pinned services healthy, only
   Grafana reachable on the LAN, the provisioned HomeOps dashboard present, and
-  all five Prometheus targets up. Four stopped legacy monitoring containers and
-  both old data volumes remain available for rollback.
+  all five Prometheus targets up.
 - Grafana's unprivileged process could not read the host-owned `0600` secret
   bind mount. The default was immediately replaced through Grafana's password
   API without logging the protected value; the secret authenticates and
@@ -143,12 +142,13 @@ Live status:
   instance column.
 - The approved controlled host reboot passed. Post-reboot inventory and
   independent checks confirmed four healthy desired monitoring containers,
-  four stopped legacy rollback containers, protected authentication, friendly
-  dashboard labels, 5/5 scrape targets, and only Grafana exposed to the LAN.
-- The approved destructive rollback and clean redeployment passed. The fixed
-  `retire_legacy_monitoring_stack` action is implemented and dry-run verified
-  for final removal of only the four stopped legacy containers and two old
-  volumes; its execution remains approval-gated.
+  protected authentication, friendly dashboard labels, 5/5 scrape targets,
+  and only Grafana exposed to the LAN.
+- The approved destructive rollback and clean redeployment passed. The approved
+  `retire_legacy_monitoring_stack` execution then removed only the four stopped
+  legacy containers and two old volumes after rechecking desired-state health
+  and authentication. Final inventory shows 6 of 6 containers running and no
+  legacy monitoring Docker state. The monitoring workload is active.
 
 Current operating model:
 
@@ -281,9 +281,9 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next operational item is approval-gated retirement of the accepted legacy
-monitoring containers and volumes, then marking monitoring operational. The USB
-mount/sentinel preflight follows. Use
+Monitoring acceptance and legacy-state retirement are complete. The next
+operational item is the five pending `ispy-server` security updates, followed by
+the USB mount/sentinel preflight. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 
