@@ -75,6 +75,7 @@ def build_container_review(
         collection_errors,
         recent_actions,
         review_evidence,
+        desired_workloads,
     )
     return {
         "schema_version": "1.0",
@@ -293,6 +294,7 @@ def _recommendations(
     collection_errors: list[dict[str, Any]],
     recent_actions: list[dict[str, Any]],
     evidence: dict[str, Any],
+    workloads: dict[str, Any],
 ) -> list[dict[str, Any]]:
     if collection_errors:
         return [
@@ -545,6 +547,35 @@ def _recommendations(
                 dry_run_command=(
                     "python -m controller.main actions run "
                     "retire_disposable_containers --server container-host --dry-run"
+                ),
+            )
+        )
+    monitoring_workload = next(
+        (
+            item
+            for item in _list(workloads.get("workloads"))
+            if isinstance(item, dict) and item.get("workload_id") == "monitoring"
+        ),
+        None,
+    )
+    if isinstance(monitoring_workload, dict) and (
+        monitoring_workload.get("state") == "acceptance_pending"
+    ):
+        recommendations.append(
+            _recommendation(
+                priority=68,
+                severity="info",
+                title="Complete monitoring acceptance cleanup",
+                rationale=(
+                    "The pinned monitoring stack is healthy and LAN isolation, "
+                    "authentication, dashboard provisioning, and scrape targets "
+                    "passed. Apply the bounded Grafana startup repair before "
+                    "reboot and rollback acceptance."
+                ),
+                action_id="repair_monitoring_grafana",
+                dry_run_command=(
+                    "python -m controller.main actions run "
+                    "repair_monitoring_grafana --server container-host --dry-run"
                 ),
             )
         )

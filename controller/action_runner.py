@@ -126,6 +126,22 @@ MONITORING_DEPLOY_FILES = (
         LOCAL_MONITORING_DIR
         / "grafana"
         / "provisioning"
+        / "alerting"
+        / "README.md",
+        "grafana/provisioning/alerting/README.md",
+    ),
+    (
+        LOCAL_MONITORING_DIR
+        / "grafana"
+        / "provisioning"
+        / "plugins"
+        / "README.md",
+        "grafana/provisioning/plugins/README.md",
+    ),
+    (
+        LOCAL_MONITORING_DIR
+        / "grafana"
+        / "provisioning"
         / "datasources"
         / "prometheus.yml",
         "grafana/provisioning/datasources/prometheus.yml",
@@ -349,6 +365,14 @@ def build_action_commands(
             )
         return _deploy_monitoring_stack_commands(server)
 
+    if action_id == "repair_monitoring_grafana":
+        if arguments:
+            raise ActionError(
+                "repair_monitoring_grafana does not accept arguments; its "
+                "files, containers, checks, and recovery path are fixed."
+            )
+        return _repair_monitoring_grafana_commands(server)
+
     if action_id == "rollback_monitoring_stack":
         if arguments:
             raise ActionError(
@@ -547,6 +571,12 @@ def _preflight_monitoring_image_commands(
 
     for service in ("grafana", "prometheus", "node-exporter"):
         image = MONITORING_IMAGE_REFS[service]
+        tool_check = "command -v wget >/dev/null"
+        if service == "grafana":
+            tool_check += (
+                " && command -v curl >/dev/null"
+                " && command -v grafana >/dev/null"
+            )
         commands.append(
             build_ssh_base_command(server)
             + [
@@ -559,7 +589,7 @@ def _preflight_monitoring_image_commands(
                     "sh",
                     image,
                     "-c",
-                    "command -v wget >/dev/null",
+                    tool_check,
                 ),
             ]
         )
@@ -722,6 +752,10 @@ def _deploy_monitoring_stack_commands(
         f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT; "
         f"docker stop -- {old_names}; "
         f"{_monitoring_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
+        "docker exec -i homeops-monitoring-grafana-1 grafana cli --homepath "
+        "/usr/share/grafana admin "
+        "reset-admin-password --password-from-stdin "
+        f"< {quote(REMOTE_MONITORING_SECRET)}; "
         "trap - HUP INT TERM EXIT; "
         "printf 'monitoring_deployed\\n'"
     )
@@ -762,6 +796,25 @@ def _deploy_monitoring_stack_commands(
     )
     for volume in (*NEW_MONITORING_VOLUMES, *OLD_MONITORING_VOLUMES):
         verify_parts.append(f"docker volume inspect {quote(volume)} >/dev/null")
+    verify_parts.extend(
+        (
+            "docker exec homeops-monitoring-grafana-1 sh -c "
+            + _shell_single_quote(
+                "curl --fail --silent --user "
+                '"admin:$(cat /run/secrets/grafana_admin_password)" '
+                "http://127.0.0.1:3000/api/user >/dev/null"
+            ),
+            "if docker exec homeops-monitoring-grafana-1 curl --fail --silent "
+            "--user admin:admin http://127.0.0.1:3000/api/user >/dev/null; "
+            "then exit 1; fi",
+            "if docker logs homeops-monitoring-grafana-1 2>&1 | grep -Eq "
+            + _shell_single_quote(
+                "Failed to install plugin|provisioning/(plugins|alerting).*"
+                "no such file or directory"
+            )
+            + "; then exit 1; fi",
+        )
+    )
     verify_parts.append("trap - HUP INT TERM EXIT")
     verify_parts.append("printf 'monitoring_deployment_verified\\n'")
     commands.append(
@@ -815,6 +868,181 @@ def _provision_monitoring_secret_commands(
             str(LOCAL_MONITORING_SECRET),
         ],
     ]
+
+
+def _repair_monitoring_grafana_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Apply bounded Grafana startup/auth fixes without replacing metric services."""
+
+    for source, _ in MONITORING_DEPLOY_FILES:
+        if not source.exists():
+            raise ActionError(f"Monitoring repair file not found: {source}")
+
+    candidate_compose = f"{REMOTE_MONITORING_DIR}/compose.candidate.yaml"
+    backup_compose = f"{REMOTE_MONITORING_DIR}/compose.pre-repair.yaml"
+    remote_directories = sorted(
+        {
+            REMOTE_MONITORING_DIR,
+            *(
+                f"{REMOTE_MONITORING_DIR}/{relative.rsplit('/', 1)[0]}"
+                for _, relative in MONITORING_DEPLOY_FILES
+                if "/" in relative
+            ),
+        }
+    )
+    commands: list[list[str]] = [
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("install", "-d", "-m", "0755", *remote_directories),
+        ]
+    ]
+    for source, relative in MONITORING_DEPLOY_FILES:
+        remote_path = (
+            candidate_compose
+            if relative == "compose.yaml"
+            else f"{REMOTE_MONITORING_DIR}/{relative}"
+        )
+        commands.append(
+            _build_scp_base_command(server)
+            + [str(source), f"{server.ssh_target}:{remote_path}"]
+        )
+
+    validation_parts = ["set -eu"]
+    for source, relative in MONITORING_DEPLOY_FILES:
+        expected_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+        remote_path = (
+            candidate_compose
+            if relative == "compose.yaml"
+            else f"{REMOTE_MONITORING_DIR}/{relative}"
+        )
+        validation_parts.append(
+            "test \"$(sha256sum "
+            f"{quote(remote_path)} | cut -d ' ' -f 1)\" = {quote(expected_hash)}"
+        )
+    validation_parts.extend(
+        (
+            _remote_command(
+                "docker",
+                "compose",
+                "--project-directory",
+                REMOTE_MONITORING_DIR,
+                "-f",
+                candidate_compose,
+                "config",
+                "--quiet",
+            ),
+            "printf 'monitoring_grafana_candidate_valid\\n'",
+        )
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("sh", "-lc", "; ".join(validation_parts)),
+        ]
+    )
+
+    activation_parts = [
+        "set -eu",
+        f"test -s {quote(REMOTE_MONITORING_SECRET)}",
+        f"test ! -L {quote(REMOTE_MONITORING_SECRET)}",
+        "test \"$(stat -c %a "
+        f"{quote(REMOTE_MONITORING_SECRET)})\" = 600",
+    ]
+    for name, image in OLD_MONITORING_CONTAINERS.items():
+        activation_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = false",
+            )
+        )
+    for name, image in NEW_MONITORING_CONTAINERS.items():
+        activation_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy",
+            )
+        )
+    activation_parts.extend(
+        (
+            f"cp -- {quote(REMOTE_MONITORING_COMPOSE)} {quote(backup_compose)}",
+            f"mv -- {quote(candidate_compose)} {quote(REMOTE_MONITORING_COMPOSE)}",
+            "printf 'monitoring_grafana_candidate_activated\\n'",
+        )
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("sh", "-lc", "; ".join(activation_parts)),
+        ]
+    )
+
+    recovery = (
+        "status=$?; trap - HUP INT TERM EXIT; "
+        f"cp -- {quote(backup_compose)} {quote(REMOTE_MONITORING_COMPOSE)}; "
+        f"{_monitoring_compose_command('up', '-d', '--wait', '--wait-timeout', '180')} "
+        ">/dev/null 2>&1 || true; "
+        f"rm -f -- {quote(candidate_compose)} {quote(backup_compose)}; "
+        "exit \"$status\""
+    )
+    repair = (
+        "set -eu; "
+        "cadvisor_id=$(docker inspect --format '{{.Id}}' "
+        "homeops-monitoring-cadvisor-1); "
+        "node_id=$(docker inspect --format '{{.Id}}' "
+        "homeops-monitoring-node-exporter-1); "
+        "prometheus_id=$(docker inspect --format '{{.Id}}' "
+        "homeops-monitoring-prometheus-1); "
+        f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT; "
+        f"{_monitoring_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
+        "docker exec -i homeops-monitoring-grafana-1 grafana cli --homepath "
+        "/usr/share/grafana admin "
+        "reset-admin-password --password-from-stdin "
+        f"< {quote(REMOTE_MONITORING_SECRET)}; "
+        "test \"$(docker inspect --format '{{.Id}}' "
+        "homeops-monitoring-cadvisor-1)\" = \"$cadvisor_id\"; "
+        "test \"$(docker inspect --format '{{.Id}}' "
+        "homeops-monitoring-node-exporter-1)\" = \"$node_id\"; "
+        "test \"$(docker inspect --format '{{.Id}}' "
+        "homeops-monitoring-prometheus-1)\" = \"$prometheus_id\"; "
+        "test \"$(docker exec homeops-monitoring-grafana-1 printenv "
+        "GF_PLUGINS_PREINSTALL_DISABLED)\" = true; "
+        "test \"$(docker exec homeops-monitoring-grafana-1 printenv "
+        "GF_PLUGINS_PREINSTALL_AUTO_UPDATE)\" = false; "
+        "docker exec homeops-monitoring-grafana-1 sh -c "
+        + _shell_single_quote(
+            "curl --fail --silent --user "
+            '"admin:$(cat /run/secrets/grafana_admin_password)" '
+            "http://127.0.0.1:3000/api/user >/dev/null"
+        )
+        + "; "
+        "if docker exec homeops-monitoring-grafana-1 curl --fail --silent "
+        "--user admin:admin http://127.0.0.1:3000/api/user >/dev/null; "
+        "then exit 1; fi; "
+        "if docker logs homeops-monitoring-grafana-1 2>&1 | grep -Eq "
+        + _shell_single_quote(
+            "Failed to install plugin|provisioning/(plugins|alerting).*"
+            "no such file or directory"
+        )
+        + "; then exit 1; fi; "
+        "trap - HUP INT TERM EXIT; "
+        f"rm -f -- {quote(backup_compose)}; "
+        "printf 'monitoring_grafana_repair_verified\\n'"
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", repair)]
+    )
+    return commands
 
 
 def _rollback_monitoring_stack_commands(

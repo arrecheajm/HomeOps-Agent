@@ -40,7 +40,7 @@ Live status:
   `migrate_watchtower_container`, `deploy_health_script`,
   `retire_disposable_containers`, `preflight_monitoring_images`,
   `provision_monitoring_secret`, `deploy_monitoring_stack`,
-  `rollback_monitoring_stack`,
+  `repair_monitoring_grafana`, `rollback_monitoring_stack`,
   `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
   `apply_package_updates`, `apply_security_updates`, and `reboot_server`
   support dry-run, exact approval, execution, and action history.
@@ -97,14 +97,15 @@ Live status:
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 - The live monitoring preflight is complete and the first
   `stacks/monitoring/` replacement bundle is implemented. Docker Compose
-  renders it successfully; 118 tests cover version pinning, LAN exposure,
+  renders it successfully; 124 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
-  Linux/amd64 registry digests. Exact-image health checks have passed; cutover
-  remains gated on its untracked secret and separate approval.
+  Linux/amd64 registry digests. Exact-image checks and the approved cutover have
+  passed; Grafana startup cleanup, reboot, and rollback acceptance remain.
 - The approved `preflight_monitoring_images` execution passed on 2026-07-21;
   targeted inventory afterward confirmed the same 6 of 6 original containers
   running. The fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`
-  lifecycle is implemented and dry-run verified but has not been executed.
+  lifecycle is implemented and dry-run verified. The approved deployment
+  completed on 2026-07-21; rollback remains unexecuted.
 - Read-only inspection identified the five `ispy-server` security entries as
   two architectures each of `libde265-0` and `libsqlite3-0`, plus `wget`.
   `snapd` is the one non-security entry; AgentDVR is not itself pending.
@@ -112,6 +113,19 @@ Live status:
   or validates the fixed server-side secret without logging its value and
   copies it to the ignored local recovery path. Its approved execution passed
   on 2026-07-21, and the ignored local copy was verified without displaying it.
+- Post-cutover verification confirmed all four pinned services healthy, only
+  Grafana reachable on the LAN, the provisioned HomeOps dashboard present, and
+  all five Prometheus targets up. Four stopped legacy monitoring containers and
+  both old data volumes remain available for rollback.
+- Grafana loaded the secret but initialized its clean database with the default
+  password. The default was immediately replaced through Grafana's password API
+  without logging the protected value; the secret now authenticates and
+  `admin/admin` is rejected. The deploy action now synchronizes from stdin.
+- Grafana 13 also attempted bundled-plugin writes on its read-only root and
+  logged absent optional provisioning directories. The bundle now disables
+  plugin preinstall/auto-update and includes those directories.
+  `repair_monitoring_grafana` is implemented and dry-run verified with rollback
+  to the prior Compose file, but has not been executed.
 
 Current operating model:
 
@@ -207,7 +221,8 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `restart_service`, `deploy_health_script`, `deploy_sudoers_profile`,
 `inspect_docker_container`, `replace_watchtower_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
-`preflight_monitoring_images`, `provision_monitoring_secret`, `deploy_monitoring_stack`,
+`preflight_monitoring_images`, `provision_monitoring_secret`,
+`deploy_monitoring_stack`, `repair_monitoring_grafana`,
 `rollback_monitoring_stack`,
 `apply_package_updates`,
 `apply_security_updates`, and `reboot_server` are executable after exact
@@ -223,6 +238,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `preflight_monitoring_images`
 - [x] `provision_monitoring_secret`
 - [x] `deploy_monitoring_stack`
+- [x] `repair_monitoring_grafana`
 - [x] `rollback_monitoring_stack`
 - [x] `restart_service`
 - [x] `restart_docker_container`
@@ -242,9 +258,8 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 ## Next Implementation Step
 
 The next operational item is separately approving
-`deploy_monitoring_stack`. After cutover, verify the
-Grafana login, Prometheus targets, dashboard, private port boundary, reboot
-persistence, and rollback before old monitoring state is removed. The USB
+`repair_monitoring_grafana`, then verifying monitoring reboot persistence and
+rollback before old monitoring state is removed. The USB
 mount/sentinel preflight follows. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.

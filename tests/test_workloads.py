@@ -58,6 +58,22 @@ class WorkloadManifestTests(unittest.TestCase):
 
         self.assertEqual(manifest["workloads"][0]["workload_id"], "monitoring")
 
+    def test_preserves_acceptance_pending_deployment_state(self):
+        manifest = normalize_workloads(
+            {
+                "workloads": [
+                    {
+                        "workload_id": "monitoring",
+                        "state": "acceptance_pending",
+                        "deployment_enabled": True,
+                    }
+                ]
+            }
+        )
+
+        self.assertEqual(manifest["workloads"][0]["state"], "acceptance_pending")
+        self.assertTrue(manifest["workloads"][0]["deployment_enabled"])
+
 
 if __name__ == "__main__":
     unittest.main()

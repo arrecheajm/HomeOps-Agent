@@ -7,14 +7,14 @@
         {
           "workload_id": "monitoring",
           "phase": 0,
-          "state": "redeploy",
+          "state": "acceptance_pending",
           "purpose": "Cleanly rebuild host and container monitoring under pinned, reviewable desired state.",
           "services": ["cadvisor", "grafana", "node-exporter", "prometheus"],
-          "current_containers": ["cadvisor", "monitoring-grafana-1", "monitoring-node_exporter-1", "monitoring-prometheus-1"],
+          "current_containers": ["homeops-monitoring-cadvisor-1", "homeops-monitoring-grafana-1", "homeops-monitoring-node-exporter-1", "homeops-monitoring-prometheus-1"],
           "storage_class": "internal",
           "backup_required": false,
-          "deployment_enabled": false,
-          "prerequisites": ["review the bounded deployment dry run", "approve the monitoring cutover"],
+          "deployment_enabled": true,
+          "prerequisites": ["approve repair_monitoring_grafana", "verify reboot persistence", "test rollback before removing legacy state"],
           "acceptance": ["all services survive reboot", "only Grafana is published to the LAN", "the Prometheus data source and HomeOps dashboard are provisioned from Git", "configuration mounts are read-only where supported", "old volumes remain available until rollback acceptance"]
         },
         {

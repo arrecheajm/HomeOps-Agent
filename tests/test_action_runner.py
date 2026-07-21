@@ -246,18 +246,20 @@ class ActionRunnerTests(unittest.TestCase):
         rendered = "\n".join(command[-1] for command in record["commands"])
 
         self.assertEqual(record["status"], "dry_run")
-        self.assertEqual(len(record["commands"]), 10)
+        self.assertEqual(len(record["commands"]), 12)
         self.assertEqual(record["commands"][0][0], "ssh")
         self.assertNotIn("\\home\\", record["commands"][0][-1])
         self.assertEqual(
             sum(command[0] == "scp" for command in record["commands"]),
-            6,
+            8,
         )
         self.assertIn("grafana_admin_password", rendered)
         self.assertIn("stat -c %a", rendered)
         self.assertIn("sha256sum", rendered)
         self.assertIn("docker compose", rendered)
         self.assertIn("up -d --wait --wait-timeout 180", rendered)
+        self.assertIn("reset-admin-password --password-from-stdin", rendered)
+        self.assertIn("--user admin:admin", rendered)
         self.assertIn("docker start -- cadvisor", rendered)
         self.assertGreaterEqual(rendered.count("trap"), 4)
         self.assertIn("192.168.86.58:3000", rendered)
@@ -314,6 +316,50 @@ class ActionRunnerTests(unittest.TestCase):
                 "container-host",
                 [self._container_server()],
                 {"project": "anything"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_repair_monitoring_grafana_dry_run_is_bounded_and_recoverable(self):
+        attempt = run_action(
+            "repair_monitoring_grafana",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(command[-1] for command in record["commands"])
+
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 12)
+        self.assertEqual(
+            sum(command[0] == "scp" for command in record["commands"]),
+            8,
+        )
+        self.assertIn("compose.candidate.yaml", rendered)
+        self.assertIn("compose.pre-repair.yaml", rendered)
+        self.assertIn("reset-admin-password --password-from-stdin", rendered)
+        self.assertIn("GF_PLUGINS_PREINSTALL_DISABLED", rendered)
+        self.assertIn("GF_PLUGINS_PREINSTALL_AUTO_UPDATE", rendered)
+        self.assertIn("Failed to install plugin", rendered)
+        self.assertIn("--user admin:admin", rendered)
+        self.assertNotIn("docker stop -- cadvisor", rendered)
+        self.assertNotIn("docker volume rm", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action repair_monitoring_grafana on container-host",
+        )
+
+    def test_repair_monitoring_grafana_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "repair_monitoring_grafana",
+                "container-host",
+                [self._container_server()],
+                {"container": "anything"},
                 dry_run=True,
                 actions_dir=self.actions_dir,
             )

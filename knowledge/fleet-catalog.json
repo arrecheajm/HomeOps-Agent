@@ -3,13 +3,13 @@
     "collection_failed": 0,
     "cpu_threads": 10,
     "docker_hosts": 1,
-    "not_collected": 0,
+    "not_collected": 2,
     "pending_updates": 10,
     "reboots_required": 0,
     "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-07-21T12:13:24Z",
+  "generated_at": "2026-07-21T12:58:05Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
@@ -25,17 +25,13 @@
         "Small CPU footprint"
       ],
       "collected_at": "2026-07-21T12:13:29Z",
+      "collection_status": "not_in_latest_run",
       "constraints": [
+        "Not collected in latest run",
         "3 package updates pending",
         "VPN availability affects remote access"
       ],
-      "current_findings": [
-        {
-          "code": "updates_pending",
-          "message": "3 package updates are pending.",
-          "severity": "info"
-        }
-      ],
+      "current_findings": [],
       "docker": {
         "containers": [],
         "containers_running": 0,
@@ -51,6 +47,7 @@
         "virtualization": "none"
       },
       "hostname": "vpnserver",
+      "last_successful_collected_at": "2026-07-21T12:13:29Z",
       "maintenance": {
         "pending_security_updates": 0,
         "pending_updates": 3,
@@ -114,17 +111,13 @@
         "Moderate CPU headroom"
       ],
       "collected_at": "2026-07-21T12:13:32Z",
+      "collection_status": "not_in_latest_run",
       "constraints": [
+        "Not collected in latest run",
         "6 package updates pending",
         "Camera recording interruption risk"
       ],
-      "current_findings": [
-        {
-          "code": "security_updates_pending",
-          "message": "5 security updates are pending.",
-          "severity": "warning"
-        }
-      ],
+      "current_findings": [],
       "docker": {
         "containers": [],
         "containers_running": 0,
@@ -140,6 +133,7 @@
         "virtualization": "none"
       },
       "hostname": "ispyserver",
+      "last_successful_collected_at": "2026-07-21T12:13:32Z",
       "maintenance": {
         "pending_security_updates": 5,
         "pending_updates": 6,
@@ -210,7 +204,7 @@
         "Moderate CPU headroom",
         "Docker installed with 6 running containers"
       ],
-      "collected_at": "2026-07-21T12:13:34Z",
+      "collected_at": "2026-07-21T12:58:14Z",
       "constraints": [
         "1 package updates pending"
       ],
@@ -224,12 +218,12 @@
       "docker": {
         "containers": [
           {
-            "classification": "keep",
-            "classification_rationale": "Useful container metrics source; retain while moving it to a pinned image and reviewed LAN exposure.",
+            "classification": "rollback_hold",
+            "classification_rationale": "Stopped legacy cAdvisor container retained only through the monitoring rollback window; the pinned replacement is active.",
             "compose_project": "monitoring",
             "compose_service": "cadvisor",
-            "exposure": "published",
-            "health": "healthy",
+            "exposure": "none reported",
+            "health": "unhealthy",
             "image": "gcr.io/cadvisor/cadvisor:latest",
             "mounts": [
               {
@@ -259,27 +253,182 @@
             ],
             "name": "cadvisor",
             "network_mode": "monitor",
+            "ports": [],
+            "restart_policy": "unless-stopped",
+            "state": "exited"
+          },
+          {
+            "classification": "keep",
+            "classification_rationale": "Active desired-state cAdvisor using the reviewed pinned image, private network, health check, and bounded resources.",
+            "compose_project": "homeops-monitoring",
+            "compose_service": "cadvisor",
+            "exposure": "internal only",
+            "health": "healthy",
+            "image": "ghcr.io/google/cadvisor:v0.57.0@sha256:1742bab953d9d9ab166cba24604a9488efdff7d73dc6d18a087c09a1bcd6cb9d",
+            "mounts": [
+              {
+                "destination": "/dev/disk",
+                "read_only": true,
+                "source": "/dev/disk",
+                "type": "bind"
+              },
+              {
+                "destination": "/rootfs",
+                "read_only": true,
+                "source": "/",
+                "type": "bind"
+              },
+              {
+                "destination": "/sys",
+                "read_only": true,
+                "source": "/sys",
+                "type": "bind"
+              },
+              {
+                "destination": "/var/lib/docker",
+                "read_only": true,
+                "source": "/var/lib/docker",
+                "type": "bind"
+              },
+              {
+                "destination": "/var/run",
+                "read_only": true,
+                "source": "/var/run",
+                "type": "bind"
+              }
+            ],
+            "name": "homeops-monitoring-cadvisor-1",
+            "network_mode": "homeops-monitoring",
             "ports": [
               {
                 "container_port": "8080/tcp",
-                "host_ip": "0.0.0.0",
-                "host_port": "8080"
-              },
-              {
-                "container_port": "8080/tcp",
-                "host_ip": "::",
-                "host_port": "8080"
+                "host_ip": "",
+                "host_port": ""
               }
             ],
             "restart_policy": "unless-stopped",
             "state": "running"
           },
           {
-            "classification": "redeploy",
-            "classification_rationale": "Keep Grafana capability but start from clean provisioned state; the operator confirmed the basic dashboard and data do not need migration.",
-            "compose_project": "monitoring",
+            "classification": "keep",
+            "classification_rationale": "Active desired-state Grafana with LAN-only binding, protected authentication, Git provisioning, health checks, and bounded resources.",
+            "compose_project": "homeops-monitoring",
             "compose_service": "grafana",
             "exposure": "published",
+            "health": "healthy",
+            "image": "grafana/grafana:13.1.0@sha256:6ea068891652aa6a65ca9065c26b89de939653803c836426970305c11fd00534",
+            "mounts": [
+              {
+                "destination": "/etc/grafana/provisioning",
+                "read_only": true,
+                "source": "/home/containerserver/.local/share/homeops/stacks/monitoring/grafana/provisioning",
+                "type": "bind"
+              },
+              {
+                "destination": "/run/secrets/grafana_admin_password",
+                "read_only": true,
+                "source": "/home/containerserver/.config/homeops/secrets/monitoring/grafana_admin_password",
+                "type": "bind"
+              },
+              {
+                "destination": "/var/lib/grafana",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/homeops-monitoring_grafana-data/_data",
+                "type": "volume"
+              },
+              {
+                "destination": "/var/lib/grafana/dashboards",
+                "read_only": true,
+                "source": "/home/containerserver/.local/share/homeops/stacks/monitoring/grafana/dashboards",
+                "type": "bind"
+              }
+            ],
+            "name": "homeops-monitoring-grafana-1",
+            "network_mode": "homeops-monitoring",
+            "ports": [
+              {
+                "container_port": "3000/tcp",
+                "host_ip": "192.168.86.58",
+                "host_port": "3000"
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          },
+          {
+            "classification": "keep",
+            "classification_rationale": "Active desired-state Node Exporter on the private monitoring network with a pinned image and bounded resources.",
+            "compose_project": "homeops-monitoring",
+            "compose_service": "node-exporter",
+            "exposure": "internal only",
+            "health": "healthy",
+            "image": "prom/node-exporter:v1.11.1@sha256:fbd8062b4529e166e902bd62cd93de2f48b36d50af942620d419657265bc20b1",
+            "mounts": [
+              {
+                "destination": "/host",
+                "read_only": true,
+                "source": "/",
+                "type": "bind"
+              }
+            ],
+            "name": "homeops-monitoring-node-exporter-1",
+            "network_mode": "homeops-monitoring",
+            "ports": [
+              {
+                "container_port": "9100/tcp",
+                "host_ip": "",
+                "host_port": ""
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          },
+          {
+            "classification": "keep",
+            "classification_rationale": "Active desired-state Prometheus with private networking, read-only configuration, retained cross-server targets, and bounded retention.",
+            "compose_project": "homeops-monitoring",
+            "compose_service": "prometheus",
+            "exposure": "internal only",
+            "health": "healthy",
+            "image": "prom/prometheus:v3.12.0@sha256:dd4bced05dfaddf23a7ec50f87334993a4149f7fcfbf58456d1c8bafce91cd13",
+            "mounts": [
+              {
+                "destination": "/etc/prometheus/prometheus.yml",
+                "read_only": true,
+                "source": "/home/containerserver/.local/share/homeops/stacks/monitoring/prometheus/prometheus.yml",
+                "type": "bind"
+              },
+              {
+                "destination": "/etc/prometheus/rules",
+                "read_only": true,
+                "source": "/home/containerserver/.local/share/homeops/stacks/monitoring/prometheus/rules",
+                "type": "bind"
+              },
+              {
+                "destination": "/prometheus",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/homeops-monitoring_prometheus-data/_data",
+                "type": "volume"
+              }
+            ],
+            "name": "homeops-monitoring-prometheus-1",
+            "network_mode": "homeops-monitoring",
+            "ports": [
+              {
+                "container_port": "9090/tcp",
+                "host_ip": "",
+                "host_port": ""
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          },
+          {
+            "classification": "rollback_hold",
+            "classification_rationale": "Stopped legacy Grafana container retained only through acceptance and rollback testing; its basic dashboard and data do not need migration.",
+            "compose_project": "monitoring",
+            "compose_service": "grafana",
+            "exposure": "none reported",
             "health": "none",
             "image": "grafana/grafana:latest",
             "mounts": [
@@ -292,53 +441,31 @@
             ],
             "name": "monitoring-grafana-1",
             "network_mode": "monitor",
-            "ports": [
-              {
-                "container_port": "3000/tcp",
-                "host_ip": "0.0.0.0",
-                "host_port": "3000"
-              },
-              {
-                "container_port": "3000/tcp",
-                "host_ip": "::",
-                "host_port": "3000"
-              }
-            ],
+            "ports": [],
             "restart_policy": "no",
-            "state": "running"
+            "state": "exited"
           },
           {
-            "classification": "redeploy",
-            "classification_rationale": "Keep host metrics, but redeploy from desired state with a pinned image, restart policy, and reviewed port binding.",
+            "classification": "rollback_hold",
+            "classification_rationale": "Stopped legacy Node Exporter container retained only through the monitoring rollback window; the pinned private replacement is active.",
             "compose_project": "monitoring",
             "compose_service": "node_exporter",
-            "exposure": "published",
+            "exposure": "none reported",
             "health": "none",
             "image": "prom/node-exporter:latest",
             "mounts": [],
             "name": "monitoring-node_exporter-1",
             "network_mode": "monitor",
-            "ports": [
-              {
-                "container_port": "9100/tcp",
-                "host_ip": "0.0.0.0",
-                "host_port": "9100"
-              },
-              {
-                "container_port": "9100/tcp",
-                "host_ip": "::",
-                "host_port": "9100"
-              }
-            ],
+            "ports": [],
             "restart_policy": "no",
-            "state": "running"
+            "state": "exited"
           },
           {
-            "classification": "redeploy",
-            "classification_rationale": "Keep Prometheus capability but start with a clean bounded-retention volume, pinned image, restart policy, and read-only configuration.",
+            "classification": "rollback_hold",
+            "classification_rationale": "Stopped legacy Prometheus container and old volume are retained only through rollback acceptance; the clean bounded replacement is active.",
             "compose_project": "monitoring",
             "compose_service": "prometheus",
-            "exposure": "published",
+            "exposure": "none reported",
             "health": "none",
             "image": "prom/prometheus:latest",
             "mounts": [
@@ -357,20 +484,9 @@
             ],
             "name": "monitoring-prometheus-1",
             "network_mode": "monitor",
-            "ports": [
-              {
-                "container_port": "9090/tcp",
-                "host_ip": "0.0.0.0",
-                "host_port": "9090"
-              },
-              {
-                "container_port": "9090/tcp",
-                "host_ip": "::",
-                "host_port": "9090"
-              }
-            ],
+            "ports": [],
             "restart_policy": "no",
-            "state": "running"
+            "state": "exited"
           },
           {
             "classification": "retire_later",
@@ -456,7 +572,7 @@
           }
         ],
         "containers_running": 6,
-        "containers_total": 6,
+        "containers_total": 10,
         "installed": true,
         "inventory_collected": true,
         "unhealthy": []
@@ -484,10 +600,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.2,
-        "memory_used_percent": 13.5,
+        "load_1m": 0.66,
+        "memory_used_percent": 12.7,
         "swap_used_percent": 0.0,
-        "uptime_days": 2.8
+        "uptime_days": 2.9
       },
       "role": "container_host",
       "role_label": "Containers",
@@ -532,8 +648,8 @@
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-21T12-13-24Z/fleet-health.json",
-    "generated_at": "2026-07-21T12:13:24Z",
-    "run_id": "2026-07-21T12-13-24Z"
+    "fleet_path": "history/runs/2026-07-21T12-58-05Z/fleet-health.json",
+    "generated_at": "2026-07-21T12:58:05Z",
+    "run_id": "2026-07-21T12-58-05Z"
   }
 }

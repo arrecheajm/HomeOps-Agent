@@ -83,13 +83,14 @@ GCR path to the project's current GHCR path for releases newer than 0.53.
 | LAN exposure | Ports 3000, 8080, 9090, and 9100 listen on all IPv4 and IPv6 interfaces. | Publish only Grafana, bound to the container host's LAN address. Keep metric endpoints on a private Compose network. | Household users need Grafana; direct access to raw collectors and Prometheus is unnecessary exposure. | Required |
 | Prometheus configuration | The bind-mounted `prometheus.yml` is writable by the container. | Store it in Git and mount it read-only. | The running service should not be able to mutate its desired configuration. | Required |
 | Grafana provisioning | Dashboard and data-source setup is mostly manual. | Provision the Prometheus data source and the initial HomeOps dashboard from files. | A clean deployment should reproduce the useful dashboard automatically and make changes reviewable. | Required |
-| Credentials | Not confirmed. | Disable anonymous/admin defaults and load the initial admin secret from an untracked server-side environment file. | Credentials must not live in Compose, Git, reports, or action history. | Required |
+| Credentials | The legacy stack accepted the default Grafana admin credential. | Disable anonymous access, load a protected untracked secret, and explicitly synchronize the Grafana database password from stdin after first start. | Grafana 13 loaded the Docker secret during the clean deployment but still initialized its database with `admin/admin`; an explicit non-logging synchronization prevents a known default from surviving bootstrap or rebuild. | Required |
 | Health checks | Only cAdvisor reports healthy; the other three have no reported checks. | Add service-appropriate readiness/health checks where the image supports them. | “Container running” does not prove the web API or metrics endpoint is working. | Required |
 | Verification | Visual confirmation that Grafana starts. | Verify scrape targets, dashboard panels, container health, LAN-only access, and reboot persistence. | HomeOps needs objective acceptance checks before calling a deployment successful. | Required |
 | Prometheus retention | Only config/data path flags are set; there is no intentional retention budget. | Limit retention to 15 days or 4 GB, whichever is reached first. | Prevent telemetry from growing until it consumes space needed by household applications. | Recommended |
 | Container logging | `json-file` with no rotation options. | Rotate at 10 MB and retain three files per service. | Default JSON logs can grow without a bound even when Prometheus retention is controlled. | Recommended |
 | Resource protection | No CPU, memory, or PID limits. | Use a combined ceiling of about 1.9 GB RAM and 2.5 CPU cores across the four services, then tune from observed use. | The 8 GB host must reserve capacity for Home Assistant, Paperless, Mealie, and Forgejo. | Recommended |
 | Security hardening | No security options, capability drops, or read-only roots. | Use `no-new-privileges`, drop capabilities, and use read-only roots where compatible; keep a documented cAdvisor exception until host metrics are verified. | Collectors need host visibility, but that should not become unrestricted access by accident. | Recommended |
+| Grafana plugins | No intentional plugin policy. | Disable bundled-plugin preinstall and automatic updates; add the optional provisioning directories to the Git bundle. | Grafana 13 attempted writes under its read-only image and logged missing-directory errors until these settings and directories were made explicit. | Recommended |
 | Watchtower | Automatic updates remain available on the host. | Do not label this stack for Watchtower updates. Upgrade only through a pinned HomeOps change. | Automatic replacement defeats version pinning, validation, and rollback. | Required |
 | HTTPS and friendly name | Grafana is reached directly by host and port. | Keep initial access LAN-only; add local DNS and HTTPS with the common household ingress later. | Centralizing certificates and names is cleaner than solving TLS separately for every first deployment. | Later |
 
@@ -124,10 +125,14 @@ stacks/monitoring/
       host.rules.yml
   grafana/
     provisioning/
+      alerting/
+        README.md
       datasources/
         prometheus.yml
       dashboards/
         dashboards.yml
+      plugins/
+        README.md
     dashboards/
       homeops-overview.json
 ```
@@ -163,36 +168,53 @@ Grafana state and Prometheus time-series data stay in named Docker volumes.
 
 - [x] All images use reviewed exact versions and recorded Linux/amd64 digests.
 - [x] `docker compose config` succeeds with no secrets printed or committed.
-- [ ] Grafana is the only monitoring service with a LAN-published port.
-- [ ] Grafana requires authentication and has no default credential.
-- [ ] Prometheus, cAdvisor, and Node Exporter are reachable only on the private
+- [x] Grafana is the only monitoring service with a LAN-published port.
+- [x] Grafana requires authentication and has no default credential.
+- [x] Prometheus, cAdvisor, and Node Exporter are reachable only on the private
   monitoring network.
-- [ ] Prometheus configuration and Grafana provisioning files are read-only.
-- [ ] All four services report healthy and use automatic restart policies.
-- [ ] Prometheus reports every expected scrape target as up.
-- [ ] The HomeOps dashboard shows host, disk, container, and target health.
-- [ ] Log rotation and Prometheus retention are bounded.
+- [x] Prometheus configuration and Grafana provisioning files are read-only.
+- [x] All four services report healthy and use automatic restart policies.
+- [x] Prometheus reports every expected scrape target as up.
+- [x] The HomeOps dashboard shows host, disk, container, and target health.
+- [x] Log rotation and Prometheus retention are bounded.
 - [ ] The stack returns successfully after an approved host reboot.
 - [ ] Rollback is tested before old volumes or files are removed.
 
-## What This Does Not Yet Authorize
-
-The first version-controlled bundle now exists at `stacks/monitoring/`, but this
-decision does not authorize stopping or deleting the current monitoring
-containers, removing volumes, writing remote files, changing ports, or deploying
-the replacement. Those remain approval-gated HomeOps actions after the bundle
-and dry run are ready for review.
+## Deployment Result And Remaining Gates
 
 `preflight_monitoring_images` completed successfully on 2026-07-21. The pinned
 images, health tooling, cAdvisor health metadata, and Prometheus configuration
 all passed; a post-action collection confirmed the same six original containers
 remained running.
 
-`deploy_monitoring_stack` and `rollback_monitoring_stack` are now implemented
-and dry-run verified. Neither has been executed. Deployment still requires the
-server-side Grafana secret. `provision_monitoring_secret` is implemented and
-dry-run verified to create it without logging its value and retain an ignored
-local recovery copy; its approved execution passed on 2026-07-21. Deployment requires the exact
-phrase `Approve action deploy_monitoring_stack on container-host`. Rollback has
-its own separate exact approval. The old containers and old volumes remain
-untouched until a future approved cutover.
+`provision_monitoring_secret` and `deploy_monitoring_stack` completed through
+their separate approval gates on 2026-07-21. The four pinned replacements are
+healthy, Grafana alone is reachable at `192.168.86.58:3000`, the three raw
+metric ports reject LAN connections, the HomeOps dashboard is provisioned, and
+all five Prometheus targets report up. The old containers are stopped and their
+old volumes remain intact for rollback.
+
+Post-cutover authentication testing found that Grafana loaded the secret file
+but initialized its clean database with the default password. The default was
+immediately replaced through Grafana's password API without logging the secret;
+the protected credential now returns HTTP 200 and `admin/admin` returns 401.
+The deployment lifecycle now also synchronizes the password from stdin so a
+future clean rebuild cannot repeat this gap.
+
+This follows Grafana's documented admin-password reset workflow with an
+explicit `/usr/share/grafana` home path, while the pinned image's CLI adds the
+non-logging `--password-from-stdin` option. See the official
+[Grafana CLI documentation](https://grafana.com/docs/grafana/latest/administration/cli/).
+
+Grafana startup logs also showed bundled-plugin write attempts against the
+read-only filesystem and absent optional provisioning directories. The bundle
+now disables plugin preinstall/auto-update and includes those directories.
+These settings correspond to Grafana's documented `preinstall_disabled` and
+`preinstall_auto_update` options in the official
+[configuration reference](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/).
+`repair_monitoring_grafana` is implemented and dry-run verified to apply only
+that Grafana change, preserve the other three monitoring container identities,
+and restore the prior Compose file if verification fails. It has not been
+executed and requires its own exact approval. Reboot and rollback acceptance
+also remain separate gates; no legacy container or volume should be removed
+before both are proven.

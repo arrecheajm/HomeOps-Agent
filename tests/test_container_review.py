@@ -295,21 +295,21 @@ class ContainerReviewTests(unittest.TestCase):
         self.assertIn("attach the 1 TB USB drive", html)
         self.assertIn("gated", html)
 
-    def test_build_container_review_uses_local_disposition_recommendations(self):
+    def test_build_container_review_recognizes_legacy_monitoring_rollback_hold(self):
         review = build_container_review(self._run_summary(), "container-host")
 
         titles = [item["title"] for item in review["recommendations"]]
-        self.assertIn("Move useful monitoring services into desired state", titles)
-        monitoring = next(
+        self.assertNotIn("Move useful monitoring services into desired state", titles)
+        self.assertIn("Complete monitoring acceptance cleanup", titles)
+        repair = next(
             item
             for item in review["recommendations"]
-            if item["title"] == "Move useful monitoring services into desired state"
+            if item["title"] == "Complete monitoring acceptance cleanup"
         )
-        self.assertEqual(monitoring["action_id"], "deploy_monitoring_stack")
-        self.assertIn("--dry-run", monitoring["dry_run_command"])
+        self.assertEqual(repair["action_id"], "repair_monitoring_grafana")
         container = review["server"]["docker"]["containers"][0]
-        self.assertEqual(container["classification"], "redeploy")
-        self.assertIn("pinned image", container["classification_rationale"])
+        self.assertEqual(container["classification"], "rollback_hold")
+        self.assertIn("rollback", container["classification_rationale"])
 
     def test_build_container_review_recommends_bounded_disposable_retirement(self):
         run = self._run_summary()

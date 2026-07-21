@@ -1,7 +1,8 @@
 # HomeOps Monitoring Stack
 
-This is the reviewable replacement bundle for the current proof-of-concept
-monitoring containers. It is not authorized for deployment yet.
+This is the deployed desired-state replacement for the proof-of-concept
+monitoring containers. Cutover completed on 2026-07-21; the old containers and
+volumes remain available until reboot and rollback acceptance are proven.
 
 Pinned review baseline:
 
@@ -23,6 +24,8 @@ tag. The version decision and old-to-new rationale are documented in
 - Docker JSON logs rotate at 10 MB with three files per service.
 - Grafana's Prometheus data source and HomeOps dashboard are provisioned from
   version-controlled files.
+- Grafana plugin preinstall and automatic plugin updates are disabled so its
+  read-only image remains immutable.
 - The Grafana admin password is read from a server-side Docker secret file and
   is never stored in Git.
 - New volume names keep this clean rebuild isolated from old rollback data.
@@ -39,7 +42,7 @@ is `/home/containerserver/.config/homeops/secrets/monitoring` on
 `container-host`; it should be owned by `containerserver` with directory mode
 `0700` and secret-file mode `0600`.
 
-## Deployment Gate
+## Deployment And Acceptance Status
 
 Before any server change:
 
@@ -51,7 +54,11 @@ Before any server change:
    validates the server-side secret with directory mode `0700` and file mode
    `0600`, never prints the value, and retains an ignored local recovery copy.
    This gate completed successfully on 2026-07-21.
-5. Review the fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`
-   dry runs. Deployment remains separately approval-gated.
-6. Keep the current monitoring containers and old volumes available until the
-   new stack passes health, dashboard, LAN exposure, and reboot verification.
+5. The fixed `deploy_monitoring_stack` action completed successfully. Health,
+   dashboard provisioning, five scrape targets, authentication, and LAN port
+   isolation passed.
+6. Acceptance found Grafana plugin-preinstall and optional-directory startup
+   errors. `repair_monitoring_grafana` is implemented and dry-run verified but
+   still needs separate approval.
+7. Keep the old monitoring containers and volumes available until the repair,
+   reboot persistence, and rollback test pass.

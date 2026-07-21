@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 120 tests, and the health script passes
+- Python regression suite passes with 124 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
@@ -171,8 +171,9 @@ backup target.
 - Sanitized point-in-time storage and database evidence is stored in
   `config/container-review-evidence.yaml` and rendered in the focused review.
 - Ordered desired workload intent is stored in `config/workloads.yaml` and
-  rendered in the focused review. All deployment flags remain disabled until
-  pinned Compose definitions and workload prerequisites are implemented.
+  rendered in the focused review. Monitoring is deployed and marked
+  acceptance-pending; later workloads remain disabled until their pinned
+  Compose definitions and prerequisites are implemented.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.
@@ -185,26 +186,37 @@ backup target.
 - The first `stacks/monitoring/` bundle is implemented and Compose-valid with
   exact version tags, clean volumes, private metric endpoints, bounded
   retention/logging/resources, provisioning, and a HomeOps overview dashboard.
-  Exact-image validation has passed; cutover remains separately gated on the
-  Grafana secret and explicit deployment approval.
+  Exact-image validation and the approved cutover passed on 2026-07-21.
 - The four Linux/amd64 digests are now committed, and the non-disruptive
   `preflight_monitoring_images` action completed successfully on 2026-07-21.
   Targeted inventory afterward confirmed all six original containers remained
-  running. The fixed deployment and rollback actions are implemented and
-  dry-run verified, but neither cutover nor rollback has been executed.
+  running before cutover. The fixed deployment passed; rollback is implemented
+  and dry-run verified but has not been executed.
 - The fixed `provision_monitoring_secret` action is implemented and dry-run
   verified. It generates or validates the password without logging its value
   and retains a Git-ignored recovery copy. Its approved execution passed on
   2026-07-21, and the local copy was verified without displaying its contents.
+- Post-cutover checks confirmed the protected Grafana login, rejected default
+  login, provisioned HomeOps dashboard, five healthy Prometheus targets, four
+  healthy pinned containers, and private raw metric ports. The four old
+  containers are stopped and old volumes remain for rollback.
+- Grafana 13 plugin-preinstall and missing optional provisioning-directory log
+  errors were found during acceptance. The bundle now disables those plugin
+  writes and includes the directories. `repair_monitoring_grafana` is bounded,
+  recovery-aware, and dry-run verified; execution remains approval-gated.
 
 ## Current Container Disposition
 
 | Container | Recommendation | Reason |
 |---|---|---|
-| `cadvisor` | keep | Useful container metrics; later pin the image and review LAN exposure. |
-| `monitoring-grafana-1` | redeploy | Start clean with provisioned data source/dashboard, authentication, a pinned image, health check, and restart policy. |
-| `monitoring-node_exporter-1` | redeploy | Preserve host metrics with a pinned image, restart policy, and reviewed port binding. |
-| `monitoring-prometheus-1` | redeploy | Start with clean bounded-retention storage; pin the image, add health/restart policy, and mount reviewed configuration read-only. |
+| `homeops-monitoring-cadvisor-1` | keep | Active pinned, healthy, private desired-state container metrics collector. |
+| `homeops-monitoring-grafana-1` | keep | Active authenticated LAN UI with Git-provisioned dashboard and data source; startup cleanup repair remains. |
+| `homeops-monitoring-node-exporter-1` | keep | Active pinned, healthy host metrics collector on the private monitoring network. |
+| `homeops-monitoring-prometheus-1` | keep | Active pinned service with read-only configuration, bounded retention, and five healthy targets. |
+| `cadvisor` | rollback hold | Stopped legacy container retained only through rollback acceptance. |
+| `monitoring-grafana-1` | rollback hold | Stopped legacy container and old volume retained only through rollback acceptance. |
+| `monitoring-node_exporter-1` | rollback hold | Stopped legacy container retained only through rollback acceptance. |
+| `monitoring-prometheus-1` | rollback hold | Stopped legacy container and old volume retained only through rollback acceptance. |
 | `filebrowser` | retired | Removed with its Docker volumes after the operator confirmed it was empty. Bind-mounted directories were left intact. |
 | `mysql57` | retired | Removed with `dev-db_mysql_data` after the operator confirmed it was disposable test data. |
 | `nonprofit-postgres` | retired | Removed with `nonprofit_postgres_data` after the operator confirmed it was disposable test data. |
@@ -234,14 +246,14 @@ proposed capabilities, not currently implemented action IDs:
 - [ ] Storage preflight that validates the USB mount, sentinel, space,
   ownership, and expected directories.
 - [ ] Dedicated lifecycle operations for every stack phase. Monitoring
-  preflight, deployment, and rollback are implemented; backup, restore,
-  upgrade, and final removal remain open.
+  preflight, secret provisioning, deployment, Grafana repair, and rollback are
+  implemented; backup, restore, upgrade, and final removal remain open.
 - [ ] Health verification after deployment, upgrade, host reboot, and restore.
 - [ ] Pinned application versions and controlled HomeOps upgrades. Automatic
   Watchtower updates should remain opt-in and should not be enabled for
   stateful applications without a tested backup path.
-- [ ] Secrets stored outside Git and never included in reports or action
-  history.
+- [x] Monitoring secret stored outside Git and never included in reports or
+  action history; apply the same pattern to future stacks.
 
 ## Delivery Order
 

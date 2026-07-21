@@ -113,6 +113,14 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "execution_timeout_seconds": 240,
     },
     {
+        "action_id": "repair_monitoring_grafana",
+        "risk": "approval_required",
+        "description": "Apply the reviewed Grafana startup fixes, synchronize the protected admin password, and verify authentication without replacing the other monitoring containers.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 240,
+    },
+    {
         "action_id": "rollback_monitoring_stack",
         "risk": "approval_required",
         "description": "Stop the HomeOps monitoring stack, restart the preserved old containers, and remove only the new candidate containers and volumes.",

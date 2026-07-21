@@ -51,6 +51,18 @@ class MonitoringStackTests(unittest.TestCase):
         self.assertIn("Top Container Memory", titles)
         self.assertIn("Scrape Target Health", titles)
 
+    def test_grafana_disables_plugin_preinstall_and_has_optional_directories(self):
+        compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
+
+        self.assertIn('GF_PLUGINS_PREINSTALL_DISABLED: "true"', compose)
+        self.assertIn('GF_PLUGINS_PREINSTALL_AUTO_UPDATE: "false"', compose)
+        self.assertTrue(
+            (STACK_DIR / "grafana/provisioning/alerting/README.md").is_file()
+        )
+        self.assertTrue(
+            (STACK_DIR / "grafana/provisioning/plugins/README.md").is_file()
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

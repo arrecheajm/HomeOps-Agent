@@ -3,24 +3,40 @@
   "servers": {
     "container-host": {
       "cadvisor": {
-        "classification": "keep",
-        "rationale": "Useful container metrics source; retain while moving it to a pinned image and reviewed LAN exposure."
+        "classification": "rollback_hold",
+        "rationale": "Stopped legacy cAdvisor container retained only through the monitoring rollback window; the pinned replacement is active."
       },
       "filebrowser": {
         "classification": "retired",
         "rationale": "Removed through retire_disposable_containers on 2026-07-20 after the operator confirmed File Browser was empty and not wanted."
       },
       "monitoring-grafana-1": {
-        "classification": "redeploy",
-        "rationale": "Keep Grafana capability but start from clean provisioned state; the operator confirmed the basic dashboard and data do not need migration."
+        "classification": "rollback_hold",
+        "rationale": "Stopped legacy Grafana container retained only through acceptance and rollback testing; its basic dashboard and data do not need migration."
       },
       "monitoring-node_exporter-1": {
-        "classification": "redeploy",
-        "rationale": "Keep host metrics, but redeploy from desired state with a pinned image, restart policy, and reviewed port binding."
+        "classification": "rollback_hold",
+        "rationale": "Stopped legacy Node Exporter container retained only through the monitoring rollback window; the pinned private replacement is active."
       },
       "monitoring-prometheus-1": {
-        "classification": "redeploy",
-        "rationale": "Keep Prometheus capability but start with a clean bounded-retention volume, pinned image, restart policy, and read-only configuration."
+        "classification": "rollback_hold",
+        "rationale": "Stopped legacy Prometheus container and old volume are retained only through rollback acceptance; the clean bounded replacement is active."
+      },
+      "homeops-monitoring-cadvisor-1": {
+        "classification": "keep",
+        "rationale": "Active desired-state cAdvisor using the reviewed pinned image, private network, health check, and bounded resources."
+      },
+      "homeops-monitoring-grafana-1": {
+        "classification": "keep",
+        "rationale": "Active desired-state Grafana with LAN-only binding, protected authentication, Git provisioning, health checks, and bounded resources."
+      },
+      "homeops-monitoring-node-exporter-1": {
+        "classification": "keep",
+        "rationale": "Active desired-state Node Exporter on the private monitoring network with a pinned image and bounded resources."
+      },
+      "homeops-monitoring-prometheus-1": {
+        "classification": "keep",
+        "rationale": "Active desired-state Prometheus with private networking, read-only configuration, retained cross-server targets, and bounded retention."
       },
       "mysql57": {
         "classification": "retired",

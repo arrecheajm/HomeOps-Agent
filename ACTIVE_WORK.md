@@ -66,9 +66,10 @@ Recommended thinking level for the next work:
 - Check `git status --short --branch` at session start for branch cleanliness.
 - Latest fleet report run: `2026-07-21T12-13-24Z`; all 3 servers collected
   without errors.
-- Latest targeted `container-host` run: `2026-07-21T12-05-24Z`; sanitized
-  inventory confirmed all 6 original containers remained running immediately
-  after the monitoring image preflight.
+- Latest targeted `container-host` run: `2026-07-21T12-58-05Z`; sanitized
+  inventory confirmed the four new monitoring containers plus Portainer and
+  Watchtower running. The four stopped legacy monitoring containers remain as
+  rollback state.
 - Latest fleet status: 0 critical, 1 warning, and 2 informational findings.
 - `openvpn-server` has 3 non-security package updates pending; no reboot is
   required.
@@ -77,8 +78,9 @@ Recommended thinking level for the next work:
 - Read-only package inspection identified the five security entries as
   `libde265-0` (amd64 and i386), `libsqlite3-0` (amd64 and i386), and `wget`.
   The sixth entry is a normal `snapd` update; AgentDVR itself is not pending.
-- `container-host` has 1 non-security package update with Docker active, 6 of 6
-  original containers running, and no unhealthy containers or required reboot.
+- `container-host` has 1 non-security package update with Docker active, 6 of 10
+  containers running, four intentionally stopped for rollback, no unhealthy
+  containers, and no required reboot.
 - `container-host` has an i5-4210U with 4 CPU threads, about 8 GB RAM, and about
   80 GB free on the root disk. Current load and memory use are low.
 - The accepted direction is a LAN-only House OS combining Home Assistant,
@@ -94,9 +96,10 @@ Recommended thinking level for the next work:
   and container review.
 - Updated health script deployment completed through the approval-gated action:
   `history/actions/2026-07-20T17-12-38Z-container-host-deploy_health_script.json`.
-- Current disposition recommendations: keep `cadvisor`; redeploy Grafana,
-  node-exporter, and Prometheus from desired state; retire Portainer and
-  Watchtower only after replacements exist.
+- Current disposition recommendations: keep the four `homeops-monitoring-*`
+  desired-state containers; retain the four stopped legacy monitoring
+  containers only through rollback acceptance; retire Portainer and Watchtower
+  only after replacements exist.
 - Read-only evidence confirmed `/mnt/storage1`, `/mnt/storage2`, and
   `/mnt/storageWD320` are nearly empty directories on the 100 GB root
   filesystem, not external mounts. The host currently exposes only its internal
@@ -134,9 +137,8 @@ Recommended thinking level for the next work:
   preserved in the draft.
 - `stacks/monitoring/` now contains a Compose-valid clean replacement using
   Grafana 13.1.0, Prometheus 3.12.0, Node Exporter 1.11.1, and cAdvisor 0.57.0,
-  plus provisioning, rules, and a HomeOps overview dashboard. Deployment stays
-  disabled until exact-image health checks are validated and a bounded
-  deploy/rollback action passes dry run.
+  plus provisioning, rules, and a HomeOps overview dashboard. The approved
+  cutover completed on 2026-07-21 and the workload is now acceptance-pending.
 - Linux/amd64 manifest digests for all four pinned monitoring images were
   resolved read-only and committed in Compose. Re-resolve them immediately
   before deployment to detect tag movement.
@@ -147,18 +149,36 @@ Recommended thinking level for the next work:
   files. A targeted post-check confirmed the same six original containers were
   still running; the host now has one non-security package update pending.
 - Fixed `deploy_monitoring_stack` and `rollback_monitoring_stack` actions are
-  implemented and dry-run verified. Deployment stages six exact repository
+  implemented and dry-run verified. Deployment stages eight exact repository
   files, validates their hashes and the untracked Grafana secret, verifies the
   old and new identities, and automatically restores the old containers if
-  cutover fails. Rollback proves the old stack can restart before removing only
-  the new candidate containers and volumes. Neither action has been executed.
+  cutover fails. The approved deployment passed on 2026-07-21. Rollback proves
+  the old stack can restart before removing only the new candidate containers
+  and volumes; rollback has not been executed.
 - `provision_monitoring_secret` is implemented and dry-run verified. It
   idempotently generates a 32-byte URL-safe Grafana password at the fixed
   server path, validates owner/mode/non-symlink constraints, never prints the
   value, and copies it to the Git-ignored local recovery path. Its approved
   execution passed on 2026-07-21; the local recovery file exists, is non-empty,
   and is confirmed ignored by Git.
-- Full regression coverage now passes with 120 tests.
+- Independent post-cutover checks confirmed all four pinned services healthy,
+  Grafana as the only LAN port, private ports 8080/9090/9100 unreachable,
+  the `HomeOps Overview` dashboard provisioned, and all five Prometheus targets
+  up (`prometheus`, `node-exporter`, `cadvisor`, `openvpn-server`, and
+  `ispy-server`). The four stopped legacy containers and both old data volumes
+  remain available for rollback.
+- Grafana loaded the secret file but its clean database initially accepted the
+  default `admin/admin`. The password was immediately synchronized to the
+  protected secret through Grafana's API without displaying it; the protected
+  login now returns 200 and the default returns 401. The deployment action now
+  performs a non-logging stdin password synchronization for future rebuilds.
+- Grafana startup also logged bundled-plugin writes against the read-only root
+  and missing optional provisioning directories. The bundle now disables
+  plugin preinstall/auto-update and includes those directories.
+  `repair_monitoring_grafana` is implemented and dry-run verified with Compose
+  backup/recovery and guards that preserve cAdvisor, Node Exporter, and
+  Prometheus identities. It still requires exact approval.
+- Full regression coverage now passes with 124 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -172,19 +192,21 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Review and, only after a separate exact approval, run
-   `deploy_monitoring_stack`; then verify Grafana login, targets, dashboard,
-   private metrics ports, and recovery before any cleanup.
-2. Schedule the five `ispy-server` security package updates through the
+1. After exact approval, run `repair_monitoring_grafana`; verify clean startup
+   logs, protected login, rejected default login, and unchanged metric-service
+   container identities.
+2. Prove monitoring reboot persistence and separately test
+   `rollback_monitoring_stack`; do not delete legacy containers or volumes yet.
+3. Schedule the five `ispy-server` security package updates through the
    existing approval gate, followed by service and recording verification.
-3. Record the smart-switch and garage-controller brands/apps, phone platform,
+4. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-4. Define version-pinned Compose bundle metadata and approval-gated stack
+5. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-5. Implement USB mount/sentinel preflight before storage-dependent deployment.
-6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+6. Implement USB mount/sentinel preflight before storage-dependent deployment.
+7. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-7. Prove reboot persistence and backup/restore for each new stateful application
+8. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

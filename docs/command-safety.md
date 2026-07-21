@@ -267,11 +267,13 @@ Approve action provision_monitoring_secret on container-host
 ```
 
 Monitoring deployment and rollback are separate fixed actions. Deployment
-uploads only the six committed runtime files, verifies their SHA-256 hashes,
+uploads only the eight committed runtime files, verifies their SHA-256 hashes,
 requires the untracked Grafana secret to be a non-symlink owned by the SSH user
 with mode `0600`, verifies the exact old containers and cached images, and then
-starts the new stack. If cutover fails, its exit trap removes the partial new
-containers while preserving their volumes and restarts the old four containers:
+starts the new stack. It synchronizes the Grafana database password from stdin
+without placing it in a command argument. If cutover fails, its exit trap
+removes the partial new containers while preserving their volumes and restarts
+the old four containers:
 
 ```powershell
 python -m controller.main actions run deploy_monitoring_stack --server container-host --dry-run
@@ -281,6 +283,24 @@ The corresponding approval phrase is:
 
 ```text
 Approve action deploy_monitoring_stack on container-host
+```
+
+The approved deployment completed on 2026-07-21. Acceptance found Grafana
+plugin-preinstall writes against its read-only root and missing optional
+provisioning directories. `repair_monitoring_grafana` stages and hash-checks a
+candidate Compose file, backs up the live Compose file, recreates only Grafana,
+synchronizes its password from stdin, verifies the protected/default logins and
+startup logs, and proves the other three monitoring container IDs did not
+change. Its failure trap restores the prior Compose file:
+
+```powershell
+python -m controller.main actions run repair_monitoring_grafana --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action repair_monitoring_grafana on container-host
 ```
 
 Rollback first stops the new stack and proves the preserved old containers can
