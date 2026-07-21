@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 126 tests, and the health script passes
+- Python regression suite passes with 127 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
@@ -200,6 +200,10 @@ backup target.
   login, provisioned HomeOps dashboard, five healthy Prometheus targets, four
   healthy pinned containers, and private raw metric ports. The four old
   containers are stopped and old volumes remain for rollback.
+- An approved controlled host reboot subsequently confirmed that all four
+  desired monitoring containers return healthy, all four legacy containers
+  remain stopped, all five targets return up, authentication and friendly
+  labels persist, and only Grafana remains exposed to the LAN.
 - Grafana 13 plugin-preinstall and missing optional provisioning-directory log
   errors were found during acceptance. The bundle now disables those plugin
   writes and includes the directories. `repair_monitoring_grafana` is bounded,

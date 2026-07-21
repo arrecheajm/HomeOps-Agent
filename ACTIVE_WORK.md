@@ -66,7 +66,7 @@ Recommended thinking level for the next work:
 - Check `git status --short --branch` at session start for branch cleanliness.
 - Latest fleet report run: `2026-07-21T12-13-24Z`; all 3 servers collected
   without errors.
-- Latest targeted `container-host` run: `2026-07-21T14-14-23Z`; sanitized
+- Latest targeted `container-host` run: `2026-07-21T15-18-21Z`; sanitized
   inventory confirmed the four new monitoring containers plus Portainer and
   Watchtower running. The four stopped legacy monitoring containers remain as
   rollback state.
@@ -186,7 +186,7 @@ Recommended thinking level for the next work:
   clean startup, protected login, rejected `admin/admin`, the HomeOps dashboard,
   five of five targets up, only port 3000 exposed, and unchanged metric-service
   identities.
-- Full regression coverage now passes with 126 tests.
+- Full regression coverage now passes with 127 tests.
 - The Git-provisioned Grafana dashboard now uses `server_id` for host legends
   and target health: `192.168.86.25:9100` maps to `openvpn-server`,
   `192.168.86.27:9100` to `ispy-server`, and `node-exporter:9100` to
@@ -194,6 +194,11 @@ Recommended thinking level for the next work:
   Grafana HomeOps Overview. The approved live synchronization completed, and
   the Grafana API confirmed `{{server_id}}` legends, a friendly `Server` target
   column, and hidden raw instances.
+- The approved controlled `container-host` reboot completed on 2026-07-21.
+  Fresh inventory confirmed all four desired monitoring containers healthy,
+  all four legacy rollback containers stopped, 5/5 scrape targets up,
+  protected/default authentication correct, friendly labels intact, and only
+  Grafana port 3000 reachable on the LAN.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -207,20 +212,18 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Prove monitoring reboot persistence; do not delete legacy containers or
-   volumes yet.
-2. Separately decide when to test `rollback_monitoring_stack`, which restores
+1. Decide when to test `rollback_monitoring_stack`, which restores
    the legacy stack and removes the new candidate volumes by design.
-3. Schedule the five `ispy-server` security package updates through the
+2. Schedule the five `ispy-server` security package updates through the
    existing approval gate, followed by service and recording verification.
-4. Record the smart-switch and garage-controller brands/apps, phone platform,
+3. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-5. Define version-pinned Compose bundle metadata and approval-gated stack
+4. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-6. Implement USB mount/sentinel preflight before storage-dependent deployment.
-7. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+5. Implement USB mount/sentinel preflight before storage-dependent deployment.
+6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-8. Prove reboot persistence and backup/restore for each new stateful application
+7. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

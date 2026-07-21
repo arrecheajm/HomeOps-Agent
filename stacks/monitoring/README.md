@@ -2,7 +2,7 @@
 
 This is the deployed desired-state replacement for the proof-of-concept
 monitoring containers. Cutover completed on 2026-07-21; the old containers and
-volumes remain available until reboot and rollback acceptance are proven.
+volumes remain available until rollback acceptance is proven.
 
 Pinned review baseline:
 
@@ -67,5 +67,5 @@ Before any server change:
    restored the prior Compose file when its verifier reproduced the secret
    permission problem. The corrected loopback/bootstrap repair is dry-run
    verified, approved, and completed with all acceptance checks passing.
-7. Keep the old monitoring containers and volumes available until reboot
-   persistence and the rollback test pass.
+7. Controlled reboot persistence passed on 2026-07-21. Keep the old monitoring
+   containers and volumes available until the rollback test passes.

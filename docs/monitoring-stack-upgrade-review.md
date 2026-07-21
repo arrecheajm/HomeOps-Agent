@@ -182,7 +182,7 @@ Grafana state and Prometheus time-series data stay in named Docker volumes.
 - [x] Prometheus reports every expected scrape target as up.
 - [x] The HomeOps dashboard shows host, disk, container, and target health.
 - [x] Log rotation and Prometheus retention are bounded.
-- [ ] The stack returns successfully after an approved host reboot.
+- [x] The stack returns successfully after an approved host reboot.
 - [ ] Rollback is tested before old volumes or files are removed.
 
 ## Deployment Result And Remaining Gates
@@ -229,5 +229,11 @@ second approved execution completed successfully. Independent acceptance
 confirmed the protected login, rejected default login, clean startup logs,
 HomeOps dashboard, five of five scrape targets up, Grafana as the only exposed
 monitoring port, and unchanged metric-service identities. Reboot and rollback
-acceptance remain separate gates; no legacy container or volume should be removed
-before both are proven.
+acceptance remained separate gates at that point.
+
+The approved controlled host reboot completed on 2026-07-21. Fresh inventory
+confirmed the four desired containers restarted healthy while the four legacy
+rollback containers stayed stopped. Independent checks confirmed protected
+authentication, rejected `admin/admin`, friendly `server_id` labels, 5/5
+targets up, and only port 3000 reachable on the LAN. Reboot persistence is
+accepted; rollback is the only remaining monitoring gate.

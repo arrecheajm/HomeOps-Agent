@@ -300,13 +300,13 @@ class ContainerReviewTests(unittest.TestCase):
 
         titles = [item["title"] for item in review["recommendations"]]
         self.assertNotIn("Move useful monitoring services into desired state", titles)
-        self.assertIn("Prove monitoring reboot persistence", titles)
-        reboot = next(
+        self.assertIn("Test the preserved monitoring rollback", titles)
+        rollback = next(
             item
             for item in review["recommendations"]
-            if item["title"] == "Prove monitoring reboot persistence"
+            if item["title"] == "Test the preserved monitoring rollback"
         )
-        self.assertEqual(reboot["action_id"], "reboot_server")
+        self.assertEqual(rollback["action_id"], "rollback_monitoring_stack")
         container = review["server"]["docker"]["containers"][0]
         self.assertEqual(container["classification"], "rollback_hold")
         self.assertIn("rollback", container["classification_rationale"])
@@ -332,6 +332,28 @@ class ContainerReviewTests(unittest.TestCase):
             if item["title"] == "Complete monitoring acceptance cleanup"
         )
         self.assertEqual(repair["action_id"], "repair_monitoring_grafana")
+
+    def test_build_container_review_keeps_reboot_gate_when_prerequisite_remains(self):
+        review = build_container_review(
+            self._run_summary(),
+            "container-host",
+            workloads={
+                "workloads": [
+                    {
+                        "workload_id": "monitoring",
+                        "state": "acceptance_pending",
+                        "prerequisites": ["verify reboot persistence"],
+                    }
+                ]
+            },
+        )
+
+        reboot = next(
+            item
+            for item in review["recommendations"]
+            if item["title"] == "Prove monitoring reboot persistence"
+        )
+        self.assertEqual(reboot["action_id"], "reboot_server")
 
     def test_build_container_review_recommends_bounded_disposable_retirement(self):
         run = self._run_summary()

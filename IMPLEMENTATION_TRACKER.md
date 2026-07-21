@@ -97,11 +97,11 @@ Live status:
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 - The live monitoring preflight is complete and the first
   `stacks/monitoring/` replacement bundle is implemented. Docker Compose
-  renders it successfully; 126 tests cover version pinning, LAN exposure,
+  renders it successfully; 127 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
   Linux/amd64 registry digests. Exact-image checks and the approved cutover have
-  passed; Grafana startup cleanup passed, while reboot and rollback acceptance
-  remain.
+  passed; Grafana startup cleanup and reboot persistence passed, while rollback
+  acceptance remains.
 - The approved `preflight_monitoring_images` execution passed on 2026-07-21;
   targeted inventory afterward confirmed the same 6 of 6 original containers
   running. The fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`
@@ -139,6 +139,10 @@ Live status:
   links to Grafana's HomeOps Overview. The approved live sync passed, and the
   Grafana API confirmed the friendly legends/table fields and hidden raw
   instance column.
+- The approved controlled host reboot passed. Post-reboot inventory and
+  independent checks confirmed four healthy desired monitoring containers,
+  four stopped legacy rollback containers, protected authentication, friendly
+  dashboard labels, 5/5 scrape targets, and only Grafana exposed to the LAN.
 
 Current operating model:
 
@@ -270,8 +274,8 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next operational item is verifying monitoring reboot persistence and then
-separately testing rollback before old monitoring state is removed. The USB
+The next operational item is separately testing rollback before old monitoring
+state is removed. The USB
 mount/sentinel preflight follows. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
