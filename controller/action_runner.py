@@ -751,11 +751,15 @@ def _deploy_monitoring_stack_commands(
         "set -eu; "
         f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT; "
         f"docker stop -- {old_names}; "
+        "HOMEOPS_LAN_IP=127.0.0.1 "
         f"{_monitoring_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
         "docker exec -i homeops-monitoring-grafana-1 grafana cli --homepath "
         "/usr/share/grafana admin "
         "reset-admin-password --password-from-stdin "
         f"< {quote(REMOTE_MONITORING_SECRET)}; "
+        f"{_grafana_protected_auth_check('http://127.0.0.1:3000/api/user')}; "
+        f"{_grafana_default_auth_rejected_check('http://127.0.0.1:3000/api/user')}; "
+        f"{_monitoring_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
         "trap - HUP INT TERM EXIT; "
         "printf 'monitoring_deployed\\n'"
     )
@@ -798,19 +802,16 @@ def _deploy_monitoring_stack_commands(
         verify_parts.append(f"docker volume inspect {quote(volume)} >/dev/null")
     verify_parts.extend(
         (
-            "docker exec homeops-monitoring-grafana-1 sh -c "
-            + _shell_single_quote(
-                "curl --fail --silent --user "
-                '"admin:$(cat /run/secrets/grafana_admin_password)" '
-                "http://127.0.0.1:3000/api/user >/dev/null"
+            _grafana_protected_auth_check(
+                "http://192.168.86.58:3000/api/user"
             ),
-            "if docker exec homeops-monitoring-grafana-1 curl --fail --silent "
-            "--user admin:admin http://127.0.0.1:3000/api/user >/dev/null; "
-            "then exit 1; fi",
+            _grafana_default_auth_rejected_check(
+                "http://192.168.86.58:3000/api/user"
+            ),
             "if docker logs homeops-monitoring-grafana-1 2>&1 | grep -Eq "
             + _shell_single_quote(
                 "Failed to install plugin|provisioning/(plugins|alerting).*"
-                "no such file or directory"
+                "no such file or directory|grafana_admin_password: Permission denied"
             )
             + "; then exit 1; fi",
         )
@@ -1003,11 +1004,15 @@ def _repair_monitoring_grafana_commands(
         "prometheus_id=$(docker inspect --format '{{.Id}}' "
         "homeops-monitoring-prometheus-1); "
         f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT; "
+        "HOMEOPS_LAN_IP=127.0.0.1 "
         f"{_monitoring_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
         "docker exec -i homeops-monitoring-grafana-1 grafana cli --homepath "
         "/usr/share/grafana admin "
         "reset-admin-password --password-from-stdin "
         f"< {quote(REMOTE_MONITORING_SECRET)}; "
+        f"{_grafana_protected_auth_check('http://127.0.0.1:3000/api/user')}; "
+        f"{_grafana_default_auth_rejected_check('http://127.0.0.1:3000/api/user')}; "
+        f"{_monitoring_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
         "test \"$(docker inspect --format '{{.Id}}' "
         "homeops-monitoring-cadvisor-1)\" = \"$cadvisor_id\"; "
         "test \"$(docker inspect --format '{{.Id}}' "
@@ -1018,20 +1023,14 @@ def _repair_monitoring_grafana_commands(
         "GF_PLUGINS_PREINSTALL_DISABLED)\" = true; "
         "test \"$(docker exec homeops-monitoring-grafana-1 printenv "
         "GF_PLUGINS_PREINSTALL_AUTO_UPDATE)\" = false; "
-        "docker exec homeops-monitoring-grafana-1 sh -c "
-        + _shell_single_quote(
-            "curl --fail --silent --user "
-            '"admin:$(cat /run/secrets/grafana_admin_password)" '
-            "http://127.0.0.1:3000/api/user >/dev/null"
-        )
-        + "; "
-        "if docker exec homeops-monitoring-grafana-1 curl --fail --silent "
-        "--user admin:admin http://127.0.0.1:3000/api/user >/dev/null; "
-        "then exit 1; fi; "
+        "test \"$(docker port homeops-monitoring-grafana-1 3000/tcp)\" "
+        "= 192.168.86.58:3000; "
+        f"{_grafana_protected_auth_check('http://192.168.86.58:3000/api/user')}; "
+        f"{_grafana_default_auth_rejected_check('http://192.168.86.58:3000/api/user')}; "
         "if docker logs homeops-monitoring-grafana-1 2>&1 | grep -Eq "
         + _shell_single_quote(
             "Failed to install plugin|provisioning/(plugins|alerting).*"
-            "no such file or directory"
+            "no such file or directory|grafana_admin_password: Permission denied"
         )
         + "; then exit 1; fi; "
         "trap - HUP INT TERM EXIT; "
@@ -1117,6 +1116,33 @@ def _monitoring_compose_command(*parts: str) -> str:
         REMOTE_MONITORING_COMPOSE,
         *parts,
     )
+
+
+def _grafana_protected_auth_check(endpoint: str) -> str:
+    """Verify the protected admin credential without exposing it in argv/output."""
+
+    script = (
+        "import base64,urllib.request;"
+        f"p=open({REMOTE_MONITORING_SECRET!r},encoding='utf-8').read().strip();"
+        f"r=urllib.request.Request({endpoint!r},headers={{'Authorization':'Basic '+"
+        "base64.b64encode(('admin:'+p).encode()).decode()});"
+        "assert urllib.request.urlopen(r,timeout=10).status==200"
+    )
+    return _remote_command("python3", "-c", script)
+
+
+def _grafana_default_auth_rejected_check(endpoint: str) -> str:
+    """Require Grafana to reject the factory admin credential with HTTP 401."""
+
+    script = (
+        "import base64,urllib.error,urllib.request;"
+        f"r=urllib.request.Request({endpoint!r},headers={{'Authorization':'Basic '+"
+        "base64.b64encode(b'admin:admin').decode()});"
+        "exec(\"try:\\n urllib.request.urlopen(r,timeout=10)\\nexcept "
+        "urllib.error.HTTPError as e:\\n assert e.code==401\\nelse:\\n raise "
+        "AssertionError('default credential accepted')\")"
+    )
+    return _remote_command("python3", "-c", script)
 
 
 def _deploy_health_script_commands(server: ServerInventoryItem) -> list[list[str]]:

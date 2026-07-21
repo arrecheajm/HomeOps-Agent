@@ -26,8 +26,9 @@ tag. The version decision and old-to-new rationale are documented in
   version-controlled files.
 - Grafana plugin preinstall and automatic plugin updates are disabled so its
   read-only image remains immutable.
-- The Grafana admin password is read from a server-side Docker secret file and
-  is never stored in Git.
+- The Grafana admin password remains in a server-side `0600` file outside the
+  container and Git. The lifecycle passes it through stdin during a loopback
+  bootstrap, verifies authentication, and only then exposes Grafana to the LAN.
 - New volume names keep this clean rebuild isolated from old rollback data.
 
 ## Local Validation
@@ -57,8 +58,10 @@ Before any server change:
 5. The fixed `deploy_monitoring_stack` action completed successfully. Health,
    dashboard provisioning, five scrape targets, authentication, and LAN port
    isolation passed.
-6. Acceptance found Grafana plugin-preinstall and optional-directory startup
-   errors. `repair_monitoring_grafana` is implemented and dry-run verified but
-   still needs separate approval.
+6. Acceptance found Grafana plugin-preinstall, optional-directory, and
+   unreadable secret-mount startup errors. The first approved repair safely
+   restored the prior Compose file when its verifier reproduced the secret
+   permission problem. The corrected loopback/bootstrap repair is dry-run
+   verified and needs fresh approval.
 7. Keep the old monitoring containers and volumes available until the repair,
    reboot persistence, and rollback test pass.

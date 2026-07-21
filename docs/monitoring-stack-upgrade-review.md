@@ -194,12 +194,13 @@ metric ports reject LAN connections, the HomeOps dashboard is provisioned, and
 all five Prometheus targets report up. The old containers are stopped and their
 old volumes remain intact for rollback.
 
-Post-cutover authentication testing found that Grafana loaded the secret file
-but initialized its clean database with the default password. The default was
+Post-cutover authentication testing found that Grafana's unprivileged process
+could not read the host-owned `0600` secret bind mount. The default was
 immediately replaced through Grafana's password API without logging the secret;
-the protected credential now returns HTTP 200 and `admin/admin` returns 401.
-The deployment lifecycle now also synchronizes the password from stdin so a
-future clean rebuild cannot repeat this gap.
+the protected credential returns HTTP 200 and `admin/admin` returns 401. The
+revised lifecycle keeps the secret outside the container, initially binds
+Grafana to loopback, synchronizes the password from stdin, verifies both logins
+from the host, and only then recreates Grafana on its LAN binding.
 
 This follows Grafana's documented admin-password reset workflow with an
 explicit `/usr/share/grafana` home path, while the pinned image's CLI adds the
@@ -212,9 +213,13 @@ now disables plugin preinstall/auto-update and includes those directories.
 These settings correspond to Grafana's documented `preinstall_disabled` and
 `preinstall_auto_update` options in the official
 [configuration reference](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/).
-`repair_monitoring_grafana` is implemented and dry-run verified to apply only
-that Grafana change, preserve the other three monitoring container identities,
-and restore the prior Compose file if verification fails. It has not been
-executed and requires its own exact approval. Reboot and rollback acceptance
-also remain separate gates; no legacy container or volume should be removed
+The first approved `repair_monitoring_grafana` attempt reached final
+verification, where its container-side check could not read the `0600` host
+file. Its recovery trap restored the prior Compose file; protected login,
+default-login rejection, and all four service health checks remained intact.
+The corrected action is dry-run verified to use loopback bootstrap and
+host-side authentication, preserve the other three monitoring container
+identities, and restore the prior Compose file if verification fails. It needs
+a fresh exact approval. Reboot and rollback acceptance remain separate gates;
+no legacy container or volume should be removed
 before both are proven.

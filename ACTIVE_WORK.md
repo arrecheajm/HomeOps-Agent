@@ -167,18 +167,23 @@ Recommended thinking level for the next work:
   up (`prometheus`, `node-exporter`, `cadvisor`, `openvpn-server`, and
   `ispy-server`). The four stopped legacy containers and both old data volumes
   remain available for rollback.
-- Grafana loaded the secret file but its clean database initially accepted the
-  default `admin/admin`. The password was immediately synchronized to the
-  protected secret through Grafana's API without displaying it; the protected
-  login now returns 200 and the default returns 401. The deployment action now
-  performs a non-logging stdin password synchronization for future rebuilds.
+- Grafana's unprivileged process cannot read the host-owned `0600` secret bind
+  mount. The password was immediately synchronized through Grafana's API
+  without displaying it; the protected login returns 200 and the default
+  returns 401. The revised lifecycle does not mount the secret. It bootstraps
+  Grafana on loopback, passes the password through stdin, verifies it from the
+  host, and only then exposes Grafana to the LAN.
 - Grafana startup also logged bundled-plugin writes against the read-only root
   and missing optional provisioning directories. The bundle now disables
   plugin preinstall/auto-update and includes those directories.
-  `repair_monitoring_grafana` is implemented and dry-run verified with Compose
-  backup/recovery and guards that preserve cAdvisor, Node Exporter, and
-  Prometheus identities. It still requires exact approval.
-- Full regression coverage now passes with 124 tests.
+  The first approved `repair_monitoring_grafana` attempt failed only because
+  its container-side verifier could not read that `0600` file; automatic
+  recovery restored the prior Compose file. All services and protected login
+  remained healthy. The corrected repair is dry-run verified with loopback
+  bootstrap, host-side authentication checks, Compose recovery, and guards that
+  preserve cAdvisor, Node Exporter, and Prometheus identities. It requires a
+  fresh exact approval.
+- Full regression coverage now passes with 125 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.

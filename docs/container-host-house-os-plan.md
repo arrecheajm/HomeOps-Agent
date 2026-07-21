@@ -203,7 +203,9 @@ backup target.
 - Grafana 13 plugin-preinstall and missing optional provisioning-directory log
   errors were found during acceptance. The bundle now disables those plugin
   writes and includes the directories. `repair_monitoring_grafana` is bounded,
-  recovery-aware, and dry-run verified; execution remains approval-gated.
+  recovery-aware, and dry-run verified. Its first approved attempt safely
+  recovered after discovering that the container could not read the host-owned
+  `0600` secret. The corrected loopback/bootstrap design awaits fresh approval.
 
 ## Current Container Disposition
 

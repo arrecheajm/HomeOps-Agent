@@ -63,6 +63,13 @@ class MonitoringStackTests(unittest.TestCase):
             (STACK_DIR / "grafana/provisioning/plugins/README.md").is_file()
         )
 
+    def test_grafana_secret_is_bootstrapped_outside_the_container(self):
+        compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
+
+        self.assertNotIn("GF_SECURITY_ADMIN_PASSWORD__FILE", compose)
+        self.assertNotIn("/run/secrets/grafana_admin_password", compose)
+        self.assertNotIn("secrets:", compose)
+
 
 if __name__ == "__main__":
     unittest.main()

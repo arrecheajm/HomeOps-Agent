@@ -117,15 +117,19 @@ Live status:
   Grafana reachable on the LAN, the provisioned HomeOps dashboard present, and
   all five Prometheus targets up. Four stopped legacy monitoring containers and
   both old data volumes remain available for rollback.
-- Grafana loaded the secret but initialized its clean database with the default
-  password. The default was immediately replaced through Grafana's password API
-  without logging the protected value; the secret now authenticates and
-  `admin/admin` is rejected. The deploy action now synchronizes from stdin.
+- Grafana's unprivileged process could not read the host-owned `0600` secret
+  bind mount. The default was immediately replaced through Grafana's password
+  API without logging the protected value; the secret authenticates and
+  `admin/admin` is rejected. The revised lifecycle keeps the secret outside the
+  container, bootstraps on loopback through stdin, verifies from the host, and
+  exposes Grafana to the LAN only after protected authentication succeeds.
 - Grafana 13 also attempted bundled-plugin writes on its read-only root and
   logged absent optional provisioning directories. The bundle now disables
   plugin preinstall/auto-update and includes those directories.
-  `repair_monitoring_grafana` is implemented and dry-run verified with rollback
-  to the prior Compose file, but has not been executed.
+  The first approved `repair_monitoring_grafana` execution failed at its
+  container-side secret read and automatically restored the prior Compose file.
+  The corrected action is dry-run verified with host-side authentication and
+  rollback to the prior Compose file; it awaits fresh approval.
 
 Current operating model:
 

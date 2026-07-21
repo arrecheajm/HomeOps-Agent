@@ -270,8 +270,10 @@ Monitoring deployment and rollback are separate fixed actions. Deployment
 uploads only the eight committed runtime files, verifies their SHA-256 hashes,
 requires the untracked Grafana secret to be a non-symlink owned by the SSH user
 with mode `0600`, verifies the exact old containers and cached images, and then
-starts the new stack. It synchronizes the Grafana database password from stdin
-without placing it in a command argument. If cutover fails, its exit trap
+starts Grafana on loopback. It synchronizes the database password from stdin
+without placing it in a command argument, verifies authentication from the
+host, and only then switches Grafana to its LAN binding. The secret is not
+mounted into the container. If cutover fails, its exit trap
 removes the partial new containers while preserving their volumes and restarts
 the old four containers:
 
@@ -292,6 +294,11 @@ candidate Compose file, backs up the live Compose file, recreates only Grafana,
 synchronizes its password from stdin, verifies the protected/default logins and
 startup logs, and proves the other three monitoring container IDs did not
 change. Its failure trap restores the prior Compose file:
+
+The first approved repair attempt failed at a container-side read of the
+host-owned `0600` secret and automatically restored the prior Compose file. The
+corrected action performs host-side authentication checks and requires a fresh
+approval.
 
 ```powershell
 python -m controller.main actions run repair_monitoring_grafana --server container-host --dry-run
