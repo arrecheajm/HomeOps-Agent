@@ -7,7 +7,14 @@ from pathlib import Path
 from typing import Any
 
 
-VALID_STATES = {"adopt", "redeploy", "planned", "acceptance_pending", "active"}
+VALID_STATES = {
+    "adopt",
+    "redeploy",
+    "planned",
+    "acceptance_pending",
+    "cleanup_pending",
+    "active",
+}
 VALID_STORAGE_CLASSES = {"internal", "external", "mixed"}
 
 

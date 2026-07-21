@@ -406,6 +406,53 @@ class ActionRunnerTests(unittest.TestCase):
                 actions_dir=self.actions_dir,
             )
 
+    def test_retire_legacy_monitoring_stack_is_exactly_bounded(self):
+        attempt = run_action(
+            "retire_legacy_monitoring_stack",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(command[-1] for command in record["commands"])
+
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 3)
+        self.assertIn(
+            "docker rm -- cadvisor monitoring-grafana-1 "
+            "monitoring-node_exporter-1 monitoring-prometheus-1",
+            rendered,
+        )
+        self.assertIn(
+            "docker volume rm -- monitoring_grafana-data "
+            "monitoring_prometheus-data",
+            rendered,
+        )
+        self.assertNotIn("docker system prune", rendered)
+        self.assertNotIn(
+            "docker volume rm -- homeops-monitoring_grafana-data",
+            rendered,
+        )
+        self.assertIn("admin:admin", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action retire_legacy_monitoring_stack on container-host",
+        )
+
+    def test_retire_legacy_monitoring_stack_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "retire_legacy_monitoring_stack",
+                "container-host",
+                [self._container_server()],
+                {"container": "anything"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
     def test_migrate_watchtower_container_dry_run_uses_maintained_image(self):
         attempt = run_action(
             "migrate_watchtower_container",

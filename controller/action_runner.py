@@ -381,6 +381,14 @@ def build_action_commands(
             )
         return _rollback_monitoring_stack_commands(server)
 
+    if action_id == "retire_legacy_monitoring_stack":
+        if arguments:
+            raise ActionError(
+                "retire_legacy_monitoring_stack does not accept arguments; its "
+                "legacy containers and volumes are fixed."
+            )
+        return _retire_legacy_monitoring_stack_commands(server)
+
     if action_id == "restart_service":
         service = _approved_service_name(server, arguments)
         return [
@@ -1103,6 +1111,87 @@ def _rollback_monitoring_stack_commands(
         + [server.ssh_target, _remote_command("sh", "-lc", rollback)],
         build_ssh_base_command(server)
         + [server.ssh_target, _remote_command("sh", "-lc", verify)],
+    ]
+
+
+def _retire_legacy_monitoring_stack_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Remove accepted legacy monitoring state after proving desired state."""
+
+    preflight_parts = ["set -eu"]
+    for name, image in NEW_MONITORING_CONTAINERS.items():
+        preflight_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy",
+            )
+        )
+    for name, image in OLD_MONITORING_CONTAINERS.items():
+        preflight_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = false",
+            )
+        )
+    for volume in (*NEW_MONITORING_VOLUMES, *OLD_MONITORING_VOLUMES):
+        preflight_parts.append(f"docker volume inspect {quote(volume)} >/dev/null")
+    preflight_parts.extend(
+        (
+            _grafana_protected_auth_check(
+                "http://192.168.86.58:3000/api/user"
+            ),
+            _grafana_default_auth_rejected_check(
+                "http://192.168.86.58:3000/api/user"
+            ),
+            "printf 'legacy_monitoring_retirement_preflight_ok\\n'",
+        )
+    )
+
+    old_names = " ".join(quote(name) for name in OLD_MONITORING_CONTAINERS)
+    old_volumes = " ".join(quote(volume) for volume in OLD_MONITORING_VOLUMES)
+    retire = (
+        "set -eu; "
+        f"docker rm -- {old_names}; "
+        f"docker volume rm -- {old_volumes}; "
+        "printf 'legacy_monitoring_retired\\n'"
+    )
+
+    verify_parts = ["set -eu"]
+    for name in OLD_MONITORING_CONTAINERS:
+        verify_parts.append(
+            f"if docker container inspect {quote(name)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for volume in OLD_MONITORING_VOLUMES:
+        verify_parts.append(
+            f"if docker volume inspect {quote(volume)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for name in NEW_MONITORING_CONTAINERS:
+        verify_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy",
+            )
+        )
+    for volume in NEW_MONITORING_VOLUMES:
+        verify_parts.append(f"docker volume inspect {quote(volume)} >/dev/null")
+    verify_parts.append("printf 'legacy_monitoring_retirement_verified\\n'")
+
+    return [
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(preflight_parts))],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", retire)],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(verify_parts))],
     ]
 
 

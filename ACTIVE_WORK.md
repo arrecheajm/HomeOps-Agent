@@ -97,9 +97,9 @@ Recommended thinking level for the next work:
 - Updated health script deployment completed through the approval-gated action:
   `history/actions/2026-07-20T17-12-38Z-container-host-deploy_health_script.json`.
 - Current disposition recommendations: keep the four `homeops-monitoring-*`
-  desired-state containers; retain the four stopped legacy monitoring
-  containers only through rollback acceptance; retire Portainer and Watchtower
-  only after replacements exist.
+  desired-state containers; retire the four stopped legacy monitoring
+  containers and two old volumes through the final bounded cleanup action;
+  retire Portainer and Watchtower only after replacements exist.
 - Read-only evidence confirmed `/mnt/storage1`, `/mnt/storage2`, and
   `/mnt/storageWD320` are nearly empty directories on the 100 GB root
   filesystem, not external mounts. The host currently exposes only its internal
@@ -154,7 +154,8 @@ Recommended thinking level for the next work:
   old and new identities, and automatically restores the old containers if
   cutover fails. The approved deployment passed on 2026-07-21. Rollback proves
   the old stack can restart before removing only the new candidate containers
-  and volumes; rollback has not been executed.
+  and volumes. The destructive rollback test and subsequent clean redeployment
+  both completed successfully.
 - `provision_monitoring_secret` is implemented and dry-run verified. It
   idempotently generates a 32-byte URL-safe Grafana password at the fixed
   server path, validates owner/mode/non-symlink constraints, never prints the
@@ -186,7 +187,7 @@ Recommended thinking level for the next work:
   clean startup, protected login, rejected `admin/admin`, the HomeOps dashboard,
   five of five targets up, only port 3000 exposed, and unchanged metric-service
   identities.
-- Full regression coverage now passes with 127 tests.
+- Full regression coverage now passes with 130 tests.
 - The Git-provisioned Grafana dashboard now uses `server_id` for host legends
   and target health: `192.168.86.25:9100` maps to `openvpn-server`,
   `192.168.86.27:9100` to `ispy-server`, and `node-exporter:9100` to
@@ -199,6 +200,15 @@ Recommended thinking level for the next work:
   all four legacy rollback containers stopped, 5/5 scrape targets up,
   protected/default authentication correct, friendly labels intact, and only
   Grafana port 3000 reachable on the LAN.
+- The approved destructive rollback started all four legacy containers and
+  removed the desired containers plus their new volumes. Fresh inventory proved
+  that state, then the approved clean redeployment rebuilt the desired stack.
+  Independent checks again confirmed protected authentication, friendly labels,
+  5/5 targets, and private metric ports. Rollback acceptance is complete.
+- `retire_legacy_monitoring_stack` is implemented and dry-run verified to
+  remove only the four stopped legacy containers and two old named volumes
+  after rechecking desired-state health and Grafana authentication. Execution
+  remains approval-gated.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -212,8 +222,8 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Decide when to test `rollback_monitoring_stack`, which restores
-   the legacy stack and removes the new candidate volumes by design.
+1. After exact approval, run `retire_legacy_monitoring_stack`, collect fresh
+   inventory, and mark monitoring operational.
 2. Schedule the five `ispy-server` security package updates through the
    existing approval gate, followed by service and recording verification.
 3. Record the smart-switch and garage-controller brands/apps, phone platform,

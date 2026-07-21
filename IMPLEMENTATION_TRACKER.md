@@ -41,6 +41,7 @@ Live status:
   `retire_disposable_containers`, `preflight_monitoring_images`,
   `provision_monitoring_secret`, `deploy_monitoring_stack`,
   `repair_monitoring_grafana`, `rollback_monitoring_stack`,
+  `retire_legacy_monitoring_stack`,
   `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
   `apply_package_updates`, `apply_security_updates`, and `reboot_server`
   support dry-run, exact approval, execution, and action history.
@@ -97,7 +98,7 @@ Live status:
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 - The live monitoring preflight is complete and the first
   `stacks/monitoring/` replacement bundle is implemented. Docker Compose
-  renders it successfully; 127 tests cover version pinning, LAN exposure,
+  renders it successfully; 130 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
   Linux/amd64 registry digests. Exact-image checks and the approved cutover have
   passed; Grafana startup cleanup and reboot persistence passed, while rollback
@@ -106,7 +107,8 @@ Live status:
   targeted inventory afterward confirmed the same 6 of 6 original containers
   running. The fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`
   lifecycle is implemented and dry-run verified. The approved deployment
-  completed on 2026-07-21; rollback remains unexecuted.
+  completed on 2026-07-21. Destructive rollback and subsequent clean
+  redeployment both completed successfully.
 - Read-only inspection identified the five `ispy-server` security entries as
   two architectures each of `libde265-0` and `libsqlite3-0`, plus `wget`.
   `snapd` is the one non-security entry; AgentDVR is not itself pending.
@@ -143,6 +145,10 @@ Live status:
   independent checks confirmed four healthy desired monitoring containers,
   four stopped legacy rollback containers, protected authentication, friendly
   dashboard labels, 5/5 scrape targets, and only Grafana exposed to the LAN.
+- The approved destructive rollback and clean redeployment passed. The fixed
+  `retire_legacy_monitoring_stack` action is implemented and dry-run verified
+  for final removal of only the four stopped legacy containers and two old
+  volumes; its execution remains approval-gated.
 
 Current operating model:
 
@@ -240,7 +246,7 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
 `preflight_monitoring_images`, `provision_monitoring_secret`,
 `deploy_monitoring_stack`, `repair_monitoring_grafana`,
-`rollback_monitoring_stack`,
+`rollback_monitoring_stack`, `retire_legacy_monitoring_stack`,
 `apply_package_updates`,
 `apply_security_updates`, and `reboot_server` are executable after exact
 approval. `run_admin_command` is also executable after exact approval on
@@ -257,6 +263,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `deploy_monitoring_stack`
 - [x] `repair_monitoring_grafana`
 - [x] `rollback_monitoring_stack`
+- [x] `retire_legacy_monitoring_stack`
 - [x] `restart_service`
 - [x] `restart_docker_container`
 - [x] `reboot_server`
@@ -274,8 +281,8 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next operational item is separately testing rollback before old monitoring
-state is removed. The USB
+The next operational item is approval-gated retirement of the accepted legacy
+monitoring containers and volumes, then marking monitoring operational. The USB
 mount/sentinel preflight follows. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.

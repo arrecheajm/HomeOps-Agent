@@ -558,9 +558,9 @@ def _recommendations(
         ),
         None,
     )
-    if isinstance(monitoring_workload, dict) and (
-        monitoring_workload.get("state") == "acceptance_pending"
-    ):
+    if isinstance(monitoring_workload, dict) and monitoring_workload.get(
+        "state"
+    ) in {"acceptance_pending", "cleanup_pending"}:
         prerequisites = {
             str(item) for item in _list(monitoring_workload.get("prerequisites"))
         }
@@ -617,6 +617,26 @@ def _recommendations(
                     dry_run_command=(
                         "python -m controller.main actions run "
                         "rollback_monitoring_stack --server container-host --dry-run"
+                    ),
+                )
+            )
+        elif "approve retire_legacy_monitoring_stack" in prerequisites:
+            recommendations.append(
+                _recommendation(
+                    priority=68,
+                    severity="info",
+                    title="Retire accepted legacy monitoring state",
+                    rationale=(
+                        "Rollback and clean redeployment passed. Remove only the four "
+                        "stopped legacy monitoring containers and their two old named "
+                        "volumes after the fixed action re-verifies desired-state "
+                        "health and protected Grafana authentication."
+                    ),
+                    action_id="retire_legacy_monitoring_stack",
+                    dry_run_command=(
+                        "python -m controller.main actions run "
+                        "retire_legacy_monitoring_stack --server container-host "
+                        "--dry-run"
                     ),
                 )
             )

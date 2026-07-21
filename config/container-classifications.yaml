@@ -4,7 +4,7 @@
     "container-host": {
       "cadvisor": {
         "classification": "rollback_hold",
-        "rationale": "Stopped legacy cAdvisor container retained only through the monitoring rollback window; the pinned replacement is active."
+        "rationale": "Rollback passed; the stopped legacy cAdvisor container awaits bounded final cleanup."
       },
       "filebrowser": {
         "classification": "retired",
@@ -12,15 +12,15 @@
       },
       "monitoring-grafana-1": {
         "classification": "rollback_hold",
-        "rationale": "Stopped legacy Grafana container retained only through acceptance and rollback testing; its basic dashboard and data do not need migration."
+        "rationale": "Rollback passed; the stopped legacy Grafana container and disposable old data await bounded final cleanup."
       },
       "monitoring-node_exporter-1": {
         "classification": "rollback_hold",
-        "rationale": "Stopped legacy Node Exporter container retained only through the monitoring rollback window; the pinned private replacement is active."
+        "rationale": "Rollback passed; the stopped legacy Node Exporter container awaits bounded final cleanup."
       },
       "monitoring-prometheus-1": {
         "classification": "rollback_hold",
-        "rationale": "Stopped legacy Prometheus container and old volume are retained only through rollback acceptance; the clean bounded replacement is active."
+        "rationale": "Rollback passed; the stopped legacy Prometheus container and disposable old data await bounded final cleanup."
       },
       "homeops-monitoring-cadvisor-1": {
         "classification": "keep",

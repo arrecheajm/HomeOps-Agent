@@ -24,6 +24,7 @@ DEFAULT_POLICY: dict[str, Any] = {
         "deploy_monitoring_stack",
         "repair_monitoring_grafana",
         "rollback_monitoring_stack",
+        "retire_legacy_monitoring_stack",
         "deploy_health_script",
         "deploy_sudoers_profile",
         "apply_security_updates",

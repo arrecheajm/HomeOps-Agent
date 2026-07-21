@@ -9,7 +9,7 @@
     "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-07-21T15:18:21Z",
+  "generated_at": "2026-07-21T19:47:33Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
@@ -204,7 +204,7 @@
         "Moderate CPU headroom",
         "Docker installed with 6 running containers"
       ],
-      "collected_at": "2026-07-21T15:18:29Z",
+      "collected_at": "2026-07-21T19:47:35Z",
       "constraints": [
         "1 package updates pending"
       ],
@@ -219,7 +219,7 @@
         "containers": [
           {
             "classification": "rollback_hold",
-            "classification_rationale": "Stopped legacy cAdvisor container retained only through the monitoring rollback window; the pinned replacement is active.",
+            "classification_rationale": "Rollback passed; the stopped legacy cAdvisor container awaits bounded final cleanup.",
             "compose_project": "monitoring",
             "compose_service": "cadvisor",
             "exposure": "none reported",
@@ -419,7 +419,7 @@
           },
           {
             "classification": "rollback_hold",
-            "classification_rationale": "Stopped legacy Grafana container retained only through acceptance and rollback testing; its basic dashboard and data do not need migration.",
+            "classification_rationale": "Rollback passed; the stopped legacy Grafana container and disposable old data await bounded final cleanup.",
             "compose_project": "monitoring",
             "compose_service": "grafana",
             "exposure": "none reported",
@@ -441,7 +441,7 @@
           },
           {
             "classification": "rollback_hold",
-            "classification_rationale": "Stopped legacy Node Exporter container retained only through the monitoring rollback window; the pinned private replacement is active.",
+            "classification_rationale": "Rollback passed; the stopped legacy Node Exporter container awaits bounded final cleanup.",
             "compose_project": "monitoring",
             "compose_service": "node_exporter",
             "exposure": "none reported",
@@ -456,7 +456,7 @@
           },
           {
             "classification": "rollback_hold",
-            "classification_rationale": "Stopped legacy Prometheus container and old volume are retained only through rollback acceptance; the clean bounded replacement is active.",
+            "classification_rationale": "Rollback passed; the stopped legacy Prometheus container and disposable old data await bounded final cleanup.",
             "compose_project": "monitoring",
             "compose_service": "prometheus",
             "exposure": "none reported",
@@ -542,7 +542,7 @@
             "compose_project": "",
             "compose_service": "",
             "exposure": "internal only",
-            "health": "starting",
+            "health": "healthy",
             "image": "nickfedor/watchtower",
             "mounts": [
               {
@@ -594,10 +594,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 1.5,
-        "memory_used_percent": 11.1,
+        "load_1m": 0.87,
+        "memory_used_percent": 11.5,
         "swap_used_percent": 0.0,
-        "uptime_days": 0.0
+        "uptime_days": 0.2
       },
       "role": "container_host",
       "role_label": "Containers",
@@ -642,8 +642,8 @@
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-21T15-18-21Z/fleet-health.json",
-    "generated_at": "2026-07-21T15:18:21Z",
-    "run_id": "2026-07-21T15-18-21Z"
+    "fleet_path": "history/runs/2026-07-21T19-47-33Z/fleet-health.json",
+    "generated_at": "2026-07-21T19:47:33Z",
+    "run_id": "2026-07-21T19-47-33Z"
   }
 }

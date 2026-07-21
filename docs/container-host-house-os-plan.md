@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 127 tests, and the health script passes
+- Python regression suite passes with 130 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
@@ -221,10 +221,10 @@ backup target.
 | `homeops-monitoring-grafana-1` | keep | Active authenticated LAN UI with Git-provisioned dashboard and data source; startup cleanup repair passed. |
 | `homeops-monitoring-node-exporter-1` | keep | Active pinned, healthy host metrics collector on the private monitoring network. |
 | `homeops-monitoring-prometheus-1` | keep | Active pinned service with read-only configuration, bounded retention, and five healthy targets. |
-| `cadvisor` | rollback hold | Stopped legacy container retained only through rollback acceptance. |
-| `monitoring-grafana-1` | rollback hold | Stopped legacy container and old volume retained only through rollback acceptance. |
-| `monitoring-node_exporter-1` | rollback hold | Stopped legacy container retained only through rollback acceptance. |
-| `monitoring-prometheus-1` | rollback hold | Stopped legacy container and old volume retained only through rollback acceptance. |
+| `cadvisor` | retire pending | Rollback passed; stopped legacy container awaits the bounded final cleanup. |
+| `monitoring-grafana-1` | retire pending | Rollback passed; stopped legacy container and old volume await the bounded final cleanup. |
+| `monitoring-node_exporter-1` | retire pending | Rollback passed; stopped legacy container awaits the bounded final cleanup. |
+| `monitoring-prometheus-1` | retire pending | Rollback passed; stopped legacy container and old volume await the bounded final cleanup. |
 | `filebrowser` | retired | Removed with its Docker volumes after the operator confirmed it was empty. Bind-mounted directories were left intact. |
 | `mysql57` | retired | Removed with `dev-db_mysql_data` after the operator confirmed it was disposable test data. |
 | `nonprofit-postgres` | retired | Removed with `nonprofit_postgres_data` after the operator confirmed it was disposable test data. |

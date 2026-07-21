@@ -183,7 +183,7 @@ Grafana state and Prometheus time-series data stay in named Docker volumes.
 - [x] The HomeOps dashboard shows host, disk, container, and target health.
 - [x] Log rotation and Prometheus retention are bounded.
 - [x] The stack returns successfully after an approved host reboot.
-- [ ] Rollback is tested before old volumes or files are removed.
+- [x] Rollback is tested before old volumes or files are removed.
 
 ## Deployment Result And Remaining Gates
 
@@ -236,4 +236,9 @@ confirmed the four desired containers restarted healthy while the four legacy
 rollback containers stayed stopped. Independent checks confirmed protected
 authentication, rejected `admin/admin`, friendly `server_id` labels, 5/5
 targets up, and only port 3000 reachable on the LAN. Reboot persistence is
-accepted; rollback is the only remaining monitoring gate.
+accepted. The destructive rollback then restored all four legacy containers and
+removed the desired containers plus their new volumes. A subsequent approved
+clean deployment rebuilt the desired stack, and independent checks again passed
+authentication, friendly labels, 5/5 targets, health, and LAN isolation.
+Rollback acceptance is complete. Only the separately approved removal of the
+four stopped legacy containers and their two old volumes remains.

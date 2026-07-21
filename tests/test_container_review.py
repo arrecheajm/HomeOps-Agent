@@ -300,16 +300,18 @@ class ContainerReviewTests(unittest.TestCase):
 
         titles = [item["title"] for item in review["recommendations"]]
         self.assertNotIn("Move useful monitoring services into desired state", titles)
-        self.assertIn("Test the preserved monitoring rollback", titles)
-        rollback = next(
+        self.assertIn("Retire accepted legacy monitoring state", titles)
+        retirement = next(
             item
             for item in review["recommendations"]
-            if item["title"] == "Test the preserved monitoring rollback"
+            if item["title"] == "Retire accepted legacy monitoring state"
         )
-        self.assertEqual(rollback["action_id"], "rollback_monitoring_stack")
+        self.assertEqual(
+            retirement["action_id"], "retire_legacy_monitoring_stack"
+        )
         container = review["server"]["docker"]["containers"][0]
         self.assertEqual(container["classification"], "rollback_hold")
-        self.assertIn("rollback", container["classification_rationale"])
+        self.assertIn("rollback", container["classification_rationale"].lower())
 
     def test_build_container_review_keeps_repair_gate_when_prerequisite_remains(self):
         review = build_container_review(
@@ -354,6 +356,30 @@ class ContainerReviewTests(unittest.TestCase):
             if item["title"] == "Prove monitoring reboot persistence"
         )
         self.assertEqual(reboot["action_id"], "reboot_server")
+
+    def test_build_container_review_keeps_rollback_gate_when_prerequisite_remains(self):
+        review = build_container_review(
+            self._run_summary(),
+            "container-host",
+            workloads={
+                "workloads": [
+                    {
+                        "workload_id": "monitoring",
+                        "state": "acceptance_pending",
+                        "prerequisites": [
+                            "test rollback before removing legacy state"
+                        ],
+                    }
+                ]
+            },
+        )
+
+        rollback = next(
+            item
+            for item in review["recommendations"]
+            if item["title"] == "Test the preserved monitoring rollback"
+        )
+        self.assertEqual(rollback["action_id"], "rollback_monitoring_stack")
 
     def test_build_container_review_recommends_bounded_disposable_retirement(self):
         run = self._run_summary()

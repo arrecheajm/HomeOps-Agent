@@ -324,6 +324,21 @@ The corresponding approval phrase is:
 Approve action rollback_monitoring_stack on container-host
 ```
 
+After rollback and clean redeployment acceptance, final legacy cleanup is a
+separate fixed action. It re-verifies the desired containers, volumes, and
+Grafana authentication before removing only the four stopped legacy monitoring
+containers and `monitoring_grafana-data` / `monitoring_prometheus-data`:
+
+```powershell
+python -m controller.main actions run retire_legacy_monitoring_stack --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action retire_legacy_monitoring_stack on container-host
+```
+
 Health script deployment is also approval-gated and only copies the known
 repository script to the approved remote path:
 

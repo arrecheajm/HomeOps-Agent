@@ -129,6 +129,13 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "execution_timeout_seconds": 180,
     },
     {
+        "action_id": "retire_legacy_monitoring_stack",
+        "risk": "approval_required",
+        "description": "After rollback acceptance, remove only the four stopped legacy monitoring containers and their two old named volumes.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+    },
+    {
         "action_id": "restart_service",
         "risk": "approval_required",
         "description": "Restart one approved system service.",
