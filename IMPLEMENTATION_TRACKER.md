@@ -39,6 +39,7 @@ Live status:
 - `inspect_docker_container`, `replace_watchtower_container`,
   `migrate_watchtower_container`, `deploy_health_script`,
   `retire_disposable_containers`, `preflight_monitoring_images`,
+  `deploy_monitoring_stack`, `rollback_monitoring_stack`,
   `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
   `apply_package_updates`, `apply_security_updates`, and `reboot_server`
   support dry-run, exact approval, execution, and action history.
@@ -47,9 +48,10 @@ Live status:
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
-  `2026-07-20T19-14-29Z`; all three servers collected successfully,
-  `container-host` has 6 of 6 containers running, and it has no current host
-  finding.
+  `2026-07-21T12-13-24Z`; all three servers collected successfully and
+  `container-host` has 6 of 6 containers running. Current maintenance findings
+  are 5 security updates on `ispy-server` plus non-security package updates on
+  `openvpn-server` and `container-host`; no server requires a reboot.
 - The `run fleet review` operator workflow is documented for Codex: collect
   live health, refresh dashboard and catalog, check the latest run explicitly,
   summarize findings, and recommend next steps without executing
@@ -94,13 +96,14 @@ Live status:
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 - The live monitoring preflight is complete and the first
   `stacks/monitoring/` replacement bundle is implemented. Docker Compose
-  renders it successfully; 114 tests cover version pinning, LAN exposure,
+  renders it successfully; 118 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
-  Linux/amd64 registry digests. Exact-image health checks and executable
-  deploy/rollback actions remain gated.
-- `preflight_monitoring_images` is implemented and dry-run verified. The fixed
-  approval-gated action pulls only those immutable refs, validates health tools
-  and Prometheus config/rules, and does not disrupt running services.
+  Linux/amd64 registry digests. Exact-image health checks have passed; cutover
+  remains gated on its untracked secret and separate approval.
+- The approved `preflight_monitoring_images` execution passed on 2026-07-21;
+  targeted inventory afterward confirmed the same 6 of 6 original containers
+  running. The fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`
+  lifecycle is implemented and dry-run verified but has not been executed.
 
 Current operating model:
 
@@ -196,7 +199,8 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `restart_service`, `deploy_health_script`, `deploy_sudoers_profile`,
 `inspect_docker_container`, `replace_watchtower_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
-`preflight_monitoring_images`,
+`preflight_monitoring_images`, `deploy_monitoring_stack`,
+`rollback_monitoring_stack`,
 `apply_package_updates`,
 `apply_security_updates`, and `reboot_server` are executable after exact
 approval. `run_admin_command` is also executable after exact approval on
@@ -209,6 +213,8 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `migrate_watchtower_container`
 - [x] `retire_disposable_containers`
 - [x] `preflight_monitoring_images`
+- [x] `deploy_monitoring_stack`
+- [x] `rollback_monitoring_stack`
 - [x] `restart_service`
 - [x] `restart_docker_container`
 - [x] `reboot_server`
@@ -226,11 +232,11 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next operational item is executing `preflight_monitoring_images` after
-exact approval. If it passes, the next code item is implementing the bounded
-monitoring deployment/rollback lifecycle from `config/workloads.yaml` and
-`docs/monitoring-stack-upgrade-review.md`. The USB mount/sentinel preflight
-follows. Use
+The next operational item is preparing the untracked Grafana password secret,
+then separately approving `deploy_monitoring_stack`. After cutover, verify the
+Grafana login, Prometheus targets, dashboard, private port boundary, reboot
+persistence, and rollback before old monitoring state is removed. The USB
+mount/sentinel preflight follows. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

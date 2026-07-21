@@ -159,11 +159,13 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 114 tests, and the health script passes
+- Python regression suite passes with 118 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
-- Full fleet run `2026-07-20T19-14-29Z` collected the post-cleanup state with 6
-  of 6 container-host containers running and no container-host findings.
+- Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
+  original container-host containers running. The container host has one
+  non-security package update pending; the separate fleet maintenance warning
+  is five security updates on `ispy-server`.
 - Local disposition recommendations are stored in
   `config/container-classifications.yaml` and do not trigger cleanup actions.
 - Sanitized point-in-time storage and database evidence is stored in
@@ -183,10 +185,13 @@ backup target.
 - The first `stacks/monitoring/` bundle is implemented and Compose-valid with
   exact version tags, clean volumes, private metric endpoints, bounded
   retention/logging/resources, provisioning, and a HomeOps overview dashboard.
-  Exact-image health validation and deployment actions remain gated.
+  Exact-image validation has passed; cutover remains separately gated on the
+  Grafana secret and explicit deployment approval.
 - The four Linux/amd64 digests are now committed, and the non-disruptive
-  `preflight_monitoring_images` action is implemented and dry-run verified.
-  Exact-image validation still requires its explicit approval.
+  `preflight_monitoring_images` action completed successfully on 2026-07-21.
+  Targeted inventory afterward confirmed all six original containers remained
+  running. The fixed deployment and rollback actions are implemented and
+  dry-run verified, but neither cutover nor rollback has been executed.
 
 ## Current Container Disposition
 
@@ -224,8 +229,9 @@ proposed capabilities, not currently implemented action IDs:
 - [x] First version-controlled Compose bundle under `stacks/monitoring/`.
 - [ ] Storage preflight that validates the USB mount, sentinel, space,
   ownership, and expected directories.
-- [ ] Dedicated lifecycle operations for stack preflight, deployment, backup,
-  restore, upgrade, rollback, and removal.
+- [ ] Dedicated lifecycle operations for every stack phase. Monitoring
+  preflight, deployment, and rollback are implemented; backup, restore,
+  upgrade, and final removal remain open.
 - [ ] Health verification after deployment, upgrade, host reboot, and restore.
 - [ ] Pinned application versions and controlled HomeOps upgrades. Automatic
   Watchtower updates should remain opt-in and should not be enabled for

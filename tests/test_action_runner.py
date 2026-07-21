@@ -232,6 +232,90 @@ class ActionRunnerTests(unittest.TestCase):
             "Approve action preflight_monitoring_images on container-host",
         )
 
+    def test_deploy_monitoring_stack_dry_run_is_bounded_and_recoverable(self):
+        attempt = run_action(
+            "deploy_monitoring_stack",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(command[-1] for command in record["commands"])
+
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 10)
+        self.assertEqual(record["commands"][0][0], "ssh")
+        self.assertNotIn("\\home\\", record["commands"][0][-1])
+        self.assertEqual(
+            sum(command[0] == "scp" for command in record["commands"]),
+            6,
+        )
+        self.assertIn("grafana_admin_password", rendered)
+        self.assertIn("stat -c %a", rendered)
+        self.assertIn("sha256sum", rendered)
+        self.assertIn("docker compose", rendered)
+        self.assertIn("up -d --wait --wait-timeout 180", rendered)
+        self.assertIn("docker start -- cadvisor", rendered)
+        self.assertGreaterEqual(rendered.count("trap"), 4)
+        self.assertIn("192.168.86.58:3000", rendered)
+        self.assertNotIn("docker volume rm", rendered)
+        self.assertNotIn("monitoring_grafana-data monitoring_prometheus-data", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action deploy_monitoring_stack on container-host",
+        )
+
+    def test_deploy_monitoring_stack_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "deploy_monitoring_stack",
+                "container-host",
+                [self._container_server()],
+                {"project": "anything"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_rollback_monitoring_stack_dry_run_restores_only_fixed_old_stack(self):
+        attempt = run_action(
+            "rollback_monitoring_stack",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(command[-1] for command in record["commands"])
+
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 3)
+        self.assertIn("docker compose", rendered)
+        self.assertIn("docker start -- cadvisor", rendered)
+        self.assertIn("down --volumes", rendered)
+        self.assertIn("homeops-monitoring_grafana-data", rendered)
+        self.assertNotIn("docker system prune", rendered)
+        self.assertNotIn("monitoring_grafana-data monitoring_prometheus-data", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action rollback_monitoring_stack on container-host",
+        )
+
+    def test_rollback_monitoring_stack_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "rollback_monitoring_stack",
+                "container-host",
+                [self._container_server()],
+                {"volume": "anything"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
     def test_migrate_watchtower_container_dry_run_uses_maintained_image(self):
         attempt = run_action(
             "migrate_watchtower_container",

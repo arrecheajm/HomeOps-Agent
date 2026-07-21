@@ -144,8 +144,9 @@ Grafana state and Prometheus time-series data stay in named Docker volumes.
 3. Validate the repository bundle with `docker compose config`, Prometheus
    tooling, and the exact image health commands; do not deploy an unrendered or
    untested template.
-4. Add a bounded HomeOps deployment action with an exact container, file, and
-   volume allowlist. Produce and review its dry run.
+4. Review the implemented bounded HomeOps deployment and rollback actions. They
+   use exact container, file, image, and volume allowlists and require separate
+   approvals.
 5. During approved cutover, verify the old four container identities, stop them,
    and start the new stack with new volume names.
 6. Confirm all four health checks, all Prometheus targets, the HomeOps dashboard,
@@ -182,7 +183,14 @@ containers, removing volumes, writing remote files, changing ports, or deploying
 the replacement. Those remain approval-gated HomeOps actions after the bundle
 and dry run are ready for review.
 
-`preflight_monitoring_images` is now implemented and dry-run verified. Its
-execution still requires the exact phrase `Approve action
-preflight_monitoring_images on container-host`. It changes only the Docker image
-cache and two temporary validation files; it does not alter running services.
+`preflight_monitoring_images` completed successfully on 2026-07-21. The pinned
+images, health tooling, cAdvisor health metadata, and Prometheus configuration
+all passed; a post-action collection confirmed the same six original containers
+remained running.
+
+`deploy_monitoring_stack` and `rollback_monitoring_stack` are now implemented
+and dry-run verified. Neither has been executed. Deployment still requires the
+server-side Grafana secret and the exact phrase `Approve action
+deploy_monitoring_stack on container-host`. Rollback has its own separate exact
+approval. The old containers and old volumes remain untouched until a future
+approved cutover.

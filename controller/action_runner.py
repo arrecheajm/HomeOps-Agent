@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import subprocess
@@ -82,6 +83,66 @@ LOCAL_PROMETHEUS_RULES_PATH = (
 )
 REMOTE_PROMETHEUS_PREFLIGHT_CONFIG = "/tmp/homeops-prometheus-preflight.yml"
 REMOTE_PROMETHEUS_PREFLIGHT_RULES = "/tmp/homeops-host-rules-preflight.yml"
+REMOTE_MONITORING_DIR = "/home/containerserver/.local/share/homeops/stacks/monitoring"
+REMOTE_MONITORING_COMPOSE = f"{REMOTE_MONITORING_DIR}/compose.yaml"
+REMOTE_MONITORING_SECRET = (
+    "/home/containerserver/.config/homeops/secrets/monitoring/"
+    "grafana_admin_password"
+)
+OLD_MONITORING_CONTAINERS = {
+    "cadvisor": "gcr.io/cadvisor/cadvisor:latest",
+    "monitoring-grafana-1": "grafana/grafana:latest",
+    "monitoring-node_exporter-1": "prom/node-exporter:latest",
+    "monitoring-prometheus-1": "prom/prometheus:latest",
+}
+NEW_MONITORING_CONTAINERS = {
+    "homeops-monitoring-cadvisor-1": MONITORING_IMAGE_REFS["cadvisor"],
+    "homeops-monitoring-grafana-1": MONITORING_IMAGE_REFS["grafana"],
+    "homeops-monitoring-node-exporter-1": MONITORING_IMAGE_REFS["node-exporter"],
+    "homeops-monitoring-prometheus-1": MONITORING_IMAGE_REFS["prometheus"],
+}
+NEW_MONITORING_VOLUMES = (
+    "homeops-monitoring_grafana-data",
+    "homeops-monitoring_prometheus-data",
+)
+OLD_MONITORING_VOLUMES = (
+    "monitoring_grafana-data",
+    "monitoring_prometheus-data",
+)
+MONITORING_DEPLOY_FILES = (
+    (LOCAL_MONITORING_DIR / "compose.yaml", "compose.yaml"),
+    (
+        LOCAL_MONITORING_DIR / "prometheus" / "prometheus.yml",
+        "prometheus/prometheus.yml",
+    ),
+    (
+        LOCAL_MONITORING_DIR / "prometheus" / "rules" / "host.rules.yml",
+        "prometheus/rules/host.rules.yml",
+    ),
+    (
+        LOCAL_MONITORING_DIR
+        / "grafana"
+        / "provisioning"
+        / "datasources"
+        / "prometheus.yml",
+        "grafana/provisioning/datasources/prometheus.yml",
+    ),
+    (
+        LOCAL_MONITORING_DIR
+        / "grafana"
+        / "provisioning"
+        / "dashboards"
+        / "dashboards.yml",
+        "grafana/provisioning/dashboards/dashboards.yml",
+    ),
+    (
+        LOCAL_MONITORING_DIR
+        / "grafana"
+        / "dashboards"
+        / "homeops-overview.json",
+        "grafana/dashboards/homeops-overview.json",
+    ),
+)
 
 
 class ActionError(RuntimeError):
@@ -167,7 +228,14 @@ def run_action(
         record_path = write_action_record(record, actions_dir)
         return ActionAttempt(record=record, record_path=record_path)
 
-    result = _run_commands(commands, server)
+    execution_timeout = action.get("execution_timeout_seconds")
+    result = _run_commands(
+        commands,
+        server,
+        command_timeout_seconds=(
+            int(execution_timeout) if execution_timeout is not None else None
+        ),
+    )
     record.update(
         {
             "status": "completed" if result["exit_code"] == 0 else "failed",
@@ -261,6 +329,22 @@ def build_action_commands(
                 "images and validation files are hard-coded."
             )
         return _preflight_monitoring_image_commands(server)
+
+    if action_id == "deploy_monitoring_stack":
+        if arguments:
+            raise ActionError(
+                "deploy_monitoring_stack does not accept arguments; its source "
+                "files, old containers, new containers, and volumes are fixed."
+            )
+        return _deploy_monitoring_stack_commands(server)
+
+    if action_id == "rollback_monitoring_stack":
+        if arguments:
+            raise ActionError(
+                "rollback_monitoring_stack does not accept arguments; its old "
+                "and new container and volume bundles are fixed."
+            )
+        return _rollback_monitoring_stack_commands(server)
 
     if action_id == "restart_service":
         service = _approved_service_name(server, arguments)
@@ -531,6 +615,225 @@ def _preflight_monitoring_image_commands(
     return commands
 
 
+def _deploy_monitoring_stack_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Build the fixed, recoverable monitoring cutover command sequence."""
+
+    for source, _ in MONITORING_DEPLOY_FILES:
+        if not source.exists():
+            raise ActionError(f"Monitoring deployment file not found: {source}")
+
+    remote_directories = sorted(
+        {
+            REMOTE_MONITORING_DIR,
+            *(f"{REMOTE_MONITORING_DIR}/{relative.rsplit('/', 1)[0]}"
+              for _, relative in MONITORING_DEPLOY_FILES
+              if "/" in relative),
+        }
+    )
+    commands: list[list[str]] = [
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("install", "-d", "-m", "0755", *remote_directories),
+        ]
+    ]
+
+    for source, relative in MONITORING_DEPLOY_FILES:
+        commands.append(
+            _build_scp_base_command(server)
+            + [
+                str(source),
+                f"{server.ssh_target}:{REMOTE_MONITORING_DIR}/{relative}",
+            ]
+        )
+
+    preflight_parts = ["set -eu"]
+    preflight_parts.extend(
+        (
+            f"test -s {quote(REMOTE_MONITORING_SECRET)}",
+            f"test ! -L {quote(REMOTE_MONITORING_SECRET)}",
+            "test \"$(stat -c %a "
+            f"{quote(REMOTE_MONITORING_SECRET)})\" = 600",
+            "test \"$(stat -c %u "
+            f"{quote(REMOTE_MONITORING_SECRET)})\" = \"$(id -u)\"",
+        )
+    )
+    for name, image in OLD_MONITORING_CONTAINERS.items():
+        preflight_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+            )
+        )
+    for name in NEW_MONITORING_CONTAINERS:
+        preflight_parts.append(
+            f"if docker container inspect {quote(name)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for volume in NEW_MONITORING_VOLUMES:
+        preflight_parts.append(
+            f"if docker volume inspect {quote(volume)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for image in MONITORING_IMAGE_REFS.values():
+        preflight_parts.append(
+            f"docker image inspect {quote(image)} >/dev/null"
+        )
+    for source, relative in MONITORING_DEPLOY_FILES:
+        expected_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+        remote_path = f"{REMOTE_MONITORING_DIR}/{relative}"
+        preflight_parts.append(
+            "test \"$(sha256sum "
+            f"{quote(remote_path)} | cut -d ' ' -f 1)\" = {quote(expected_hash)}"
+        )
+    preflight_parts.extend(
+        (
+            _monitoring_compose_command("config", "--quiet"),
+            "printf 'monitoring_deploy_preflight_ok\\n'",
+        )
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(preflight_parts))]
+    )
+
+    old_names = " ".join(quote(name) for name in OLD_MONITORING_CONTAINERS)
+    recovery = (
+        "status=$?; trap - HUP INT TERM EXIT; "
+        f"{_monitoring_compose_command('down')} >/dev/null 2>&1 || true; "
+        f"docker start -- {old_names} >/dev/null 2>&1 || true; "
+        "exit \"$status\""
+    )
+    cutover = (
+        "set -eu; "
+        f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT; "
+        f"docker stop -- {old_names}; "
+        f"{_monitoring_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
+        "trap - HUP INT TERM EXIT; "
+        "printf 'monitoring_deployed\\n'"
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", cutover)]
+    )
+
+    verify_parts = [
+        "set -eu",
+        f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT",
+    ]
+    for name in OLD_MONITORING_CONTAINERS:
+        verify_parts.append(
+            "test \"$(docker inspect --type container --format "
+            f"'{{{{.State.Running}}}}' {quote(name)})\" = false"
+        )
+    for name, image in NEW_MONITORING_CONTAINERS.items():
+        verify_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy",
+            )
+        )
+    for name in (
+        "homeops-monitoring-cadvisor-1",
+        "homeops-monitoring-node-exporter-1",
+        "homeops-monitoring-prometheus-1",
+    ):
+        verify_parts.append(f"test -z \"$(docker port {quote(name)})\"")
+    verify_parts.append(
+        "test \"$(docker port homeops-monitoring-grafana-1 3000/tcp)\" "
+        "= 192.168.86.58:3000"
+    )
+    for volume in (*NEW_MONITORING_VOLUMES, *OLD_MONITORING_VOLUMES):
+        verify_parts.append(f"docker volume inspect {quote(volume)} >/dev/null")
+    verify_parts.append("trap - HUP INT TERM EXIT")
+    verify_parts.append("printf 'monitoring_deployment_verified\\n'")
+    commands.append(
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(verify_parts))]
+    )
+    return commands
+
+
+def _rollback_monitoring_stack_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Build a fixed rollback that restores the preserved proof-of-concept stack."""
+
+    preflight_parts = ["set -eu", f"test -f {quote(REMOTE_MONITORING_COMPOSE)}"]
+    for name, image in OLD_MONITORING_CONTAINERS.items():
+        preflight_parts.append(
+            "test \"$(docker inspect --type container --format "
+            f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}"
+        )
+    for name, image in NEW_MONITORING_CONTAINERS.items():
+        preflight_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+            )
+        )
+    preflight_parts.append("printf 'monitoring_rollback_preflight_ok\\n'")
+
+    old_names = " ".join(quote(name) for name in OLD_MONITORING_CONTAINERS)
+    restore_new = (
+        "status=$?; trap - HUP INT TERM EXIT; "
+        f"docker stop -- {old_names} >/dev/null 2>&1 || true; "
+        f"{_monitoring_compose_command('start')} >/dev/null 2>&1 || true; "
+        "exit \"$status\""
+    )
+    rollback = (
+        "set -eu; "
+        f"trap {_shell_single_quote(restore_new)} HUP INT TERM EXIT; "
+        f"{_monitoring_compose_command('stop')}; "
+        f"docker start -- {old_names}; "
+        f"for name in {old_names}; do "
+        "test \"$(docker inspect --type container --format "
+        "'{{.State.Running}}' \"$name\")\" = true; done; "
+        "trap - HUP INT TERM EXIT; "
+        f"{_monitoring_compose_command('down', '--volumes')}; "
+        "printf 'monitoring_rolled_back\\n'"
+    )
+    verify = (
+        "set -eu; "
+        f"for name in {old_names}; do "
+        "test \"$(docker inspect --type container --format "
+        "'{{.State.Running}}' \"$name\")\" = true; done; "
+        f"for name in {' '.join(quote(name) for name in NEW_MONITORING_CONTAINERS)}; do "
+        "if docker container inspect \"$name\" >/dev/null 2>&1; then exit 1; fi; done; "
+        f"for volume in {' '.join(quote(volume) for volume in NEW_MONITORING_VOLUMES)}; do "
+        "if docker volume inspect \"$volume\" >/dev/null 2>&1; then exit 1; fi; done; "
+        "printf 'monitoring_rollback_verified\\n'"
+    )
+    return [
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(preflight_parts))],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", rollback)],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", verify)],
+    ]
+
+
+def _monitoring_compose_command(*parts: str) -> str:
+    return _remote_command(
+        "docker",
+        "compose",
+        "--project-directory",
+        REMOTE_MONITORING_DIR,
+        "-f",
+        REMOTE_MONITORING_COMPOSE,
+        *parts,
+    )
+
+
 def _deploy_health_script_commands(server: ServerInventoryItem) -> list[list[str]]:
     if not LOCAL_HEALTH_SCRIPT_PATH.exists():
         raise ActionError(f"Local health script not found: {LOCAL_HEALTH_SCRIPT_PATH}")
@@ -775,16 +1078,29 @@ def _base_record(
     }
 
 
-def _run_commands(commands: list[list[str]], server: ServerInventoryItem) -> dict[str, Any]:
+def _run_commands(
+    commands: list[list[str]],
+    server: ServerInventoryItem,
+    *,
+    command_timeout_seconds: int | None = None,
+) -> dict[str, Any]:
     if len(commands) == 1:
-        return _run_command(commands[0], server)
+        return _run_command(
+            commands[0],
+            server,
+            command_timeout_seconds=command_timeout_seconds,
+        )
 
     started = time.monotonic()
     stdout_parts: list[str] = []
     stderr_parts: list[str] = []
 
     for index, command in enumerate(commands, start=1):
-        result = _run_command(command, server)
+        result = _run_command(
+            command,
+            server,
+            command_timeout_seconds=command_timeout_seconds,
+        )
         if result["stdout"]:
             stdout_parts.append(f"command {index}: {result['stdout']}")
         if result["stderr"]:
@@ -805,9 +1121,15 @@ def _run_commands(commands: list[list[str]], server: ServerInventoryItem) -> dic
     }
 
 
-def _run_command(command: list[str], server: ServerInventoryItem) -> dict[str, Any]:
+def _run_command(
+    command: list[str],
+    server: ServerInventoryItem,
+    *,
+    command_timeout_seconds: int | None = None,
+) -> dict[str, Any]:
     started = time.monotonic()
-    timeout_seconds = server.connect_timeout_seconds + server.command_timeout_seconds
+    remote_timeout = command_timeout_seconds or server.command_timeout_seconds
+    timeout_seconds = server.connect_timeout_seconds + remote_timeout
     try:
         completed = subprocess.run(
             command,

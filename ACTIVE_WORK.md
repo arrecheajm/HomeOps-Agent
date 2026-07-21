@@ -64,16 +64,18 @@ Recommended thinking level for the next work:
 ## Current Resume State
 
 - Check `git status --short --branch` at session start for branch cleanliness.
-- Latest fleet report run: `2026-07-20T19-14-29Z`; all 3 servers collected
+- Latest fleet report run: `2026-07-21T12-13-24Z`; all 3 servers collected
   without errors.
-- Latest targeted `container-host` run: `2026-07-20T19-12-53Z`; sanitized
-  inventory collected 6 of 6 running containers with no findings after cleanup.
-- Latest fleet status: 0 critical, 0 warning, and 1 informational finding.
-- `openvpn-server` has 2 non-security package updates pending; no reboot is
+- Latest targeted `container-host` run: `2026-07-21T12-05-24Z`; sanitized
+  inventory confirmed all 6 original containers remained running immediately
+  after the monitoring image preflight.
+- Latest fleet status: 0 critical, 1 warning, and 2 informational findings.
+- `openvpn-server` has 3 non-security package updates pending; no reboot is
   required.
-- `ispy-server` is current and AgentDVR is active with no fleet finding.
-- `container-host` is current with Docker active, 6 of 6 containers running,
-  and no unhealthy containers or host finding.
+- `ispy-server` has 6 package updates pending, including 5 security updates;
+  AgentDVR remains active and no reboot is required.
+- `container-host` has 1 non-security package update with Docker active, 6 of 6
+  original containers running, and no unhealthy containers or required reboot.
 - `container-host` has an i5-4210U with 4 CPU threads, about 8 GB RAM, and about
   80 GB free on the root disk. Current load and memory use are low.
 - The accepted direction is a LAN-only House OS combining Home Assistant,
@@ -136,11 +138,18 @@ Recommended thinking level for the next work:
   resolved read-only and committed in Compose. Re-resolve them immediately
   before deployment to detect tag movement.
 - `preflight_monitoring_images` is implemented as a fixed approval-gated action
-  and its dry run passed. It pulls only the four immutable images, checks their
-  health tooling, validates Prometheus configuration/rules with pinned
-  `promtool`, and cleans two exact temporary files. It does not stop, restart,
-  or replace running services.
-- Full regression coverage now passes with 114 tests.
+  and its approved execution passed on 2026-07-21. It pulled only the four
+  immutable images, checked their health tooling, validated Prometheus
+  configuration/rules with pinned `promtool`, and cleaned two exact temporary
+  files. A targeted post-check confirmed the same six original containers were
+  still running; the host now has one non-security package update pending.
+- Fixed `deploy_monitoring_stack` and `rollback_monitoring_stack` actions are
+  implemented and dry-run verified. Deployment stages six exact repository
+  files, validates their hashes and the untracked Grafana secret, verifies the
+  old and new identities, and automatically restores the old containers if
+  cutover fails. Rollback proves the old stack can restart before removing only
+  the new candidate containers and volumes. Neither action has been executed.
+- Full regression coverage now passes with 118 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -154,16 +163,19 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. After exact approval, run `preflight_monitoring_images`; if it passes, add
-   the bounded monitoring deploy/rollback action and review its dry run.
-2. Record the smart-switch and garage-controller brands/apps, phone platform,
+1. Create the untracked Grafana admin-password secret on `container-host` with
+   directory mode `0700` and file mode `0600`; do not print it in action history.
+2. Review and, only after a separate exact approval, run
+   `deploy_monitoring_stack`; then verify Grafana login, targets, dashboard,
+   private metrics ports, and recovery before any cleanup.
+3. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-3. Define version-pinned Compose bundle metadata and approval-gated stack
+4. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-4. Implement USB mount/sentinel preflight before storage-dependent deployment.
-5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+5. Implement USB mount/sentinel preflight before storage-dependent deployment.
+6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-6. Prove reboot persistence and backup/restore for each new stateful application
+7. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

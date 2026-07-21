@@ -98,6 +98,22 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "implemented": True,
     },
     {
+        "action_id": "deploy_monitoring_stack",
+        "risk": "approval_required",
+        "description": "Stage the fixed monitoring bundle, verify the old stack and secret, then cut over with automatic recovery to the old containers on failure.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 240,
+    },
+    {
+        "action_id": "rollback_monitoring_stack",
+        "risk": "approval_required",
+        "description": "Stop the HomeOps monitoring stack, restart the preserved old containers, and remove only the new candidate containers and volumes.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 180,
+    },
+    {
         "action_id": "restart_service",
         "risk": "approval_required",
         "description": "Restart one approved system service.",

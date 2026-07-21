@@ -246,6 +246,40 @@ The corresponding approval phrase is:
 Approve action preflight_monitoring_images on container-host
 ```
 
+That preflight completed successfully on 2026-07-21 and a targeted collection
+confirmed that all six original containers were still running afterward.
+
+Monitoring deployment and rollback are separate fixed actions. Deployment
+uploads only the six committed runtime files, verifies their SHA-256 hashes,
+requires the untracked Grafana secret to be a non-symlink owned by the SSH user
+with mode `0600`, verifies the exact old containers and cached images, and then
+starts the new stack. If cutover fails, its exit trap removes the partial new
+containers while preserving their volumes and restarts the old four containers:
+
+```powershell
+python -m controller.main actions run deploy_monitoring_stack --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action deploy_monitoring_stack on container-host
+```
+
+Rollback first stops the new stack and proves the preserved old containers can
+start. Only after that succeeds does it remove the new candidate containers and
+their two new volumes; it never removes the old Grafana or Prometheus volumes:
+
+```powershell
+python -m controller.main actions run rollback_monitoring_stack --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action rollback_monitoring_stack on container-host
+```
+
 Health script deployment is also approval-gated and only copies the known
 repository script to the approved remote path:
 

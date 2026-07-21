@@ -47,6 +47,9 @@ Before any server change:
    the committed value.
 2. Validate Compose and Prometheus configuration.
 3. Confirm all health-check commands exist in the pinned images.
-4. Add a bounded HomeOps deploy/rollback action and review its dry run.
-5. Keep the current monitoring containers and old volumes available until the
+4. Create the server-side Grafana secret with directory mode `0700` and file
+   mode `0600`, without printing or committing its value.
+5. Review the fixed `deploy_monitoring_stack` and `rollback_monitoring_stack`
+   dry runs. Deployment remains separately approval-gated.
+6. Keep the current monitoring containers and old volumes available until the
    new stack passes health, dashboard, LAN exposure, and reboot verification.
