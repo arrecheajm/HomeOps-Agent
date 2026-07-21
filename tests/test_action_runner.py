@@ -453,6 +453,48 @@ class ActionRunnerTests(unittest.TestCase):
                 actions_dir=self.actions_dir,
             )
 
+    def test_retire_legacy_monitoring_files_is_exactly_bounded(self):
+        attempt = run_action(
+            "retire_legacy_monitoring_files",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(command[-1] for command in record["commands"])
+
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 3)
+        self.assertIn(
+            "rm -- docker-compose.yml prometheus.yml readme.md",
+            rendered,
+        )
+        self.assertIn(
+            "rmdir -- /home/containerserver/docker_lab/monitoring",
+            rendered,
+        )
+        self.assertIn("find . -xdev -mindepth 1 -maxdepth 1", rendered)
+        self.assertNotIn("rm -rf", rendered)
+        self.assertNotIn("/home/containerserver/docker_lab/dev-db", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action retire_legacy_monitoring_files on container-host",
+        )
+
+    def test_retire_legacy_monitoring_files_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "retire_legacy_monitoring_files",
+                "container-host",
+                [self._container_server()],
+                {"path": "anything"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
     def test_migrate_watchtower_container_dry_run_uses_maintained_image(self):
         attempt = run_action(
             "migrate_watchtower_container",

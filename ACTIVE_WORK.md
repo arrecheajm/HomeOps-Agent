@@ -210,6 +210,11 @@ Recommended thinking level for the next work:
   and two old named volumes. Final inventory shows 6 of 6 containers running;
   protected authentication, the provisioned dashboard, 5/5 targets, and the
   Grafana-only LAN boundary all still pass. Monitoring is operational.
+- Read-only inspection found the obsolete proof-of-concept directory
+  `/home/containerserver/docker_lab/monitoring` contains exactly
+  `docker-compose.yml`, `prometheus.yml`, and `readme.md`. The fixed
+  `retire_legacy_monitoring_files` action is implemented to remove only these
+  files and the empty directory after exact approval.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -223,16 +228,18 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Schedule the five `ispy-server` security package updates through the
+1. Dry-run and exactly approve `retire_legacy_monitoring_files` to remove the
+   three obsolete proof-of-concept files and their empty directory.
+2. Schedule the five `ispy-server` security package updates through the
    existing approval gate, followed by service and recording verification.
-2. Record the smart-switch and garage-controller brands/apps, phone platform,
+3. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-3. Define version-pinned Compose bundle metadata and approval-gated stack
+4. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-4. Implement USB mount/sentinel preflight before storage-dependent deployment.
-5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+5. Implement USB mount/sentinel preflight before storage-dependent deployment.
+6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-6. Prove reboot persistence and backup/restore for each new stateful application
+7. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

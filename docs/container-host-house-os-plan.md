@@ -215,6 +215,9 @@ backup target.
   four stopped legacy monitoring containers and two old data volumes. Final
   inventory shows only the four healthy desired-state monitoring containers,
   Portainer, and Watchtower; monitoring is operational.
+- The inert proof-of-concept Compose directory contains exactly three verified
+  files. `retire_legacy_monitoring_files` is implemented and dry-run verified
+  for separate approval-gated, non-recursive removal.
 
 ## Current Container Disposition
 

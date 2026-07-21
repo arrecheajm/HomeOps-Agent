@@ -341,6 +341,23 @@ The corresponding approval phrase is:
 Approve action retire_legacy_monitoring_stack on container-host
 ```
 
+The obsolete proof-of-concept Compose directory is a separate fixed cleanup.
+It refuses to run unless the replacement containers are healthy, the legacy
+Docker state is absent, and the directory contains exactly `docker-compose.yml`,
+`prometheus.yml`, and `readme.md` as regular non-symlink files. It uses plain
+`rm` for those three names and `rmdir` for the now-empty directory; it never
+uses recursive deletion:
+
+```powershell
+python -m controller.main actions run retire_legacy_monitoring_files --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action retire_legacy_monitoring_files on container-host
+```
+
 Health script deployment is also approval-gated and only copies the known
 repository script to the approved remote path:
 

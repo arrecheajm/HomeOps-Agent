@@ -41,7 +41,7 @@ Live status:
   `retire_disposable_containers`, `preflight_monitoring_images`,
   `provision_monitoring_secret`, `deploy_monitoring_stack`,
   `repair_monitoring_grafana`, `rollback_monitoring_stack`,
-  `retire_legacy_monitoring_stack`,
+  `retire_legacy_monitoring_stack`, `retire_legacy_monitoring_files`,
   `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
   `apply_package_updates`, `apply_security_updates`, and `reboot_server`
   support dry-run, exact approval, execution, and action history.
@@ -149,6 +149,10 @@ Live status:
   legacy containers and two old volumes after rechecking desired-state health
   and authentication. Final inventory shows 6 of 6 containers running and no
   legacy monitoring Docker state. The monitoring workload is active.
+- Read-only inspection confirmed the obsolete proof-of-concept Compose
+  directory contains only `docker-compose.yml`, `prometheus.yml`, and
+  `readme.md`. The fixed `retire_legacy_monitoring_files` action is implemented
+  for separate approval-gated, non-recursive removal.
 
 Current operating model:
 
@@ -247,6 +251,7 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `preflight_monitoring_images`, `provision_monitoring_secret`,
 `deploy_monitoring_stack`, `repair_monitoring_grafana`,
 `rollback_monitoring_stack`, `retire_legacy_monitoring_stack`,
+`retire_legacy_monitoring_files`,
 `apply_package_updates`,
 `apply_security_updates`, and `reboot_server` are executable after exact
 approval. `run_admin_command` is also executable after exact approval on
@@ -264,6 +269,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `repair_monitoring_grafana`
 - [x] `rollback_monitoring_stack`
 - [x] `retire_legacy_monitoring_stack`
+- [x] `retire_legacy_monitoring_files`
 - [x] `restart_service`
 - [x] `restart_docker_container`
 - [x] `reboot_server`
@@ -282,8 +288,9 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 ## Next Implementation Step
 
 Monitoring acceptance and legacy-state retirement are complete. The next
-operational item is the five pending `ispy-server` security updates, followed by
-the USB mount/sentinel preflight. Use
+operational item is approval-gated removal of the three obsolete monitoring
+Compose files, then the five pending `ispy-server` security updates and the USB
+mount/sentinel preflight. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

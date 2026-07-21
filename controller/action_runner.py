@@ -112,6 +112,12 @@ OLD_MONITORING_VOLUMES = (
     "monitoring_grafana-data",
     "monitoring_prometheus-data",
 )
+LEGACY_MONITORING_DIR = "/home/containerserver/docker_lab/monitoring"
+LEGACY_MONITORING_FILES = (
+    "docker-compose.yml",
+    "prometheus.yml",
+    "readme.md",
+)
 MONITORING_DEPLOY_FILES = (
     (LOCAL_MONITORING_DIR / "compose.yaml", "compose.yaml"),
     (
@@ -388,6 +394,14 @@ def build_action_commands(
                 "legacy containers and volumes are fixed."
             )
         return _retire_legacy_monitoring_stack_commands(server)
+
+    if action_id == "retire_legacy_monitoring_files":
+        if arguments:
+            raise ActionError(
+                "retire_legacy_monitoring_files does not accept arguments; its "
+                "legacy directory and three file names are fixed."
+            )
+        return _retire_legacy_monitoring_files_commands(server)
 
     if action_id == "restart_service":
         service = _approved_service_name(server, arguments)
@@ -1190,6 +1204,88 @@ def _retire_legacy_monitoring_stack_commands(
         + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(preflight_parts))],
         build_ssh_base_command(server)
         + [server.ssh_target, _remote_command("sh", "-lc", retire)],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(verify_parts))],
+    ]
+
+
+def _retire_legacy_monitoring_files_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Remove only the verified obsolete monitoring Compose directory."""
+
+    expected_members = "\n".join(sorted(LEGACY_MONITORING_FILES))
+    remote_dir = quote(LEGACY_MONITORING_DIR)
+
+    preflight_parts = ["set -eu"]
+    for name, image in NEW_MONITORING_CONTAINERS.items():
+        preflight_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy",
+            )
+        )
+    for name in OLD_MONITORING_CONTAINERS:
+        preflight_parts.append(
+            f"if docker container inspect {quote(name)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for volume in OLD_MONITORING_VOLUMES:
+        preflight_parts.append(
+            f"if docker volume inspect {quote(volume)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    preflight_parts.extend(
+        (
+            f"test -d {remote_dir}",
+            f"test ! -L {remote_dir}",
+            f"test \"$(find {remote_dir} -xdev -mindepth 1 -maxdepth 1 "
+            f"-printf '%f\\n' | LC_ALL=C sort)\" = {quote(expected_members)}",
+        )
+    )
+    for name in LEGACY_MONITORING_FILES:
+        path = quote(f"{LEGACY_MONITORING_DIR}/{name}")
+        preflight_parts.extend((f"test -f {path}", f"test ! -L {path}"))
+    preflight_parts.append("printf 'legacy_monitoring_files_preflight_ok\\n'")
+
+    quoted_names = " ".join(quote(name) for name in LEGACY_MONITORING_FILES)
+    retire_parts = [
+        "set -eu",
+        f"cd -- {remote_dir}",
+        f"test \"$(pwd -P)\" = {remote_dir}",
+        "test \"$(find . -xdev -mindepth 1 -maxdepth 1 -printf '%f\\n' | "
+        f"LC_ALL=C sort)\" = {quote(expected_members)}",
+    ]
+    for name in LEGACY_MONITORING_FILES:
+        retire_parts.extend((f"test -f {quote(name)}", f"test ! -L {quote(name)}"))
+    retire_parts.extend(
+        (
+            f"rm -- {quoted_names}",
+            "cd -- ..",
+            f"rmdir -- {remote_dir}",
+            "printf 'legacy_monitoring_files_retired\\n'",
+        )
+    )
+
+    verify_parts = ["set -eu", f"test ! -e {remote_dir}"]
+    for name in NEW_MONITORING_CONTAINERS:
+        verify_parts.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy",
+            )
+        )
+    verify_parts.append("printf 'legacy_monitoring_files_retirement_verified\\n'")
+
+    return [
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(preflight_parts))],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(retire_parts))],
         build_ssh_base_command(server)
         + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(verify_parts))],
     ]

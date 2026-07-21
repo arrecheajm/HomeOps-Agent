@@ -136,6 +136,13 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "implemented": True,
     },
     {
+        "action_id": "retire_legacy_monitoring_files",
+        "risk": "approval_required",
+        "description": "Remove the three verified obsolete monitoring Compose files and their directory after proving the replacement stack remains healthy.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+    },
+    {
         "action_id": "restart_service",
         "risk": "approval_required",
         "description": "Restart one approved system service.",

@@ -252,3 +252,10 @@ monitoring services plus Portainer and Watchtower running, no legacy monitoring
 state, no unhealthy containers, and no container-host warnings. Independent
 acceptance again confirmed the HomeOps dashboard, friendly labels, 5/5 targets,
 protected authentication, and only Grafana port 3000 reachable on the LAN.
+
+The obsolete proof-of-concept Compose directory remains inert at
+`/home/containerserver/docker_lab/monitoring` with exactly
+`docker-compose.yml`, `prometheus.yml`, and `readme.md`. The fixed
+`retire_legacy_monitoring_files` action is dry-run verified to require that
+exact non-symlink file set and healthy replacement containers, then use only
+non-recursive removal. Its execution requires separate exact approval.
