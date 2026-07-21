@@ -111,6 +111,11 @@ version should answer these questions at a glance:
 
 Use a small number of readable panels with plain labels. Avoid importing a huge
 community dashboard without reviewing its queries and data requirements.
+Host legends and the target-health table use the existing `server_id` label so
+the three Node Exporter endpoints appear as `container-host`, `openvpn-server`,
+and `ispy-server`; Prometheus retains the actual addresses only as backend
+scrape destinations. The generated HomeOps HTML dashboard includes a direct
+link to Grafana's provisioned HomeOps Overview.
 
 ## Proposed Repository Bundle
 

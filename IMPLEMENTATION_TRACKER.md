@@ -133,6 +133,11 @@ Live status:
   rollback to the prior Compose file. Its second approved execution completed;
   protected/default authentication, clean startup logs, final LAN binding, and
   unchanged cAdvisor, Node Exporter, and Prometheus identities all passed.
+- The provisioned dashboard now presents the three Node Exporter hosts by their
+  stable `server_id` values (`container-host`, `openvpn-server`, and
+  `ispy-server`) rather than scrape addresses. The generated HomeOps dashboard
+  links to Grafana's HomeOps Overview. Repository validation passed; the live
+  Grafana file sync remains approval-gated.
 
 Current operating model:
 
@@ -264,8 +269,9 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next operational item is verifying monitoring reboot persistence, then
-separately testing rollback before old monitoring state is removed. The USB
+The next operational item is synchronizing the friendly-label Grafana dashboard
+update through the bounded monitoring action, then verifying reboot persistence
+and separately testing rollback before old monitoring state is removed. The USB
 mount/sentinel preflight follows. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.

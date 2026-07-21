@@ -24,6 +24,10 @@ tag. The version decision and old-to-new rationale are documented in
 - Docker JSON logs rotate at 10 MB with three files per service.
 - Grafana's Prometheus data source and HomeOps dashboard are provisioned from
   version-controlled files.
+- Host panels and target health use the existing `server_id` labels, mapping
+  the scrape endpoints to `container-host`, `openvpn-server`, and `ispy-server`
+  instead of displaying internal addresses. The generated HomeOps HTML
+  dashboard links directly to Grafana's HomeOps Overview.
 - Grafana plugin preinstall and automatic plugin updates are disabled so its
   read-only image remains immutable.
 - The Grafana admin password remains in a server-side `0600` file outside the

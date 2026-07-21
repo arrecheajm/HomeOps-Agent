@@ -24,7 +24,7 @@
       "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
       "id": 2,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
-      "targets": [{"editorMode": "code", "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{instance}}", "range": true, "refId": "A"}],
+      "targets": [{"editorMode": "code", "expr": "100 - (avg by (server_id) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{server_id}}", "range": true, "refId": "A"}],
       "title": "Host CPU Used",
       "type": "stat"
     },
@@ -34,7 +34,7 @@
       "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
       "id": 3,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
-      "targets": [{"editorMode": "code", "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)", "legendFormat": "{{instance}}", "range": true, "refId": "A"}],
+      "targets": [{"editorMode": "code", "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)", "legendFormat": "{{server_id}}", "range": true, "refId": "A"}],
       "title": "Host Memory Used",
       "type": "stat"
     },
@@ -44,7 +44,7 @@
       "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
       "id": 4,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
-      "targets": [{"editorMode": "code", "expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\"})", "legendFormat": "{{instance}}", "range": true, "refId": "A"}],
+      "targets": [{"editorMode": "code", "expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\"})", "legendFormat": "{{server_id}}", "range": true, "refId": "A"}],
       "title": "Root Filesystem Used",
       "type": "stat"
     },
@@ -54,7 +54,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
       "id": 5,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
-      "targets": [{"editorMode": "code", "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{instance}}", "range": true, "refId": "A"}],
+      "targets": [{"editorMode": "code", "expr": "100 - (avg by (server_id) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{server_id}}", "range": true, "refId": "A"}],
       "title": "Host CPU Trend",
       "type": "timeseries"
     },
@@ -74,9 +74,9 @@
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 13},
       "id": 7,
       "options": {"cellHeight": "sm", "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false}, "showHeader": true},
-      "targets": [{"editorMode": "code", "expr": "up", "format": "table", "instant": true, "legendFormat": "{{job}} {{instance}}", "range": false, "refId": "A"}],
+      "targets": [{"editorMode": "code", "expr": "up", "format": "table", "instant": true, "legendFormat": "{{job}} {{server_id}}", "range": false, "refId": "A"}],
       "title": "Scrape Target Health",
-      "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true}, "indexByName": {}, "renameByName": {"Value": "Status", "instance": "Instance", "job": "Job"}}}],
+      "transformations": [{"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "instance": true}, "indexByName": {"job": 0, "server_id": 1, "Value": 2}, "renameByName": {"Value": "Status", "job": "Job", "server_id": "Server"}}}],
       "type": "table"
     }
   ],

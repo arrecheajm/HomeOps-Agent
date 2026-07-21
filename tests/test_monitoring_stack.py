@@ -35,6 +35,33 @@ class MonitoringStackTests(unittest.TestCase):
         self.assertIn("cadvisor:8080", prometheus)
         self.assertIn("192.168.86.25:9100", prometheus)
         self.assertIn("192.168.86.27:9100", prometheus)
+        self.assertIn(
+            "- job_name: node-exporter\n"
+            "    static_configs:\n"
+            "      - targets:\n"
+            "          - node-exporter:9100\n"
+            "        labels:\n"
+            "          server_id: container-host",
+            prometheus,
+        )
+        self.assertIn(
+            "- job_name: openvpn-server\n"
+            "    static_configs:\n"
+            "      - targets:\n"
+            "          - 192.168.86.25:9100\n"
+            "        labels:\n"
+            "          server_id: openvpn-server",
+            prometheus,
+        )
+        self.assertIn(
+            "- job_name: ispy-server\n"
+            "    static_configs:\n"
+            "      - targets:\n"
+            "          - 192.168.86.27:9100\n"
+            "        labels:\n"
+            "          server_id: ispy-server",
+            prometheus,
+        )
         self.assertIn("--storage.tsdb.retention.size=4GB", (STACK_DIR / "compose.yaml").read_text(encoding="utf-8"))
 
     def test_dashboard_is_valid_json_with_core_homeops_panels(self):
@@ -50,6 +77,29 @@ class MonitoringStackTests(unittest.TestCase):
         self.assertIn("Root Filesystem Used", titles)
         self.assertIn("Top Container Memory", titles)
         self.assertIn("Scrape Target Health", titles)
+        host_panels = {
+            panel["title"]: panel
+            for panel in dashboard["panels"]
+            if panel["title"] in {
+                "Host CPU Used",
+                "Host Memory Used",
+                "Root Filesystem Used",
+                "Host CPU Trend",
+            }
+        }
+        self.assertEqual(
+            {panel["targets"][0]["legendFormat"] for panel in host_panels.values()},
+            {"{{server_id}}"},
+        )
+        self.assertNotIn("{{instance}}", json.dumps(dashboard))
+        target_health = next(
+            panel
+            for panel in dashboard["panels"]
+            if panel["title"] == "Scrape Target Health"
+        )
+        organize = target_health["transformations"][0]["options"]
+        self.assertTrue(organize["excludeByName"]["instance"])
+        self.assertEqual(organize["renameByName"]["server_id"], "Server")
 
     def test_grafana_disables_plugin_preinstall_and_has_optional_directories(self):
         compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
