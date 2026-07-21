@@ -12,7 +12,7 @@
       },
       "monitoring-grafana-1": {
         "classification": "redeploy",
-        "rationale": "Keep Grafana capability, but redeploy from desired state with a pinned image and restart policy."
+        "rationale": "Keep Grafana capability but start from clean provisioned state; the operator confirmed the basic dashboard and data do not need migration."
       },
       "monitoring-node_exporter-1": {
         "classification": "redeploy",
@@ -20,7 +20,7 @@
       },
       "monitoring-prometheus-1": {
         "classification": "redeploy",
-        "rationale": "Keep metrics history, but redeploy from desired state with a pinned image, restart policy, and read-only configuration mount."
+        "rationale": "Keep Prometheus capability but start with a clean bounded-retention volume, pinned image, restart policy, and read-only configuration."
       },
       "mysql57": {
         "classification": "retired",

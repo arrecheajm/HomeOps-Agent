@@ -88,6 +88,10 @@ Live status:
   `retire_disposable_containers` action removed those three containers and their
   fixed data-volume bundle on 2026-07-20; targeted and full-fleet collections
   verified 6 of 6 remaining containers with no container-host findings.
+- The monitoring migration strategy is a clean rebuild. The current basic
+  Grafana state and Prometheus history are disposable; the documented plan
+  keeps old volumes only through rollback acceptance and records every proposed
+  upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 
 Current operating model:
 
@@ -211,9 +215,10 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next code item is version-pinned Compose bundle metadata for the retained
-monitoring stack and approval-gated stack lifecycle design from
-`config/workloads.yaml`, followed by the USB mount/sentinel preflight. Use
+The next code item is the version-pinned `stacks/monitoring/` bundle and bounded
+deployment/rollback lifecycle design from `config/workloads.yaml` and
+`docs/monitoring-stack-upgrade-review.md`, followed by the USB mount/sentinel
+preflight. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

@@ -162,8 +162,8 @@ backup target.
 - Python regression suite passes with 109 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
-- Targeted run `2026-07-20T17-12-50Z` collected all 9 running containers with
-  no findings and populated the enhanced reports.
+- Full fleet run `2026-07-20T19-14-29Z` collected the post-cleanup state with 6
+  of 6 container-host containers running and no container-host findings.
 - Local disposition recommendations are stored in
   `config/container-classifications.yaml` and do not trigger cleanup actions.
 - Sanitized point-in-time storage and database evidence is stored in
@@ -177,15 +177,18 @@ backup target.
 - `retire_disposable_containers` is implemented as an approval-gated fixed
   bundle. The approved action completed on 2026-07-20, and fresh inventory
   verified 6 of 6 remaining containers with no container-host findings.
+- The monitoring stack will be rebuilt from clean state rather than migrating
+  the basic Grafana dashboard or Prometheus history. The old-to-new learning
+  ledger and rollback plan are in `docs/monitoring-stack-upgrade-review.md`.
 
 ## Current Container Disposition
 
 | Container | Recommendation | Reason |
 |---|---|---|
 | `cadvisor` | keep | Useful container metrics; later pin the image and review LAN exposure. |
-| `monitoring-grafana-1` | redeploy | Preserve Grafana data while adding a pinned image and restart policy. |
+| `monitoring-grafana-1` | redeploy | Start clean with provisioned data source/dashboard, authentication, a pinned image, health check, and restart policy. |
 | `monitoring-node_exporter-1` | redeploy | Preserve host metrics with a pinned image, restart policy, and reviewed port binding. |
-| `monitoring-prometheus-1` | redeploy | Preserve metrics history; pin the image, add restart policy, and make the config mount read-only. |
+| `monitoring-prometheus-1` | redeploy | Start with clean bounded-retention storage; pin the image, add health/restart policy, and mount reviewed configuration read-only. |
 | `filebrowser` | retired | Removed with its Docker volumes after the operator confirmed it was empty. Bind-mounted directories were left intact. |
 | `mysql57` | retired | Removed with `dev-db_mysql_data` after the operator confirmed it was disposable test data. |
 | `nonprofit-postgres` | retired | Removed with `nonprofit_postgres_data` after the operator confirmed it was disposable test data. |

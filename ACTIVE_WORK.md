@@ -116,6 +116,12 @@ Recommended thinking level for the next work:
   Mission Control, smart home, recipes, documents, and developer lab are ordered
   into phases with storage, backup, and acceptance prerequisites. Deployment is
   gated for every workload until pinned Compose bundles and preflights exist.
+- The operator approved a clean monitoring rebuild: the current basic Grafana
+  configuration and Prometheus history do not need migration. Keep the current
+  stack running and its old volumes available until the replacement passes
+  health, LAN-exposure, dashboard, reboot, and rollback acceptance.
+- `docs/monitoring-stack-upgrade-review.md` is the required learning ledger for
+  every old-to-new monitoring change and why it is needed.
 - Full regression coverage now passes with 109 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
@@ -130,8 +136,9 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Define desired-state Compose bundles for the retained monitoring services
-   with pinned images, restart policies, and reviewed LAN port bindings.
+1. Repeat the non-secret monitoring preflight when VPN/SSH access returns, then
+   implement `stacks/monitoring/` from the accepted upgrade review with pinned
+   images, private metric endpoints, provisioning, health checks, and rollback.
 2. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
 3. Define version-pinned Compose bundle metadata and approval-gated stack
