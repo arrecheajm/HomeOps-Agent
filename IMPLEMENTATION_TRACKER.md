@@ -38,7 +38,7 @@ Live status:
   before-state snapshots.
 - `inspect_docker_container`, `replace_watchtower_container`,
   `migrate_watchtower_container`, `deploy_health_script`,
-  `retire_disposable_containers`,
+  `retire_disposable_containers`, `preflight_monitoring_images`,
   `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
   `apply_package_updates`, `apply_security_updates`, and `reboot_server`
   support dry-run, exact approval, execution, and action history.
@@ -92,6 +92,15 @@ Live status:
   Grafana state and Prometheus history are disposable; the documented plan
   keeps old volumes only through rollback acceptance and records every proposed
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
+- The live monitoring preflight is complete and the first
+  `stacks/monitoring/` replacement bundle is implemented. Docker Compose
+  renders it successfully; 114 tests cover version pinning, LAN exposure,
+  retained scrape targets, dashboard structure, and four committed
+  Linux/amd64 registry digests. Exact-image health checks and executable
+  deploy/rollback actions remain gated.
+- `preflight_monitoring_images` is implemented and dry-run verified. The fixed
+  approval-gated action pulls only those immutable refs, validates health tools
+  and Prometheus config/rules, and does not disrupt running services.
 
 Current operating model:
 
@@ -187,6 +196,7 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `restart_service`, `deploy_health_script`, `deploy_sudoers_profile`,
 `inspect_docker_container`, `replace_watchtower_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
+`preflight_monitoring_images`,
 `apply_package_updates`,
 `apply_security_updates`, and `reboot_server` are executable after exact
 approval. `run_admin_command` is also executable after exact approval on
@@ -198,6 +208,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `replace_watchtower_container`
 - [x] `migrate_watchtower_container`
 - [x] `retire_disposable_containers`
+- [x] `preflight_monitoring_images`
 - [x] `restart_service`
 - [x] `restart_docker_container`
 - [x] `reboot_server`
@@ -215,10 +226,11 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-The next code item is the version-pinned `stacks/monitoring/` bundle and bounded
-deployment/rollback lifecycle design from `config/workloads.yaml` and
-`docs/monitoring-stack-upgrade-review.md`, followed by the USB mount/sentinel
-preflight. Use
+The next operational item is executing `preflight_monitoring_images` after
+exact approval. If it passes, the next code item is implementing the bounded
+monitoring deployment/rollback lifecycle from `config/workloads.yaml` and
+`docs/monitoring-stack-upgrade-review.md`. The USB mount/sentinel preflight
+follows. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

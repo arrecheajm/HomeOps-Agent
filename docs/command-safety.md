@@ -230,6 +230,22 @@ The corresponding approval phrase is:
 Approve action retire_disposable_containers on container-host
 ```
 
+Monitoring image validation is separated from deployment. The preflight pulls
+only the four immutable image references committed in `stacks/monitoring/`,
+checks health-command dependencies, and runs the pinned Prometheus `promtool`
+against the proposed configuration and rule files. It does not stop, restart,
+or replace any service:
+
+```powershell
+python -m controller.main actions run preflight_monitoring_images --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action preflight_monitoring_images on container-host
+```
+
 Health script deployment is also approval-gated and only copies the known
 repository script to the approved remote path:
 

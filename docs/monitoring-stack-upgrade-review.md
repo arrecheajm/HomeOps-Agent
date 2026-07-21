@@ -30,13 +30,47 @@ Confirmed by sanitized inventory from fleet run `2026-07-20T19-14-29Z`:
 | Node Exporter | `prom/node-exporter:latest` | none | `9100` on IPv4 and IPv6 | none reported |
 | Prometheus | `prom/prometheus:latest` | none | `9090` on IPv4 and IPv6 | Writable `prometheus.yml`; `monitoring_prometheus-data` |
 
-All four containers currently share the `monitor` Docker network. Grafana,
-Prometheus, and Node Exporter have no reported health check.
+All four containers currently share the `monitor` Docker network with
+Portainer. Grafana, Prometheus, and Node Exporter have no health check.
 
-A deeper read-only inspection attempted on `2026-07-21` timed out before SSH
-connected. Therefore current resource limits, log rotation, security options,
-Prometheus retention, scrape jobs, and Compose-file contents are not claimed as
-facts here. They must be captured or treated as unknown before cutover.
+A follow-up sanitized inspection on `2026-07-21` confirmed:
+
+- no CPU, memory, or PID limits on any monitoring service
+- Docker's `json-file` logging driver with no rotation options
+- no `security_opt`, capability drop, or read-only container root filesystem
+- no Grafana environment configuration or provisioning mounts
+- Prometheus only specifies its config and data paths, so retention uses image
+  defaults rather than an intentional HomeOps budget
+- useful 15-second scrape jobs for local Node Exporter, cAdvisor,
+  `openvpn-server` at `192.168.86.25:9100`, and `ispy-server` at
+  `192.168.86.27:9100`
+- about 50 MiB of Grafana data and 194 MiB of Prometheus data
+- no secret-bearing environment keys in the effective Compose services
+- the proposed `wget` checks work in the currently running Grafana, Prometheus,
+  and Node Exporter image families, while cAdvisor's image-native health check
+  reports healthy; the exact pinned images still require validation after an
+  approval-gated pull
+
+The current Compose files remain on the server at
+`/home/containerserver/docker_lab/monitoring/`. File contents were sanitized
+through `docker compose config`; credential values and arbitrary environment
+values were not collected.
+
+## Pinned Review Baseline
+
+The first repository draft uses the latest stable releases visible in the
+projects' official release channels on `2026-07-21`:
+
+- [Grafana 13.1.0](https://github.com/grafana/grafana/releases/tag/v13.1.0)
+- [Prometheus 3.12.0](https://github.com/prometheus/prometheus/releases/tag/v3.12.0)
+- [Node Exporter 1.11.1](https://github.com/prometheus/node_exporter/releases/tag/v1.11.1)
+- [cAdvisor 0.57.0](https://github.com/google/cadvisor/releases/tag/v0.57.0)
+
+These exact tags prevent accidental major/minor drift. Their Linux/amd64
+manifest digests were resolved read-only from `container-host` and committed in
+`stacks/monitoring/compose.yaml`; they must be rechecked immediately before
+deployment so a moved tag is detected. The cAdvisor image moves from the legacy
+GCR path to the project's current GHCR path for releases newer than 0.53.
 
 ## Upgrade Ledger
 
@@ -52,10 +86,10 @@ facts here. They must be captured or treated as unknown before cutover.
 | Credentials | Not confirmed. | Disable anonymous/admin defaults and load the initial admin secret from an untracked server-side environment file. | Credentials must not live in Compose, Git, reports, or action history. | Required |
 | Health checks | Only cAdvisor reports healthy; the other three have no reported checks. | Add service-appropriate readiness/health checks where the image supports them. | “Container running” does not prove the web API or metrics endpoint is working. | Required |
 | Verification | Visual confirmation that Grafana starts. | Verify scrape targets, dashboard panels, container health, LAN-only access, and reboot persistence. | HomeOps needs objective acceptance checks before calling a deployment successful. | Required |
-| Prometheus retention | Not confirmed. | Set a modest time and size budget appropriate for the internal disk. | Prevent telemetry from growing until it consumes space needed by household applications. | Recommended |
-| Container logging | Not confirmed. | Configure Docker log rotation for each service. | Default JSON logs can grow without a bound even when Prometheus retention is controlled. | Recommended |
-| Resource protection | Not confirmed. | Add conservative memory, CPU, and PID limits after measuring normal use. | The 8 GB host must reserve capacity for Home Assistant, Paperless, Mealie, and Forgejo. | Recommended |
-| Security hardening | Current capability and root-filesystem settings are not confirmed. | Use `no-new-privileges`, drop capabilities, and use read-only roots where compatible; document exceptions for host collectors. | Collectors need host visibility, but that should not become unrestricted access by accident. | Recommended |
+| Prometheus retention | Only config/data path flags are set; there is no intentional retention budget. | Limit retention to 15 days or 4 GB, whichever is reached first. | Prevent telemetry from growing until it consumes space needed by household applications. | Recommended |
+| Container logging | `json-file` with no rotation options. | Rotate at 10 MB and retain three files per service. | Default JSON logs can grow without a bound even when Prometheus retention is controlled. | Recommended |
+| Resource protection | No CPU, memory, or PID limits. | Use a combined ceiling of about 1.9 GB RAM and 2.5 CPU cores across the four services, then tune from observed use. | The 8 GB host must reserve capacity for Home Assistant, Paperless, Mealie, and Forgejo. | Recommended |
+| Security hardening | No security options, capability drops, or read-only roots. | Use `no-new-privileges`, drop capabilities, and use read-only roots where compatible; keep a documented cAdvisor exception until host metrics are verified. | Collectors need host visibility, but that should not become unrestricted access by accident. | Recommended |
 | Watchtower | Automatic updates remain available on the host. | Do not label this stack for Watchtower updates. Upgrade only through a pinned HomeOps change. | Automatic replacement defeats version pinning, validation, and rollback. | Required |
 | HTTPS and friendly name | Grafana is reached directly by host and port. | Keep initial access LAN-only; add local DNS and HTTPS with the common household ingress later. | Centralizing certificates and names is cleaner than solving TLS separately for every first deployment. | Later |
 
@@ -103,12 +137,13 @@ Grafana state and Prometheus time-series data stay in named Docker volumes.
 
 ## Migration And Rollback Plan
 
-1. Reconnect to `container-host` and repeat the non-secret preflight for current
-   Compose paths, scrape targets, limits, logging, volume sizes, and image IDs.
-2. Select supported image versions from official release documentation and pin
-   versions plus resolved digests.
-3. Build the repository bundle and validate it locally with `docker compose
-   config`; do not deploy from an unrendered template.
+1. Revalidate the non-secret preflight immediately before cutover so container
+   identities and source files cannot drift unnoticed.
+2. Re-resolve the selected exact tags and confirm their Linux/amd64 digests
+   still match the committed values; review image release notes.
+3. Validate the repository bundle with `docker compose config`, Prometheus
+   tooling, and the exact image health commands; do not deploy an unrendered or
+   untested template.
 4. Add a bounded HomeOps deployment action with an exact container, file, and
    volume allowlist. Produce and review its dry run.
 5. During approved cutover, verify the old four container identities, stop them,
@@ -125,8 +160,8 @@ Grafana state and Prometheus time-series data stay in named Docker volumes.
 
 ## Acceptance Checklist
 
-- [ ] All images use reviewed exact versions and recorded digests.
-- [ ] `docker compose config` succeeds with no secrets printed or committed.
+- [x] All images use reviewed exact versions and recorded Linux/amd64 digests.
+- [x] `docker compose config` succeeds with no secrets printed or committed.
 - [ ] Grafana is the only monitoring service with a LAN-published port.
 - [ ] Grafana requires authentication and has no default credential.
 - [ ] Prometheus, cAdvisor, and Node Exporter are reachable only on the private
@@ -141,7 +176,13 @@ Grafana state and Prometheus time-series data stay in named Docker volumes.
 
 ## What This Does Not Yet Authorize
 
-This decision does not authorize stopping or deleting the current monitoring
+The first version-controlled bundle now exists at `stacks/monitoring/`, but this
+decision does not authorize stopping or deleting the current monitoring
 containers, removing volumes, writing remote files, changing ports, or deploying
 the replacement. Those remain approval-gated HomeOps actions after the bundle
 and dry run are ready for review.
+
+`preflight_monitoring_images` is now implemented and dry-run verified. Its
+execution still requires the exact phrase `Approve action
+preflight_monitoring_images on container-host`. It changes only the Docker image
+cache and two temporary validation files; it does not alter running services.

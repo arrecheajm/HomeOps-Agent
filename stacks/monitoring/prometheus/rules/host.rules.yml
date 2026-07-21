@@ -1,0 +1,25 @@
+groups:
+  - name: homeops-host-health
+    rules:
+      - alert: HomeOpsTargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HomeOps scrape target is down"
+          description: "{{ $labels.job }} target {{ $labels.instance }} has been unreachable for five minutes."
+
+      - alert: HomeOpsRootFilesystemLow
+        expr: |
+          100 * (
+            node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}
+            /
+            node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}
+          ) < 15
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HomeOps root filesystem has less than 15% free space"
+          description: "{{ $labels.instance }} root filesystem free space is below the planning threshold."

@@ -7,6 +7,7 @@
     "replace_watchtower_container",
     "migrate_watchtower_container",
     "retire_disposable_containers",
+    "preflight_monitoring_images",
     "deploy_health_script",
     "deploy_sudoers_profile",
     "apply_security_updates",

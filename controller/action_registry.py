@@ -91,6 +91,13 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "implemented": True,
     },
     {
+        "action_id": "preflight_monitoring_images",
+        "risk": "approval_required",
+        "description": "Pull the four immutable monitoring images and validate their health tooling plus the proposed Prometheus configuration without replacing services.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+    },
+    {
         "action_id": "restart_service",
         "risk": "approval_required",
         "description": "Restart one approved system service.",

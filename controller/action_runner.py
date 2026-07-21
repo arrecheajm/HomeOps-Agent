@@ -69,6 +69,19 @@ DISPOSABLE_VOLUMES = (
     "dev-db_mysql_data",
     "nonprofit_postgres_data",
 )
+MONITORING_IMAGE_REFS = {
+    "cadvisor": "ghcr.io/google/cadvisor:v0.57.0@sha256:1742bab953d9d9ab166cba24604a9488efdff7d73dc6d18a087c09a1bcd6cb9d",
+    "grafana": "grafana/grafana:13.1.0@sha256:6ea068891652aa6a65ca9065c26b89de939653803c836426970305c11fd00534",
+    "node-exporter": "prom/node-exporter:v1.11.1@sha256:fbd8062b4529e166e902bd62cd93de2f48b36d50af942620d419657265bc20b1",
+    "prometheus": "prom/prometheus:v3.12.0@sha256:dd4bced05dfaddf23a7ec50f87334993a4149f7fcfbf58456d1c8bafce91cd13",
+}
+LOCAL_MONITORING_DIR = config.BASE_DIR / "stacks" / "monitoring"
+LOCAL_PROMETHEUS_CONFIG_PATH = LOCAL_MONITORING_DIR / "prometheus" / "prometheus.yml"
+LOCAL_PROMETHEUS_RULES_PATH = (
+    LOCAL_MONITORING_DIR / "prometheus" / "rules" / "host.rules.yml"
+)
+REMOTE_PROMETHEUS_PREFLIGHT_CONFIG = "/tmp/homeops-prometheus-preflight.yml"
+REMOTE_PROMETHEUS_PREFLIGHT_RULES = "/tmp/homeops-host-rules-preflight.yml"
 
 
 class ActionError(RuntimeError):
@@ -240,6 +253,14 @@ def build_action_commands(
                 "container and volume bundle is hard-coded."
             )
         return _retire_disposable_container_commands(server)
+
+    if action_id == "preflight_monitoring_images":
+        if arguments:
+            raise ActionError(
+                "preflight_monitoring_images does not accept arguments; its exact "
+                "images and validation files are hard-coded."
+            )
+        return _preflight_monitoring_image_commands(server)
 
     if action_id == "restart_service":
         service = _approved_service_name(server, arguments)
@@ -413,6 +434,101 @@ def _retire_disposable_container_commands(
             _remote_command("sh", "-lc", verify_script),
         ],
     ]
+
+
+def _preflight_monitoring_image_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    for path in (LOCAL_PROMETHEUS_CONFIG_PATH, LOCAL_PROMETHEUS_RULES_PATH):
+        if not path.exists():
+            raise ActionError(f"Monitoring preflight file not found: {path}")
+
+    commands: list[list[str]] = []
+    for image in MONITORING_IMAGE_REFS.values():
+        commands.append(
+            build_ssh_base_command(server)
+            + [server.ssh_target, _remote_command("docker", "pull", image)]
+        )
+
+    for service in ("grafana", "prometheus", "node-exporter"):
+        image = MONITORING_IMAGE_REFS[service]
+        commands.append(
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                _remote_command(
+                    "docker",
+                    "run",
+                    "--rm",
+                    "--entrypoint",
+                    "sh",
+                    image,
+                    "-c",
+                    "command -v wget >/dev/null",
+                ),
+            ]
+        )
+
+    cadvisor_image = MONITORING_IMAGE_REFS["cadvisor"]
+    cadvisor_check = (
+        "test \"$(docker image inspect --format '{{json .Config.Healthcheck}}' "
+        f"{quote(cadvisor_image)})\" != null"
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", cadvisor_check)]
+    )
+
+    commands.append(
+        _build_scp_base_command(server)
+        + [
+            str(LOCAL_PROMETHEUS_CONFIG_PATH),
+            f"{server.ssh_target}:{REMOTE_PROMETHEUS_PREFLIGHT_CONFIG}",
+        ]
+    )
+    commands.append(
+        _build_scp_base_command(server)
+        + [
+            str(LOCAL_PROMETHEUS_RULES_PATH),
+            f"{server.ssh_target}:{REMOTE_PROMETHEUS_PREFLIGHT_RULES}",
+        ]
+    )
+    prometheus_image = MONITORING_IMAGE_REFS["prometheus"]
+    commands.append(
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command(
+                "docker",
+                "run",
+                "--rm",
+                "--entrypoint",
+                "/bin/promtool",
+                "-v",
+                f"{REMOTE_PROMETHEUS_PREFLIGHT_CONFIG}:/etc/prometheus/prometheus.yml:ro",
+                "-v",
+                f"{REMOTE_PROMETHEUS_PREFLIGHT_RULES}:/etc/prometheus/rules/host.rules.yml:ro",
+                prometheus_image,
+                "check",
+                "config",
+                "/etc/prometheus/prometheus.yml",
+            ),
+        ]
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command(
+                "rm",
+                "-f",
+                "--",
+                REMOTE_PROMETHEUS_PREFLIGHT_CONFIG,
+                REMOTE_PROMETHEUS_PREFLIGHT_RULES,
+            ),
+        ]
+    )
+    return commands
 
 
 def _deploy_health_script_commands(server: ServerInventoryItem) -> list[list[str]]:

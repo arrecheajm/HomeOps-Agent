@@ -207,6 +207,31 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(attempt.record["status"], "completed")
         self.assertEqual(subprocess_run.call_count, 4)
 
+    def test_preflight_monitoring_images_dry_run_is_non_disruptive_and_pinned(self):
+        attempt = run_action(
+            "preflight_monitoring_images",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(command[-1] for command in record["commands"])
+
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(rendered.count("docker pull"), 4)
+        self.assertGreaterEqual(rendered.count("@sha256:"), 8)
+        self.assertIn("/bin/promtool", rendered)
+        self.assertNotIn("docker stop", rendered)
+        self.assertNotIn("docker restart", rendered)
+        self.assertNotIn("docker compose up", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action preflight_monitoring_images on container-host",
+        )
+
     def test_migrate_watchtower_container_dry_run_uses_maintained_image(self):
         attempt = run_action(
             "migrate_watchtower_container",

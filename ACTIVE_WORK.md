@@ -122,7 +122,25 @@ Recommended thinking level for the next work:
   health, LAN-exposure, dashboard, reboot, and rollback acceptance.
 - `docs/monitoring-stack-upgrade-review.md` is the required learning ledger for
   every old-to-new monitoring change and why it is needed.
-- Full regression coverage now passes with 109 tests.
+- The live non-secret monitoring preflight completed on 2026-07-21. It confirmed
+  no runtime resource limits, log rotation, security options, or intentional
+  Prometheus retention; only cAdvisor has a health check. Current Grafana and
+  Prometheus data total under 250 MiB, and existing cross-server scrape jobs are
+  preserved in the draft.
+- `stacks/monitoring/` now contains a Compose-valid clean replacement using
+  Grafana 13.1.0, Prometheus 3.12.0, Node Exporter 1.11.1, and cAdvisor 0.57.0,
+  plus provisioning, rules, and a HomeOps overview dashboard. Deployment stays
+  disabled until exact-image health checks are validated and a bounded
+  deploy/rollback action passes dry run.
+- Linux/amd64 manifest digests for all four pinned monitoring images were
+  resolved read-only and committed in Compose. Re-resolve them immediately
+  before deployment to detect tag movement.
+- `preflight_monitoring_images` is implemented as a fixed approval-gated action
+  and its dry run passed. It pulls only the four immutable images, checks their
+  health tooling, validates Prometheus configuration/rules with pinned
+  `promtool`, and cleans two exact temporary files. It does not stop, restart,
+  or replace running services.
+- Full regression coverage now passes with 114 tests.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -136,9 +154,8 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Repeat the non-secret monitoring preflight when VPN/SSH access returns, then
-   implement `stacks/monitoring/` from the accepted upgrade review with pinned
-   images, private metric endpoints, provisioning, health checks, and rollback.
+1. After exact approval, run `preflight_monitoring_images`; if it passes, add
+   the bounded monitoring deploy/rollback action and review its dry run.
 2. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
 3. Define version-pinned Compose bundle metadata and approval-gated stack

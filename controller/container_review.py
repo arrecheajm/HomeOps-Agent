@@ -557,7 +557,13 @@ def _recommendations(
                 title="Move useful monitoring services into desired state",
                 rationale=(
                     f"Redeploy {names} with pinned images, restart policies, and "
-                    "reviewed LAN bindings while preserving useful data."
+                    "reviewed LAN bindings. Start with the bounded image/config "
+                    "preflight; it does not stop or replace running services."
+                ),
+                action_id="preflight_monitoring_images",
+                dry_run_command=(
+                    "python -m controller.main actions run "
+                    "preflight_monitoring_images --server container-host --dry-run"
                 ),
             )
         )

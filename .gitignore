@@ -9,3 +9,6 @@ history/runs/
 history/actions/
 history/before-state/
 history/rebuild-plans/
+
+stacks/**/.env
+stacks/**/secrets/

@@ -300,6 +300,13 @@ class ContainerReviewTests(unittest.TestCase):
 
         titles = [item["title"] for item in review["recommendations"]]
         self.assertIn("Move useful monitoring services into desired state", titles)
+        monitoring = next(
+            item
+            for item in review["recommendations"]
+            if item["title"] == "Move useful monitoring services into desired state"
+        )
+        self.assertEqual(monitoring["action_id"], "preflight_monitoring_images")
+        self.assertIn("--dry-run", monitoring["dry_run_command"])
         container = review["server"]["docker"]["containers"][0]
         self.assertEqual(container["classification"], "redeploy")
         self.assertIn("pinned image", container["classification_rationale"])

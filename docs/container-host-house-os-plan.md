@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 109 tests, and the health script passes
+- Python regression suite passes with 114 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Full fleet run `2026-07-20T19-14-29Z` collected the post-cleanup state with 6
@@ -180,6 +180,13 @@ backup target.
 - The monitoring stack will be rebuilt from clean state rather than migrating
   the basic Grafana dashboard or Prometheus history. The old-to-new learning
   ledger and rollback plan are in `docs/monitoring-stack-upgrade-review.md`.
+- The first `stacks/monitoring/` bundle is implemented and Compose-valid with
+  exact version tags, clean volumes, private metric endpoints, bounded
+  retention/logging/resources, provisioning, and a HomeOps overview dashboard.
+  Exact-image health validation and deployment actions remain gated.
+- The four Linux/amd64 digests are now committed, and the non-disruptive
+  `preflight_monitoring_images` action is implemented and dry-run verified.
+  Exact-image validation still requires its explicit approval.
 
 ## Current Container Disposition
 
@@ -214,7 +221,7 @@ proposed capabilities, not currently implemented action IDs:
 - [x] Desired-state workload configuration in `config/workloads.yaml`.
 - [x] Bounded approval-gated removal for the three confirmed disposable legacy
   containers and their named data volumes.
-- [ ] Version-controlled Compose bundles under `stacks/<stack-name>/`.
+- [x] First version-controlled Compose bundle under `stacks/monitoring/`.
 - [ ] Storage preflight that validates the USB mount, sentinel, space,
   ownership, and expected directories.
 - [ ] Dedicated lifecycle operations for stack preflight, deployment, backup,
