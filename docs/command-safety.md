@@ -358,6 +358,9 @@ The corresponding approval phrase is:
 Approve action retire_legacy_monitoring_files on container-host
 ```
 
+This cleanup completed successfully on 2026-07-22 and remains documented as
+the audited lifecycle record.
+
 Health script deployment is also approval-gated and only copies the known
 repository script to the approved remote path:
 

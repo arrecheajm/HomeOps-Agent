@@ -149,10 +149,10 @@ Live status:
   legacy containers and two old volumes after rechecking desired-state health
   and authentication. Final inventory shows 6 of 6 containers running and no
   legacy monitoring Docker state. The monitoring workload is active.
-- Read-only inspection confirmed the obsolete proof-of-concept Compose
-  directory contains only `docker-compose.yml`, `prometheus.yml`, and
-  `readme.md`. The fixed `retire_legacy_monitoring_files` action is implemented
-  for separate approval-gated, non-recursive removal.
+- The approved `retire_legacy_monitoring_files` execution completed on
+  2026-07-22. It removed only the three verified proof-of-concept files and
+  their empty directory after proving the desired monitoring stack healthy.
+  Final targeted inventory shows 6 of 6 containers running and no findings.
 
 Current operating model:
 
@@ -287,10 +287,9 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-Monitoring acceptance and legacy-state retirement are complete. The next
-operational item is approval-gated removal of the three obsolete monitoring
-Compose files, then the five pending `ispy-server` security updates and the USB
-mount/sentinel preflight. Use
+Monitoring acceptance, legacy Docker-state retirement, and obsolete Compose
+file cleanup are complete. The next operational item is the five pending
+`ispy-server` security updates, followed by the USB mount/sentinel preflight. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

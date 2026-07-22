@@ -66,11 +66,11 @@ Recommended thinking level for the next work:
 - Check `git status --short --branch` at session start for branch cleanliness.
 - Latest fleet report run: `2026-07-21T12-13-24Z`; all 3 servers collected
   without errors.
-- Latest targeted `container-host` run: `2026-07-21T20-01-26Z`; sanitized
+- Latest targeted `container-host` run: `2026-07-22T14-21-53Z`; sanitized
   inventory confirmed the four desired monitoring containers plus Portainer
   and Watchtower running, with no legacy monitoring containers remaining.
-- Latest targeted `container-host` status: 0 critical, 0 warning, and 1
-  informational finding for its single non-security package update.
+- Latest targeted `container-host` status: 0 critical, 0 warning, and 0
+  informational findings.
 - Latest fleet status: 0 critical, 1 warning, and 2 informational findings.
 - `openvpn-server` has 3 non-security package updates pending; no reboot is
   required.
@@ -79,7 +79,7 @@ Recommended thinking level for the next work:
 - Read-only package inspection identified the five security entries as
   `libde265-0` (amd64 and i386), `libsqlite3-0` (amd64 and i386), and `wget`.
   The sixth entry is a normal `snapd` update; AgentDVR itself is not pending.
-- `container-host` has 1 non-security package update with Docker active, 6 of 6
+- `container-host` has no pending package updates with Docker active, 6 of 6
   containers running, no unhealthy containers, and no required reboot.
 - `container-host` has an i5-4210U with 4 CPU threads, about 8 GB RAM, and about
   80 GB free on the root disk. Current load and memory use are low.
@@ -210,11 +210,11 @@ Recommended thinking level for the next work:
   and two old named volumes. Final inventory shows 6 of 6 containers running;
   protected authentication, the provisioned dashboard, 5/5 targets, and the
   Grafana-only LAN boundary all still pass. Monitoring is operational.
-- Read-only inspection found the obsolete proof-of-concept directory
-  `/home/containerserver/docker_lab/monitoring` contains exactly
-  `docker-compose.yml`, `prometheus.yml`, and `readme.md`. The fixed
-  `retire_legacy_monitoring_files` action is implemented to remove only these
-  files and the empty directory after exact approval.
+- The approved `retire_legacy_monitoring_files` execution completed at
+  `2026-07-22T14:21:38Z`. It verified the exact three-file set and healthy
+  replacement stack, removed only `docker-compose.yml`, `prometheus.yml`, and
+  `readme.md`, then removed the empty proof-of-concept directory. The final
+  action check and targeted inventory passed.
 - Exact Wi-Fi switch/garage brands, phone platform, USB enclosure, and second
   backup destination remain open inputs.
 - Durable plan: `docs/container-host-house-os-plan.md`.
@@ -228,18 +228,16 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Dry-run and exactly approve `retire_legacy_monitoring_files` to remove the
-   three obsolete proof-of-concept files and their empty directory.
-2. Schedule the five `ispy-server` security package updates through the
+1. Schedule the five `ispy-server` security package updates through the
    existing approval gate, followed by service and recording verification.
-3. Record the smart-switch and garage-controller brands/apps, phone platform,
+2. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
-4. Define version-pinned Compose bundle metadata and approval-gated stack
+3. Define version-pinned Compose bundle metadata and approval-gated stack
    lifecycle operations from `config/workloads.yaml`.
-5. Implement USB mount/sentinel preflight before storage-dependent deployment.
-6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+4. Implement USB mount/sentinel preflight before storage-dependent deployment.
+5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-7. Prove reboot persistence and backup/restore for each new stateful application
+6. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

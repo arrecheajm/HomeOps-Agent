@@ -72,6 +72,6 @@ Before any server change:
 8. The separately approved final cleanup reverified the desired stack and
    authentication, then removed the four stopped legacy containers and two old
    data volumes. Final inventory and acceptance checks passed.
-9. The old proof-of-concept Compose directory contains three verified inert
-   files. Its fixed, non-recursive cleanup action is dry-run verified and awaits
-   separate exact approval.
+9. The approved fixed cleanup removed the three verified inert files and the
+   empty old proof-of-concept Compose directory on 2026-07-22. Final monitoring
+   health and targeted inventory checks passed.
