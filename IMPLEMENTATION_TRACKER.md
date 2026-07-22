@@ -39,6 +39,7 @@ Live status:
 - `inspect_docker_container`, `replace_watchtower_container`,
   `migrate_watchtower_container`, `deploy_health_script`,
   `retire_disposable_containers`, `preflight_monitoring_images`,
+  `preflight_mission_control_images`,
   `provision_monitoring_secret`, `deploy_monitoring_stack`,
   `repair_monitoring_grafana`, `rollback_monitoring_stack`,
   `retire_legacy_monitoring_stack`, `retire_legacy_monitoring_files`,
@@ -51,6 +52,14 @@ Live status:
   device discovery and `/srv/homeops-storage` mount/sentinel inspection. Its
   first completed run confirmed only the internal Samsung SSD, no USB device,
   and no mount at the candidate path.
+- The first `stacks/mission-control/` draft is Compose-valid with Homepage
+  1.13.2, Uptime Kuma 2.4.0, and ntfy 2.23.0 pinned to resolved Linux/amd64
+  digests. It defines LAN-only direct ports, static Homepage links without a
+  Docker socket, deny-by-default ntfy configuration, local named volumes, and
+  bounded health/resources/PIDs/logs. Deployment remains disabled.
+- `preflight_mission_control_images` is implemented and dry-run verified as a
+  non-disruptive approval-gated pull/tooling/architecture/collision check. It
+  does not start or replace services.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -102,7 +111,7 @@ Live status:
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 - The live monitoring preflight is complete and the first
   `stacks/monitoring/` replacement bundle is implemented. Docker Compose
-  renders it successfully; 135 tests cover version pinning, LAN exposure,
+  renders it successfully; 144 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
   Linux/amd64 registry digests. Exact-image checks and the approved cutover have
   passed. Grafana startup cleanup, reboot persistence, destructive rollback,
@@ -252,7 +261,8 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `restart_service`, `deploy_health_script`, `deploy_sudoers_profile`,
 `inspect_docker_container`, `replace_watchtower_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
-`preflight_monitoring_images`, `provision_monitoring_secret`,
+`preflight_monitoring_images`, `preflight_mission_control_images`,
+`provision_monitoring_secret`,
 `deploy_monitoring_stack`, `repair_monitoring_grafana`,
 `rollback_monitoring_stack`, `retire_legacy_monitoring_stack`,
 `retire_legacy_monitoring_files`,
@@ -268,6 +278,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `migrate_watchtower_container`
 - [x] `retire_disposable_containers`
 - [x] `preflight_monitoring_images`
+- [x] `preflight_mission_control_images`
 - [x] `provision_monitoring_secret`
 - [x] `deploy_monitoring_stack`
 - [x] `repair_monitoring_grafana`
@@ -291,11 +302,11 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 ## Next Implementation Step
 
-Monitoring acceptance, legacy Docker-state retirement, and obsolete Compose
-file cleanup are complete. A fresh 2026-07-22 collection found AgentDVR active,
-no pending `ispy-server` updates, and no reboot requirement. The next
-operational item is attaching the planned 1 TB USB drive and using the read-only
-storage inspection before implementing its UUID-bound mount/sentinel preflight. Use
+Monitoring acceptance and cleanup are complete. A fresh 2026-07-22 collection
+found AgentDVR active with no pending updates or reboot requirement. USB work is
+deferred until the drive can be attached. The next implementation item is a
+bounded Mission Control image/tooling preflight, followed by credential,
+bootstrap, backup/restore, deployment, and acceptance actions. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

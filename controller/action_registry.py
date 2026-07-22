@@ -105,6 +105,14 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "implemented": True,
     },
     {
+        "action_id": "preflight_mission_control_images",
+        "risk": "approval_required",
+        "description": "Pull the three immutable Mission Control images and validate architecture, required tooling, container/volume identities, and LAN-port availability without starting the stack.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 240,
+    },
+    {
         "action_id": "provision_monitoring_secret",
         "risk": "approval_required",
         "description": "Generate or validate the server-side Grafana admin secret without printing it, then copy it to the ignored local recovery path.",

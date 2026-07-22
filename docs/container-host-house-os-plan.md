@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 135 tests, and the health script passes
+- Python regression suite passes with 144 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
@@ -174,6 +174,14 @@ backup target.
   rendered in the focused review. Monitoring is deployed and active; later
   workloads remain disabled until their pinned
   Compose definitions and prerequisites are implemented.
+- The first Mission Control bundle is implemented under
+  `stacks/mission-control/` with immutable Homepage, Uptime Kuma, and ntfy image
+  references. Compose rendering passes. Its direct LAN ports are defined, but
+  deployment remains disabled until image preflight, credentials, Uptime Kuma
+  bootstrap, and backup/restore are implemented and reviewed.
+- The bounded `preflight_mission_control_images` action is implemented and
+  dry-run verified. Its live image pulls and temporary tooling checks require
+  separate exact approval and do not start the stack.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.

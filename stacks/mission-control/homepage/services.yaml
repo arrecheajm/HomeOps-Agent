@@ -1,0 +1,23 @@
+- Home Operations:
+    - Grafana:
+        icon: grafana.png
+        href: http://192.168.86.58:3000/d/homeops-overview
+        description: Fleet and container metrics
+        siteMonitor: http://192.168.86.58:3000/login
+    - Uptime Kuma:
+        icon: uptime-kuma.png
+        href: http://192.168.86.58:3001
+        description: Household service reachability
+        siteMonitor: http://uptime-kuma:3001
+    - Notifications:
+        icon: ntfy.png
+        href: http://192.168.86.58:8082
+        description: Local HomeOps notifications
+        siteMonitor: http://ntfy:8080/v1/health
+
+- Server Tools:
+    - Portainer:
+        icon: portainer.png
+        href: http://192.168.86.58:9000
+        description: Temporary Docker administration
+        siteMonitor: http://192.168.86.58:9000

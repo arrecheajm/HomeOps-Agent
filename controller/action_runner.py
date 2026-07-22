@@ -76,6 +76,21 @@ MONITORING_IMAGE_REFS = {
     "node-exporter": "prom/node-exporter:v1.11.1@sha256:fbd8062b4529e166e902bd62cd93de2f48b36d50af942620d419657265bc20b1",
     "prometheus": "prom/prometheus:v3.12.0@sha256:dd4bced05dfaddf23a7ec50f87334993a4149f7fcfbf58456d1c8bafce91cd13",
 }
+MISSION_CONTROL_IMAGE_REFS = {
+    "homepage": "ghcr.io/gethomepage/homepage:v1.13.2@sha256:c881120b024d6a8e2f3c9664efc568984e4352e47df459d6b32e225374c71955",
+    "uptime-kuma": "louislam/uptime-kuma:2.4.0@sha256:7e26105b7c8445474a310131590bbfe619e955ed308b5af7e3f0a324bb40ea4d",
+    "ntfy": "binwiederhier/ntfy:v2.23.0@sha256:33c067491862f2b302bb5a4571fa0e5a55721ef36d41820979c40533192deaec",
+}
+MISSION_CONTROL_CONTAINERS = (
+    "homeops-mission-control-homepage-1",
+    "homeops-mission-control-uptime-kuma-1",
+    "homeops-mission-control-ntfy-1",
+)
+MISSION_CONTROL_VOLUMES = (
+    "homeops-mission-control_uptime-kuma-data",
+    "homeops-mission-control_ntfy-data",
+)
+MISSION_CONTROL_PORTS = (8081, 3001, 8082)
 LOCAL_MONITORING_DIR = config.BASE_DIR / "stacks" / "monitoring"
 LOCAL_MONITORING_SECRET = (
     LOCAL_MONITORING_DIR / "secrets" / "grafana_admin_password"
@@ -364,6 +379,14 @@ def build_action_commands(
                 "images and validation files are hard-coded."
             )
         return _preflight_monitoring_image_commands(server)
+
+    if action_id == "preflight_mission_control_images":
+        if arguments:
+            raise ActionError(
+                "preflight_mission_control_images does not accept arguments; "
+                "its images, identities, tooling, and LAN ports are fixed."
+            )
+        return _preflight_mission_control_image_commands(server)
 
     if action_id == "provision_monitoring_secret":
         if arguments:
@@ -684,6 +707,80 @@ def _preflight_monitoring_image_commands(
                 REMOTE_PROMETHEUS_PREFLIGHT_RULES,
             ),
         ]
+    )
+    return commands
+
+
+def _preflight_mission_control_image_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Validate immutable Mission Control images without starting services."""
+
+    commands: list[list[str]] = []
+    for image in MISSION_CONTROL_IMAGE_REFS.values():
+        commands.append(
+            build_ssh_base_command(server)
+            + [server.ssh_target, _remote_command("docker", "pull", image)]
+        )
+
+    for service in ("homepage", "uptime-kuma"):
+        commands.append(
+            build_ssh_base_command(server)
+            + [
+                server.ssh_target,
+                _remote_command(
+                    "docker",
+                    "run",
+                    "--rm",
+                    "--entrypoint",
+                    "node",
+                    MISSION_CONTROL_IMAGE_REFS[service],
+                    "--version",
+                ),
+            ]
+        )
+
+    commands.append(
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command(
+                "docker",
+                "run",
+                "--rm",
+                "--entrypoint",
+                "sh",
+                MISSION_CONTROL_IMAGE_REFS["ntfy"],
+                "-c",
+                "command -v ntfy >/dev/null && command -v wget >/dev/null "
+                "&& command -v grep >/dev/null",
+            ),
+        ]
+    )
+
+    checks = ["set -eu"]
+    for image in MISSION_CONTROL_IMAGE_REFS.values():
+        checks.append(
+            "test \"$(docker image inspect --format '{{.Architecture}}' "
+            f"{quote(image)})\" = amd64"
+        )
+    for name in MISSION_CONTROL_CONTAINERS:
+        checks.append(
+            f"if docker container inspect {quote(name)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for volume in MISSION_CONTROL_VOLUMES:
+        checks.append(
+            f"if docker volume inspect {quote(volume)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for port in MISSION_CONTROL_PORTS:
+        checks.append(
+            "if ss -H -ltn | awk '{print $4}' | "
+            f"grep -Eq '(^|:){port}$'; then exit 1; fi"
+        )
+    checks.append("printf 'mission_control_image_preflight_ok\\n'")
+    commands.append(
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(checks))]
     )
     return commands
 

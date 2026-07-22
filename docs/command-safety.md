@@ -166,6 +166,21 @@ mounts, or writes to a device:
 python -m controller.main actions run inspect_storage_devices --server container-host
 ```
 
+Mission Control image preflight is approval-gated because it pulls three exact
+images into the host cache and runs temporary `--rm` tooling checks. It does not
+start, stop, or replace services. It also refuses container/volume identity or
+LAN-port collisions:
+
+```powershell
+python -m controller.main actions run preflight_mission_control_images --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action preflight_mission_control_images on container-host
+```
+
 Service restarts use the same exact approval model and accept only approved
 unit names for the target server role. Examples:
 

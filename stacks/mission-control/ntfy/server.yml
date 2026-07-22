@@ -1,0 +1,8 @@
+listen-http: ":8080"
+cache-file: "/var/lib/ntfy/cache.db"
+cache-duration: "168h"
+auth-file: "/var/lib/ntfy/auth.db"
+auth-default-access: "deny-all"
+enable-login: true
+behind-proxy: false
+keepalive-interval: "45s"

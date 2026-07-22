@@ -129,6 +129,20 @@ Recommended thinking level for the next work:
   Mission Control, smart home, recipes, documents, and developer lab are ordered
   into phases with storage, backup, and acceptance prerequisites. Deployment is
   gated for every workload until pinned Compose bundles and preflights exist.
+- `stacks/mission-control/` now contains the first Compose-valid draft for
+  Homepage 1.13.2, Uptime Kuma 2.4.0, and ntfy 2.23.0 with committed
+  Linux/amd64 digests. The starter dashboard links directly to the Grafana
+  HomeOps Overview, Uptime Kuma, ntfy, and temporary Portainer access.
+- Initial Mission Control ingress is defined as direct LAN-only bindings on
+  `192.168.86.58`: Homepage `8081`, Uptime Kuma `3001`, and ntfy `8082`.
+  Homepage has no Docker socket, ntfy defaults to deny-all, and all services
+  have health, restart, resource, PID, and log limits. Deployment remains
+  disabled until image/tooling preflight, protected ntfy credentials, automated
+  Uptime Kuma bootstrap, and backup/restore are implemented.
+- `preflight_mission_control_images` is implemented and dry-run verified. It
+  pulls only the three committed images, runs temporary tooling checks, verifies
+  amd64 architecture, and refuses planned container, volume, or port collisions
+  without starting the stack. Execution remains separately approval-gated.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the
@@ -191,7 +205,7 @@ Recommended thinking level for the next work:
   clean startup, protected login, rejected `admin/admin`, the HomeOps dashboard,
   five of five targets up, only port 3000 exposed, and unchanged metric-service
   identities.
-- Full regression coverage now passes with 135 tests.
+- Full regression coverage now passes with 144 tests.
 - The Git-provisioned Grafana dashboard now uses `server_id` for host legends
   and target health: `192.168.86.25:9100` maps to `openvpn-server`,
   `192.168.86.27:9100` to `ispy-server`, and `node-exporter:9100` to
@@ -233,16 +247,16 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Attach the planned 1 TB USB drive, run `inspect_storage_devices`, and record
-   its stable filesystem UUID before any formatting or mount action is designed.
-2. Record the smart-switch and garage-controller brands/apps, phone platform,
-   USB drive details, and independent backup destination.
-3. Define version-pinned Compose bundle metadata and approval-gated stack
-   lifecycle operations from `config/workloads.yaml`.
-4. Implement USB mount/sentinel preflight before storage-dependent deployment.
-5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+1. Implement and dry-run the bounded Mission Control image/tooling preflight.
+2. Implement protected ntfy secret provisioning and automated Uptime Kuma
+   admin, starter-monitor, and `homeops` status-page bootstrap.
+3. Define Mission Control backup/restore and bounded deployment actions, then
+   request approval for the selected direct LAN ports.
+4. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
+5. Record smart-switch and garage-controller brands/apps and phone platform.
+6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-6. Prove reboot persistence and backup/restore for each new stateful application
+7. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

@@ -1,0 +1,23 @@
+title: HomeOps Mission Control
+description: Household services and server health
+theme: dark
+color: slate
+headerStyle: clean
+statusStyle: dot
+target: _self
+disableIndexing: true
+disableUpdateCheck: true
+hideVersion: true
+hideErrors: false
+quicklaunch:
+  hideInternetSearch: true
+  hideVisitURL: true
+  searchDescriptions: true
+  mobileButtonPosition: bottom-right
+layout:
+  Home Operations:
+    style: row
+    columns: 3
+  Server Tools:
+    style: row
+    columns: 2

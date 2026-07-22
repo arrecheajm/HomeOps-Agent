@@ -151,7 +151,8 @@ Goal: allow safe, predefined maintenance actions.
 
 Status: in progress. The registry exists, `actions list` works, and
 `inspect_docker_container`, `replace_watchtower_container`,
-`migrate_watchtower_container`, `deploy_health_script`,
+`migrate_watchtower_container`, `preflight_monitoring_images`,
+`preflight_mission_control_images`, `deploy_health_script`,
 `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
 `apply_package_updates`, `apply_security_updates`, and `reboot_server` have
 dry-run, exact approval, execution, and action history support. The health

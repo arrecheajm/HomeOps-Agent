@@ -1,0 +1,128 @@
+name: homeops-mission-control
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v1.13.2@sha256:c881120b024d6a8e2f3c9664efc568984e4352e47df459d6b32e225374c71955
+    restart: unless-stopped
+    init: true
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_ALLOWED_HOSTS:-192.168.86.58:8081}
+      LOG_TARGETS: stdout
+    volumes:
+      - ./homepage:/app/config:ro
+    ports:
+      - "${HOMEOPS_LAN_IP:-192.168.86.58}:8081:3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 384m
+    cpus: 0.50
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - mission-control
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.4.0@sha256:7e26105b7c8445474a310131590bbfe619e955ed308b5af7e3f0a324bb40ea4d
+    restart: unless-stopped
+    init: true
+    environment:
+      UPTIME_KUMA_HOST: 0.0.0.0
+      UPTIME_KUMA_PORT: "3001"
+    volumes:
+      - uptime-kuma-data:/app/data
+    ports:
+      - "${HOMEOPS_LAN_IP:-192.168.86.58}:3001:3001"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 192
+    mem_limit: 512m
+    cpus: 0.75
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - mission-control
+
+  ntfy:
+    image: binwiederhier/ntfy:v2.23.0@sha256:33c067491862f2b302bb5a4571fa0e5a55721ef36d41820979c40533192deaec
+    command:
+      - serve
+    restart: unless-stopped
+    init: true
+    environment:
+      TZ: America/New_York
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://192.168.86.58:8082}
+      NTFY_AUTH_USERS: ${NTFY_AUTH_USERS:-}
+      NTFY_AUTH_TOKENS: ${NTFY_AUTH_TOKENS:-}
+    volumes:
+      - ./ntfy/server.yml:/etc/ntfy/server.yml:ro
+      - ntfy-data:/var/lib/ntfy
+    ports:
+      - "${HOMEOPS_LAN_IP:-192.168.86.58}:8082:8080"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wget -q --tries=1 http://127.0.0.1:8080/v1/health -O - |
+          grep -Eo '"healthy"\s*:\s*true' || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 96
+    mem_limit: 256m
+    cpus: 0.25
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - mission-control
+
+networks:
+  mission-control:
+    name: homeops-mission-control
+
+volumes:
+  uptime-kuma-data:
+    name: homeops-mission-control_uptime-kuma-data
+  ntfy-data:
+    name: homeops-mission-control_ntfy-data
