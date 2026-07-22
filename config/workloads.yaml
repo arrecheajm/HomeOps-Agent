@@ -27,7 +27,7 @@
           "storage_class": "internal",
           "backup_required": true,
           "deployment_enabled": false,
-          "prerequisites": ["approve initial direct LAN ports 8081, 3001, and 8082", "complete immutable image preflight", "provision protected ntfy credentials", "automate Uptime Kuma admin and starter-monitor bootstrap", "define backup destination and prove restore"],
+          "prerequisites": ["approve initial direct LAN ports 8081, 3001, and 8082", "provision protected ntfy credentials", "automate Uptime Kuma admin and starter-monitor bootstrap", "define backup destination and prove restore"],
           "acceptance": ["usable from a phone on home Wi-Fi", "ports bind only to 192.168.86.58", "Homepage has no Docker socket", "ntfy denies anonymous access", "service health appears in HomeOps", "all services survive reboot", "backup and restore are verified"]
         },
         {

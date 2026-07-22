@@ -1,7 +1,7 @@
 # HomeOps Mission Control
 
-Status: version-pinned draft; deployment is disabled until image preflight,
-credential provisioning, and backup/restore design are complete.
+Status: image preflight passed; deployment is disabled until credential
+provisioning, automated bootstrap, and backup/restore design are complete.
 
 This internal-disk stack provides:
 
@@ -41,18 +41,18 @@ before deployment to detect tag movement.
 
 ## Remaining Gates
 
-1. Dry-run and separately approve the implemented
-   `preflight_mission_control_images` action. It pulls only the three immutable
-   images, validates architecture/tooling, and checks identity/port collisions
-   without starting the stack.
-2. Generate an ignored ntfy bcrypt user entry and access token without logging
+1. Generate an ignored ntfy bcrypt user entry and access token without logging
    plaintext secrets; require non-empty values before deployment.
-3. Define automated Uptime Kuma admin bootstrap, starter monitors, and a
+2. Define automated Uptime Kuma admin bootstrap, starter monitors, and a
    `homeops` status page. Do not leave the initial setup page exposed.
-4. Choose an independent encrypted backup destination and implement exports for
+3. Choose an independent encrypted backup destination and implement exports for
    both named volumes.
-5. Implement bounded deploy, health, phone-on-Wi-Fi, reboot, backup/restore, and
+4. Implement bounded deploy, health, phone-on-Wi-Fi, reboot, backup/restore, and
    rollback acceptance actions.
+
+The approved image preflight passed on 2026-07-22. It pulled all three exact
+images, verified their required tools and amd64 architecture, found no planned
+identity, volume, or LAN-port collisions, and did not start the stack.
 
 Local configuration validation can use:
 

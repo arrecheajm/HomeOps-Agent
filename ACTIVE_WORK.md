@@ -66,7 +66,7 @@ Recommended thinking level for the next work:
 - Check `git status --short --branch` at session start for branch cleanliness.
 - Latest fleet report run: `2026-07-21T12-13-24Z`; all 3 servers collected
   without errors.
-- Latest targeted `container-host` run: `2026-07-22T14-21-53Z`; sanitized
+- Latest targeted `container-host` run: `2026-07-22T15-46-36Z`; sanitized
   inventory confirmed the four desired monitoring containers plus Portainer
   and Watchtower running, with no legacy monitoring containers remaining.
 - Latest targeted `container-host` status: 0 critical, 0 warning, and 0
@@ -139,10 +139,12 @@ Recommended thinking level for the next work:
   have health, restart, resource, PID, and log limits. Deployment remains
   disabled until image/tooling preflight, protected ntfy credentials, automated
   Uptime Kuma bootstrap, and backup/restore are implemented.
-- `preflight_mission_control_images` is implemented and dry-run verified. It
-  pulls only the three committed images, runs temporary tooling checks, verifies
-  amd64 architecture, and refuses planned container, volume, or port collisions
-  without starting the stack. Execution remains separately approval-gated.
+- The approved `preflight_mission_control_images` execution completed at
+  `2026-07-22T15:45:15Z`. All three exact images pulled, temporary tooling and
+  amd64 architecture checks passed, and no planned container, volume, or port
+  collisions were found. Post-action inventory confirmed the same 6 of 6
+  existing containers running with zero findings; no Mission Control services
+  were started.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the
@@ -247,16 +249,15 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Implement and dry-run the bounded Mission Control image/tooling preflight.
-2. Implement protected ntfy secret provisioning and automated Uptime Kuma
+1. Implement protected ntfy secret provisioning and automated Uptime Kuma
    admin, starter-monitor, and `homeops` status-page bootstrap.
-3. Define Mission Control backup/restore and bounded deployment actions, then
+2. Define Mission Control backup/restore and bounded deployment actions, then
    request approval for the selected direct LAN ports.
-4. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
-5. Record smart-switch and garage-controller brands/apps and phone platform.
-6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+3. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
+4. Record smart-switch and garage-controller brands/apps and phone platform.
+5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-7. Prove reboot persistence and backup/restore for each new stateful application
+6. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

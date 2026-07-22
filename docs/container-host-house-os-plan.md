@@ -179,9 +179,10 @@ backup target.
   references. Compose rendering passes. Its direct LAN ports are defined, but
   deployment remains disabled until image preflight, credentials, Uptime Kuma
   bootstrap, and backup/restore are implemented and reviewed.
-- The bounded `preflight_mission_control_images` action is implemented and
-  dry-run verified. Its live image pulls and temporary tooling checks require
-  separate exact approval and do not start the stack.
+- The approved `preflight_mission_control_images` action completed on
+  2026-07-22. The exact images, required tooling, architecture, identities,
+  volumes, and planned ports passed; post-action inventory proved no running
+  service changed.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.

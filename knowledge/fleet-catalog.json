@@ -9,11 +9,11 @@
     "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-07-22T14:26:31Z",
+  "generated_at": "2026-07-22T15:46:36Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
-    "Keep container-host maintenance current before increasing Docker workload.",
+    "Use container-host as the Codex lab and default Docker experiment target.",
     "Apply pending package maintenance before using current capacity numbers for long-term planning."
   ],
   "schema_version": "1.0",
@@ -111,7 +111,9 @@
         "Moderate CPU headroom"
       ],
       "collected_at": "2026-07-22T14:26:33Z",
+      "collection_status": "not_in_latest_run",
       "constraints": [
+        "Not collected in latest run",
         "Camera recording interruption risk"
       ],
       "current_findings": [],
@@ -130,6 +132,7 @@
         "virtualization": "none"
       },
       "hostname": "ispyserver",
+      "last_successful_collected_at": "2026-07-22T14:26:33Z",
       "maintenance": {
         "pending_security_updates": 0,
         "pending_updates": 0,
@@ -200,11 +203,8 @@
         "Moderate CPU headroom",
         "Docker installed with 6 running containers"
       ],
-      "collected_at": "2026-07-22T14:21:59Z",
-      "collection_status": "not_in_latest_run",
-      "constraints": [
-        "Not collected in latest run"
-      ],
+      "collected_at": "2026-07-22T15:46:44Z",
+      "constraints": [],
       "current_findings": [],
       "docker": {
         "containers": [
@@ -464,7 +464,6 @@
         "virtualization": "none"
       },
       "hostname": "containerserver",
-      "last_successful_collected_at": "2026-07-22T14:21:59Z",
       "maintenance": {
         "pending_security_updates": 0,
         "pending_updates": 0,
@@ -481,8 +480,8 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.5,
-        "memory_used_percent": 12.1,
+        "load_1m": 0.9,
+        "memory_used_percent": 12.8,
         "swap_used_percent": 0.0,
         "uptime_days": 1.0
       },
@@ -504,10 +503,10 @@
       "storage": {
         "disks": [
           {
-            "free_gb": 80,
+            "free_gb": 78,
             "mount": "/",
             "size_gb": 98,
-            "used_percent": 15
+            "used_percent": 17
           },
           {
             "free_gb": 2,
@@ -522,15 +521,15 @@
             "used_percent": 1
           }
         ],
-        "root_free_gb": 80,
-        "root_used_percent": 15,
-        "total_reported_free_gb": 84
+        "root_free_gb": 78,
+        "root_used_percent": 17,
+        "total_reported_free_gb": 82
       }
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-22T14-26-31Z/fleet-health.json",
-    "generated_at": "2026-07-22T14:26:31Z",
-    "run_id": "2026-07-22T14-26-31Z"
+    "fleet_path": "history/runs/2026-07-22T15-46-36Z/fleet-health.json",
+    "generated_at": "2026-07-22T15:46:36Z",
+    "run_id": "2026-07-22T15-46-36Z"
   }
 }

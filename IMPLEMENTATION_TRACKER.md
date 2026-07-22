@@ -57,9 +57,10 @@ Live status:
   digests. It defines LAN-only direct ports, static Homepage links without a
   Docker socket, deny-by-default ntfy configuration, local named volumes, and
   bounded health/resources/PIDs/logs. Deployment remains disabled.
-- `preflight_mission_control_images` is implemented and dry-run verified as a
-  non-disruptive approval-gated pull/tooling/architecture/collision check. It
-  does not start or replace services.
+- The approved `preflight_mission_control_images` execution passed on
+  2026-07-22. All three immutable images, required tooling, amd64 architecture,
+  and identity/volume/port collision checks passed. Post-action inventory
+  confirmed 6 of 6 existing containers running and zero findings.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -305,8 +306,8 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 Monitoring acceptance and cleanup are complete. A fresh 2026-07-22 collection
 found AgentDVR active with no pending updates or reboot requirement. USB work is
 deferred until the drive can be attached. The next implementation item is a
-bounded Mission Control image/tooling preflight, followed by credential,
-bootstrap, backup/restore, deployment, and acceptance actions. Use
+Mission Control credential/bootstrap workflow, followed by backup/restore,
+deployment, and acceptance actions. The image preflight is complete. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 
