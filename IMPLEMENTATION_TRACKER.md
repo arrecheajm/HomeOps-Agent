@@ -67,7 +67,10 @@ Live status:
   creates or validates five owner-only server files, verifies generated bcrypt
   hashes and the scoped service-token shape without printing values, keeps the
   service plaintext off disk, and retains three ignored local recovery copies.
-  Live execution remains approval-gated.
+  Its approved execution completed at `2026-07-22T19:14:42Z`. Metadata
+  post-checks confirmed the `0700` server directory, five `0600` files owned by
+  `containerserver`, no service plaintext, and three non-empty Git-ignored
+  local copies.
 - The version-pinned Uptime Kuma 2.4.0 bootstrap helper is implemented. It
   accepts JSON containing the admin password and scoped ntfy token only on
   stdin; creates or verifies four core monitors, their ntfy notification
@@ -321,9 +324,9 @@ Monitoring acceptance and cleanup are complete. A fresh 2026-07-22 collection
 found AgentDVR active with no pending updates or reboot requirement. USB work is
 deferred until the drive can be attached. The corrected Mission Control
 credential action and pinned Uptime Kuma bootstrap are implemented and dry-run
-verified, and the corrected image/dependency preflight passed. Next, provision
-credentials after exact approval, then implement backup/restore, deployment,
-HTTPS, and acceptance actions. Use
+verified, the corrected image/dependency preflight passed, and protected
+credentials are provisioned. Next, implement backup/restore, deployment, HTTPS,
+and acceptance actions. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

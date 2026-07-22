@@ -146,13 +146,15 @@ Recommended thinking level for the next work:
   read-only post-check confirmed only the same six existing containers running;
   no Mission Control service was started.
 - `provision_mission_control_secrets` is implemented, registered, and dry-run
-  verified. It idempotently creates owner-only Uptime Kuma and ntfy admin
-  credentials plus a regular `homeops` service identity, verifies generated
-  bcrypt hashes and the topic-scoped token without printing them, never writes
-  the service plaintext to disk, and copies three Git-ignored recovery values
-  locally. Live execution still needs exact
-  approval. The ignored copies rely on workstation/disk protection; Git-ignore
-  is not encryption or an ACL.
+  verified. Its approved execution completed at `2026-07-22T19:14:42Z`. It
+  created owner-only Uptime Kuma and ntfy admin credentials plus a regular
+  `homeops` service identity, verified generated bcrypt hashes and the
+  topic-scoped token without printing them, never wrote the service plaintext
+  to disk, and copied three Git-ignored recovery values locally. Post-checks
+  confirmed a `0700` server directory, five `0600` files owned by
+  `containerserver`, no service plaintext, and three non-empty ignored local
+  copies. Those copies rely on workstation/disk protection; Git-ignore is not
+  encryption or an ACL.
 - The tracked Uptime Kuma bootstrap is version-locked to 2.4.0 and consumes the
   admin password and scoped ntfy token only as JSON on stdin. During the future
   loopback-only first start it creates or verifies `admin`, four core monitors,
@@ -266,15 +268,14 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Review and approve `provision_mission_control_secrets` on `container-host`.
-2. Define Mission Control backup/restore and bounded deployment actions, then
+1. Define Mission Control backup/restore and bounded deployment actions, then
    request approval for the selected direct LAN ports.
-3. Add local HTTPS before routine credentialed phone access.
-4. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
-5. Record smart-switch and garage-controller brands/apps and phone platform.
-6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+2. Add local HTTPS before routine credentialed phone access.
+3. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
+4. Record smart-switch and garage-controller brands/apps and phone platform.
+5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-7. Prove reboot persistence and backup/restore for each new stateful application
+6. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

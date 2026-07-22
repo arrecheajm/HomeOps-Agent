@@ -1,9 +1,8 @@
 # HomeOps Mission Control
 
-Status: the corrected image/dependency preflight passed; credential provisioning
-and the version-pinned Uptime Kuma bootstrap are implemented and locally
-validated.
-Deployment remains disabled until credentials are provisioned and independent
+Status: the corrected image/dependency preflight and protected credential
+provisioning passed; the version-pinned Uptime Kuma bootstrap is implemented
+and locally validated. Deployment remains disabled until independent
 backup/restore is designed and proven.
 
 This internal-disk stack provides:
@@ -91,16 +90,20 @@ overwriting it. The object-shaped status-page response used by Uptime Kuma
 
 ## Remaining Gates
 
-1. Approve and execute protected Mission Control credential provisioning.
-2. Choose an independent encrypted backup destination and implement exports for
+1. Choose an independent encrypted backup destination and implement exports for
    both named volumes.
-3. Implement bounded deploy, health, reboot, backup/restore, and rollback
+2. Implement bounded deploy, health, reboot, backup/restore, and rollback
    acceptance actions.
-4. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.
+3. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.
 
 The corrected image preflight passed at `2026-07-22T16:49:20Z`, including
 explicit `bcryptjs` and `socket.io-client` dependency checks. A read-only
 post-check confirmed it did not start the stack.
+
+Protected credential provisioning passed at `2026-07-22T19:14:42Z`. Metadata
+checks confirmed the protected server directory and files, absence of a
+persistent service plaintext, and all three intended Git-ignored recovery
+copies without reading or printing their values.
 
 Local configuration validation can use:
 

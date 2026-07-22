@@ -185,11 +185,13 @@ backup target.
   volumes, and planned ports passed. A read-only post-check proved that no
   Mission Control service started and the existing six containers remained.
 - Protected ntfy and Uptime Kuma credential provisioning is implemented as the
-  fixed `provision_mission_control_secrets` action. Its dry-run proves
-  owner-only server paths, idempotent generation, verified bcrypt hashes, an
-  in-memory-only service plaintext, a topic-scoped token, ignored
-  recovery copies, and no plaintext secret output. Git-ignore does not encrypt
-  or set workstation ACLs on local copies.
+  fixed `provision_mission_control_secrets` action. Its approved execution
+  completed at `2026-07-22T19:14:42Z`, proving owner-only server paths,
+  idempotent generation, verified bcrypt hashes, an in-memory-only service
+  plaintext, a topic-scoped token, ignored recovery copies, and no plaintext
+  secret output. Metadata post-checks confirmed the expected five server files
+  and three local copies. Git-ignore does not encrypt or set workstation ACLs
+  on local copies.
 - The pinned Uptime Kuma 2.4.0 bootstrap helper is implemented without direct
   database edits. It creates or verifies the admin login, four core-service
   monitors, their scoped ntfy alert provider/associations, and the `homeops`
