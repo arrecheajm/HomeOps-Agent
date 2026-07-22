@@ -57,10 +57,12 @@ Live status:
   digests. It defines LAN-only direct ports, static Homepage links without a
   Docker socket, deny-by-default ntfy configuration, local named volumes, and
   bounded health/resources/PIDs/logs. Deployment remains disabled.
-- The approved `preflight_mission_control_images` execution passed on
-  2026-07-22. All three immutable images, required tooling, amd64 architecture,
-  and identity/volume/port collision checks passed. Post-action inventory
-  confirmed 6 of 6 existing containers running and zero findings.
+- The corrected `preflight_mission_control_images` execution passed at
+  `2026-07-22T16:49:20Z`. All three immutable images, required tooling,
+  `bcryptjs`, `socket.io-client`, amd64 architecture, and
+  identity/volume/port collision checks passed. A read-only post-check
+  confirmed only the same six existing containers running and no Mission
+  Control service started.
 - `provision_mission_control_secrets` is implemented and dry-run verified. It
   creates or validates five owner-only server files, verifies generated bcrypt
   hashes and the scoped service-token shape without printing values, keeps the
@@ -319,8 +321,8 @@ Monitoring acceptance and cleanup are complete. A fresh 2026-07-22 collection
 found AgentDVR active with no pending updates or reboot requirement. USB work is
 deferred until the drive can be attached. The corrected Mission Control
 credential action and pinned Uptime Kuma bootstrap are implemented and dry-run
-verified. Next, rerun the expanded image/dependency preflight after exact
-approval, then provision credentials and implement backup/restore, deployment,
+verified, and the corrected image/dependency preflight passed. Next, provision
+credentials after exact approval, then implement backup/restore, deployment,
 HTTPS, and acceptance actions. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.

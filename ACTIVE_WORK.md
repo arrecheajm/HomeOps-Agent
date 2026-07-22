@@ -139,14 +139,12 @@ Recommended thinking level for the next work:
   have health, restart, resource, PID, and log limits. Deployment remains
   disabled until protected credentials are provisioned and backup/restore is
   implemented and proven.
-- The original approved `preflight_mission_control_images` execution completed at
-  `2026-07-22T15:45:15Z`. All three exact images pulled, temporary tooling and
-  amd64 architecture checks passed, and no planned container, volume, or port
-  collisions were found. Post-action inventory confirmed the same 6 of 6
-  existing containers running with zero findings; no Mission Control services
-  were started. The action now also checks the bootstrap's `bcryptjs` and
-  `socket.io-client` dependencies, so the expanded preflight must be approved
-  and rerun before provisioning or deployment.
+- The corrected `preflight_mission_control_images` execution completed at
+  `2026-07-22T16:49:20Z`. All three exact images, amd64 architecture, required
+  tools, and the bootstrap's `bcryptjs` and `socket.io-client` dependencies
+  passed. No planned container, volume, or port collisions were found. A
+  read-only post-check confirmed only the same six existing containers running;
+  no Mission Control service was started.
 - `provision_mission_control_secrets` is implemented, registered, and dry-run
   verified. It idempotently creates owner-only Uptime Kuma and ntfy admin
   credentials plus a regular `homeops` service identity, verifies generated
@@ -268,18 +266,15 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Review and approve the expanded `preflight_mission_control_images` action on
-   `container-host`.
-2. After that passes, review and approve
-   `provision_mission_control_secrets` on `container-host`.
-3. Define Mission Control backup/restore and bounded deployment actions, then
+1. Review and approve `provision_mission_control_secrets` on `container-host`.
+2. Define Mission Control backup/restore and bounded deployment actions, then
    request approval for the selected direct LAN ports.
-4. Add local HTTPS before routine credentialed phone access.
-5. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
-6. Record smart-switch and garage-controller brands/apps and phone platform.
-7. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+3. Add local HTTPS before routine credentialed phone access.
+4. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
+5. Record smart-switch and garage-controller brands/apps and phone platform.
+6. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-8. Prove reboot persistence and backup/restore for each new stateful application
+7. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

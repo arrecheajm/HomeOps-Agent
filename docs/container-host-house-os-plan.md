@@ -179,11 +179,11 @@ backup target.
   references. Compose rendering passes. Its direct LAN ports are defined, but
   deployment remains disabled until credentials are provisioned and
   backup/restore is implemented and reviewed.
-- The original approved `preflight_mission_control_images` action completed on
-  2026-07-22. The exact images, required tooling, architecture, identities,
-  volumes, and planned ports passed; post-action inventory proved no running
-  service changed. The corrected action adds explicit bootstrap dependency
-  checks and must be approved and rerun before live provisioning.
+- The corrected `preflight_mission_control_images` action completed at
+  `2026-07-22T16:49:20Z`. The exact images, required tooling, explicit
+  `bcryptjs` and `socket.io-client` dependencies, architecture, identities,
+  volumes, and planned ports passed. A read-only post-check proved that no
+  Mission Control service started and the existing six containers remained.
 - Protected ntfy and Uptime Kuma credential provisioning is implemented as the
   fixed `provision_mission_control_secrets` action. Its dry-run proves
   owner-only server paths, idempotent generation, verified bcrypt hashes, an
