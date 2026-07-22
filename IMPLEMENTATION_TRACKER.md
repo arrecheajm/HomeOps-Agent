@@ -90,8 +90,11 @@ Live status:
   supported `UPTIME_KUMA_DB_TYPE=sqlite` path writes its own configuration,
   completes migrations, and starts the main Socket.IO API. Desired state now
   selects SQLite explicitly. A compatible plain acknowledgement callback with
-  a bounded timer passed both first-run and idempotent bootstrap probes;
-  full-stack acceptance requires fresh approval.
+  a bounded timer passed both first-run and idempotent bootstrap probes. The
+  corrected fifth approved execution completed at `2026-07-22T21:03:05Z` and
+  passed the full loopback-to-LAN acceptance lifecycle. An independent
+  post-check confirmed all three containers healthy and anonymous ntfy
+  publishing denied.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -343,10 +346,10 @@ found AgentDVR active with no pending updates or reboot requirement. USB work is
 deferred until the drive can be attached. Mission Control images and protected
 credentials are ready; the bounded deploy/rollback lifecycle and pinned Uptime
 Kuma bootstrap are implemented. Four failed-closed live attempts exposed and
-corrected ntfy ownership, Uptime Kuma data ownership, and its first-run database
-selection without retaining candidate state. Next, rerun full-stack acceptance
-with fresh approval, then implement
-backup/restore and local HTTPS. Use
+corrected ntfy ownership, Uptime Kuma data ownership, database selection, and
+Socket.IO acknowledgement handling without retaining candidate state. The
+fifth approved deployment passed full acceptance. Next, verify reboot
+persistence, then implement backup/restore and local HTTPS. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

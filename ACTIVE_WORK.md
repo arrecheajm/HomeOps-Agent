@@ -169,8 +169,8 @@ Recommended thinking level for the next work:
   blocker: capability-dropped container root could not write the pinned image's
   `1000:1000`-owned `/app/data`. A bounded live probe proved the corrected
   `1000:1000` service identity reaches the first-run listener. The desired
-  Compose definition and regression test now preserve that ownership contract;
-  full-stack acceptance requires a fresh approval. The fourth attempt made all
+  Compose definition and regression test now preserve that ownership contract.
+  The fourth attempt made all
   three containers healthy but timed out in bootstrap because Uptime Kuma 2.4
   first served its separate database-selection UI. A bounded probe proved its
   supported `UPTIME_KUMA_DB_TYPE=sqlite` contract writes `db-config.json`, runs
@@ -178,6 +178,13 @@ Recommended thinking level for the next work:
   that non-interactive database selection. Replacing the Socket.IO client's
   timeout wrapper with a plain acknowledgement plus the same bounded timer then
   passed both first-run bootstrap and immediate reconciliation in isolation.
+- The corrected fifth `deploy_mission_control_stack` execution completed at
+  `2026-07-22T21:03:05Z`. Loopback bootstrap, scoped ntfy authorization, LAN
+  cutover, a second idempotent bootstrap, exact images and non-root identities,
+  healthy state, named volumes, protected runtime files, and fixed ports all
+  passed. An independent post-check found all three containers healthy,
+  Homepage returning `200`, Uptime Kuma returning its expected redirect, and
+  anonymous ntfy publishing denied with `403`.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the

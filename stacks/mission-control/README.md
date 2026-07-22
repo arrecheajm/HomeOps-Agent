@@ -1,14 +1,12 @@
 # HomeOps Mission Control
 
-Status: image/dependency preflight and protected credential provisioning
-passed. The version-pinned Uptime Kuma bootstrap and bounded acceptance deploy
-and rollback actions are implemented and locally validated. Four live
-acceptance starts exposed two ownership boundaries plus Uptime Kuma 2.x's new
-database-selection gate, and every automatic cleanup path passed. Isolated live
-tests proved ntfy healthy, Uptime Kuma writable as its image data owner, and the
-supported non-interactive SQLite path reaching the main Socket.IO server. The
-corrected full-stack acceptance awaits fresh approval. Retained use remains
-disabled until encrypted backup/restore is implemented and proven.
+Status: deployed and full-stack acceptance passed on 2026-07-22. Four earlier
+starts exposed two ownership boundaries plus Uptime Kuma 2.x's database setup
+and Socket.IO acknowledgement contracts; every automatic cleanup path passed.
+The corrected fifth start passed loopback bootstrap, ntfy authorization, LAN
+cutover, idempotent reconciliation, exact-image/identity checks, health checks,
+and fixed-port verification. Retained household data remains gated until
+encrypted backup/restore is implemented and proven.
 
 This internal-disk stack provides:
 

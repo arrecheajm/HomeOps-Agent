@@ -439,3 +439,5 @@ Consequences:
   20-second timer. An isolated first run and immediate reconciliation run both
   completed after the client library's timeout wrapper proved incompatible
   with Kuma's primitive `needSetup` acknowledgement.
+- The corrected full-stack deployment passed on 2026-07-22, including both
+  bootstrap runs, LAN cutover, ntfy ACL checks, and runtime assertions.
