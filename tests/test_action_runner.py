@@ -35,6 +35,51 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertEqual(record["command"][-1], "docker restart watchtower")
         self.assertIn("Approve action restart_docker_container", record["expected_approval"])
 
+    def test_inspect_storage_devices_executes_without_approval(self):
+        completed = subprocess.CompletedProcess(
+            args=["ssh"],
+            returncode=0,
+            stdout="storage metadata\n",
+            stderr="",
+        )
+
+        with patch(
+            "controller.action_runner.subprocess.run",
+            side_effect=[completed, completed],
+        ) as subprocess_run:
+            attempt = run_action(
+                "inspect_storage_devices",
+                "container-host",
+                [self._container_server()],
+                {},
+                actions_dir=self.actions_dir,
+            )
+
+        self.assertEqual(attempt.record["status"], "completed")
+        self.assertEqual(attempt.record["approval_source"], "not_required")
+        self.assertEqual(subprocess_run.call_count, 2)
+        rendered = "\n".join(
+            command[-1] for command in attempt.record["commands"]
+        )
+        self.assertIn(
+            "mountpoint -q /srv/homeops-storage",
+            attempt.record["commands"][0][-1],
+        )
+        self.assertIn("lsblk --json --bytes --output", rendered)
+        self.assertIn("/srv/homeops-storage/.homeops-storage", rendered)
+        self.assertNotIn("mkfs", rendered)
+        self.assertNotIn("mount /", rendered)
+
+    def test_inspect_storage_devices_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "inspect_storage_devices",
+                "container-host",
+                [self._container_server()],
+                {"path": "/tmp"},
+                actions_dir=self.actions_dir,
+            )
+
     def test_inspect_docker_container_dry_run_writes_status_log_and_config_commands(self):
         attempt = run_action(
             "inspect_docker_container",

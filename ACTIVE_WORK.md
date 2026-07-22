@@ -74,11 +74,10 @@ Recommended thinking level for the next work:
 - Latest fleet status: 0 critical, 1 warning, and 2 informational findings.
 - `openvpn-server` has 3 non-security package updates pending; no reboot is
   required.
-- `ispy-server` has 6 package updates pending, including 5 security updates;
-  AgentDVR remains active and no reboot is required.
-- Read-only package inspection identified the five security entries as
-  `libde265-0` (amd64 and i386), `libsqlite3-0` (amd64 and i386), and `wget`.
-  The sixth entry is a normal `snapd` update; AgentDVR itself is not pending.
+- Latest targeted `ispy-server` run: `2026-07-22T14-26-31Z`; AgentDVR is active,
+  no package updates are pending, no reboot is required, and there are no
+  findings. The previously observed five security updates and one normal update
+  no longer require action; the collection does not identify what cleared them.
 - `container-host` has no pending package updates with Docker active, 6 of 6
   containers running, no unhealthy containers, and no required reboot.
 - `container-host` has an i5-4210U with 4 CPU threads, about 8 GB RAM, and about
@@ -87,6 +86,12 @@ Recommended thinking level for the next work:
   Mealie, Paperless-ngx, Forgejo, and a household Mission Control dashboard.
 - A 1 TB USB drive can be added for larger application data and exports. Keep
   databases and latency-sensitive state on the internal disk.
+- A fresh read-only `lsblk` inventory on 2026-07-22 again found only the internal
+  250 GB Samsung SATA SSD; no USB storage device is attached. The implemented
+  read-only `inspect_storage_devices` action completed at
+  `2026-07-22T14:31:43Z` and recorded that `/srv/homeops-storage` is not mounted,
+  with no USB transport detected. It will report filesystem, mount, ownership,
+  and sentinel metadata once the drive is connected.
 - A phone on normal home Wi-Fi must be able to scan a PDF and upload it through
   the Paperless web dashboard.
 - Existing containers may be removed if sanitized inventory shows they are not
@@ -186,7 +191,7 @@ Recommended thinking level for the next work:
   clean startup, protected login, rejected `admin/admin`, the HomeOps dashboard,
   five of five targets up, only port 3000 exposed, and unchanged metric-service
   identities.
-- Full regression coverage now passes with 130 tests.
+- Full regression coverage now passes with 135 tests.
 - The Git-provisioned Grafana dashboard now uses `server_id` for host legends
   and target health: `192.168.86.25:9100` maps to `openvpn-server`,
   `192.168.86.27:9100` to `ispy-server`, and `node-exporter:9100` to
@@ -228,8 +233,8 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Schedule the five `ispy-server` security package updates through the
-   existing approval gate, followed by service and recording verification.
+1. Attach the planned 1 TB USB drive, run `inspect_storage_devices`, and record
+   its stable filesystem UUID before any formatting or mount action is designed.
 2. Record the smart-switch and garage-controller brands/apps, phone platform,
    USB drive details, and independent backup destination.
 3. Define version-pinned Compose bundle metadata and approval-gated stack

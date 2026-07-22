@@ -47,6 +47,10 @@ Live status:
   support dry-run, exact approval, execution, and action history.
 - `run_admin_command` supports dry-run, exact approval, execution, and action
   history for `experimental` and `lab` servers only.
+- `inspect_storage_devices` is an implemented read-only action for sanitized
+  device discovery and `/srv/homeops-storage` mount/sentinel inspection. Its
+  first completed run confirmed only the internal Samsung SSD, no USB device,
+  and no mount at the candidate path.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -98,7 +102,7 @@ Live status:
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 - The live monitoring preflight is complete and the first
   `stacks/monitoring/` replacement bundle is implemented. Docker Compose
-  renders it successfully; 130 tests cover version pinning, LAN exposure,
+  renders it successfully; 135 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
   Linux/amd64 registry digests. Exact-image checks and the approved cutover have
   passed. Grafana startup cleanup, reboot persistence, destructive rollback,
@@ -288,8 +292,10 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 ## Next Implementation Step
 
 Monitoring acceptance, legacy Docker-state retirement, and obsolete Compose
-file cleanup are complete. The next operational item is the five pending
-`ispy-server` security updates, followed by the USB mount/sentinel preflight. Use
+file cleanup are complete. A fresh 2026-07-22 collection found AgentDVR active,
+no pending `ispy-server` updates, and no reboot requirement. The next
+operational item is attaching the planned 1 TB USB drive and using the read-only
+storage inspection before implementing its UUID-bound mount/sentinel preflight. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

@@ -157,6 +157,15 @@ The corresponding approval phrase is:
 Approve action restart_docker_container on container-host with container watchtower
 ```
 
+Storage discovery is read-only and does not require approval. It reports
+sanitized `lsblk` metadata plus the mount, ownership, and sentinel state for the
+fixed candidate path `/srv/homeops-storage`; it never formats, partitions,
+mounts, or writes to a device:
+
+```powershell
+python -m controller.main actions run inspect_storage_devices --server container-host
+```
+
 Service restarts use the same exact approval model and accept only approved
 unit names for the target server role. Examples:
 

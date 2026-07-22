@@ -118,6 +118,8 @@ LEGACY_MONITORING_FILES = (
     "prometheus.yml",
     "readme.md",
 )
+HOMEOPS_STORAGE_MOUNT = "/srv/homeops-storage"
+HOMEOPS_STORAGE_SENTINEL = f"{HOMEOPS_STORAGE_MOUNT}/.homeops-storage"
 MONITORING_DEPLOY_FILES = (
     (LOCAL_MONITORING_DIR / "compose.yaml", "compose.yaml"),
     (
@@ -286,6 +288,14 @@ def build_action_commands(
     action_id: str, server: ServerInventoryItem, arguments: dict[str, Any]
 ) -> list[list[str]]:
     """Build deterministic local commands for one implemented action."""
+
+    if action_id == "inspect_storage_devices":
+        if arguments:
+            raise ActionError(
+                "inspect_storage_devices does not accept arguments; its reported "
+                "fields and candidate HomeOps mount path are fixed."
+            )
+        return _inspect_storage_device_commands(server)
 
     if action_id == "restart_docker_container":
         container = str(arguments.get("container") or "")
@@ -1288,6 +1298,40 @@ def _retire_legacy_monitoring_files_commands(
         + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(retire_parts))],
         build_ssh_base_command(server)
         + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(verify_parts))],
+    ]
+
+
+def _inspect_storage_device_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Report sanitized device and candidate mount metadata without mutation."""
+
+    mount = quote(HOMEOPS_STORAGE_MOUNT)
+    sentinel = quote(HOMEOPS_STORAGE_SENTINEL)
+    mount_probe = (
+        "set -eu; "
+        f"if mountpoint -q {mount}; then "
+        f"findmnt --json --bytes --output TARGET,SOURCE,FSTYPE,OPTIONS,FSROOT {mount}; "
+        f"stat --printf='homeops_storage uid=%u gid=%g mode=%a bytes=%s\\n' {mount}; "
+        f"if test -f {sentinel} && test ! -L {sentinel}; then "
+        "printf 'homeops_storage_sentinel=present\\n'; "
+        "else printf 'homeops_storage_sentinel=absent\\n'; fi; "
+        "else printf 'homeops_storage_mount=absent\\n'; fi"
+    )
+    return [
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", mount_probe)],
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command(
+                "lsblk",
+                "--json",
+                "--bytes",
+                "--output",
+                "NAME,PATH,TYPE,SIZE,FSTYPE,FSVER,LABEL,UUID,MOUNTPOINTS,MODEL,TRAN",
+            ),
+        ],
     ]
 
 

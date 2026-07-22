@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 130 tests, and the health script passes
+- Python regression suite passes with 135 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
@@ -257,6 +257,8 @@ proposed capabilities, not currently implemented action IDs:
 - [x] Bounded approval-gated removal for the three confirmed disposable legacy
   containers and their named data volumes.
 - [x] First version-controlled Compose bundle under `stacks/monitoring/`.
+- [x] Read-only storage discovery action for block-device, mount, ownership,
+  and sentinel metadata. Its first run confirmed no USB device is attached.
 - [ ] Storage preflight that validates the USB mount, sentinel, space,
   ownership, and expected directories.
 - [ ] Dedicated lifecycle operations for every stack phase. Monitoring

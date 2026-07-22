@@ -56,6 +56,13 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "implemented": False,
     },
     {
+        "action_id": "inspect_storage_devices",
+        "risk": "read_only",
+        "description": "Report block-device, filesystem, mount, ownership, and HomeOps storage-sentinel metadata without changing storage.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+    },
+    {
         "action_id": "inspect_docker_container",
         "risk": "approval_required",
         "description": "Inspect one Docker container status, recent logs, and compact config.",

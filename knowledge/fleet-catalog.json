@@ -4,16 +4,16 @@
     "cpu_threads": 10,
     "docker_hosts": 1,
     "not_collected": 2,
-    "pending_updates": 9,
+    "pending_updates": 3,
     "reboots_required": 0,
     "running_containers": 6,
     "servers": 3
   },
-  "generated_at": "2026-07-22T14:21:53Z",
+  "generated_at": "2026-07-22T14:26:31Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
-    "Use container-host as the Codex lab and default Docker experiment target.",
+    "Keep container-host maintenance current before increasing Docker workload.",
     "Apply pending package maintenance before using current capacity numbers for long-term planning."
   ],
   "schema_version": "1.0",
@@ -110,11 +110,8 @@
         "AgentDVR workload",
         "Moderate CPU headroom"
       ],
-      "collected_at": "2026-07-21T12:13:32Z",
-      "collection_status": "not_in_latest_run",
+      "collected_at": "2026-07-22T14:26:33Z",
       "constraints": [
-        "Not collected in latest run",
-        "6 package updates pending",
         "Camera recording interruption risk"
       ],
       "current_findings": [],
@@ -133,10 +130,9 @@
         "virtualization": "none"
       },
       "hostname": "ispyserver",
-      "last_successful_collected_at": "2026-07-21T12:13:32Z",
       "maintenance": {
-        "pending_security_updates": 5,
-        "pending_updates": 6,
+        "pending_security_updates": 0,
+        "pending_updates": 0,
         "reboot_required": false
       },
       "os": {
@@ -150,10 +146,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.26,
+        "load_1m": 0.56,
         "memory_used_percent": 10.1,
         "swap_used_percent": 0.0,
-        "uptime_days": 2.8
+        "uptime_days": 3.9
       },
       "role": "ispy_server",
       "role_label": "Security Cameras",
@@ -205,7 +201,10 @@
         "Docker installed with 6 running containers"
       ],
       "collected_at": "2026-07-22T14:21:59Z",
-      "constraints": [],
+      "collection_status": "not_in_latest_run",
+      "constraints": [
+        "Not collected in latest run"
+      ],
       "current_findings": [],
       "docker": {
         "containers": [
@@ -465,6 +464,7 @@
         "virtualization": "none"
       },
       "hostname": "containerserver",
+      "last_successful_collected_at": "2026-07-22T14:21:59Z",
       "maintenance": {
         "pending_security_updates": 0,
         "pending_updates": 0,
@@ -529,8 +529,8 @@
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-22T14-21-53Z/fleet-health.json",
-    "generated_at": "2026-07-22T14:21:53Z",
-    "run_id": "2026-07-22T14-21-53Z"
+    "fleet_path": "history/runs/2026-07-22T14-26-31Z/fleet-health.json",
+    "generated_at": "2026-07-22T14:26:31Z",
+    "run_id": "2026-07-22T14-26-31Z"
   }
 }

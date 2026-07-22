@@ -218,7 +218,14 @@ def command_actions_run(args: argparse.Namespace) -> int:
         arguments["intent"] = args.intent
 
     approval_text = args.approval
-    if not args.dry_run and approval_text is None and sys.stdin.isatty():
+    action = action_registry.get_action(args.action_id)
+    requires_approval = not action or action.get("risk") != "read_only"
+    if (
+        not args.dry_run
+        and approval_text is None
+        and requires_approval
+        and sys.stdin.isatty()
+    ):
         expected = approvals.approval_phrase(args.action_id, args.server, arguments)
         print("Approval required. Type this exact phrase to continue:")
         print(expected)
