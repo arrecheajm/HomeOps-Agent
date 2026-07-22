@@ -40,6 +40,7 @@ Live status:
   `migrate_watchtower_container`, `deploy_health_script`,
   `retire_disposable_containers`, `preflight_monitoring_images`,
   `preflight_mission_control_images`, `provision_mission_control_secrets`,
+  `deploy_mission_control_stack`, `rollback_mission_control_stack`,
   `provision_monitoring_secret`, `deploy_monitoring_stack`,
   `repair_monitoring_grafana`, `rollback_monitoring_stack`,
   `retire_legacy_monitoring_stack`, `retire_legacy_monitoring_files`,
@@ -56,7 +57,8 @@ Live status:
   1.13.2, Uptime Kuma 2.4.0, and ntfy 2.23.0 pinned to resolved Linux/amd64
   digests. It defines LAN-only direct ports, static Homepage links without a
   Docker socket, deny-by-default ntfy configuration, local named volumes, and
-  bounded health/resources/PIDs/logs. Deployment remains disabled.
+  bounded health/resources/PIDs/logs. Retained use remains disabled until
+  backup/restore is implemented and proven.
 - The corrected `preflight_mission_control_images` execution passed at
   `2026-07-22T16:49:20Z`. All three immutable images, required tooling,
   `bcryptjs`, `socket.io-client`, amd64 architecture, and
@@ -77,6 +79,13 @@ Live status:
   associations, and the `homeops` status page; refuses conflicting managed
   names; and avoids direct database edits. Executable contract tests cover the
   real object-shaped status-page list and mocked Socket.IO lifecycle.
+- The fixed Mission Control deploy and rollback actions are implemented and
+  dry-run verified. Three approved acceptance attempts failed closed and
+  removed all candidate runtime state. The third proved ntfy healthy and
+  isolated Uptime Kuma's remaining ownership mismatch. A bounded live probe
+  proved the corrected `1000:1000` identity reaches Kuma's first-run listener;
+  Compose and its regression test now preserve that image data-owner contract.
+  Full-stack acceptance requires fresh approval.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -279,7 +288,8 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `inspect_docker_container`, `replace_watchtower_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
 `preflight_monitoring_images`, `preflight_mission_control_images`,
-`provision_mission_control_secrets`, `provision_monitoring_secret`,
+`provision_mission_control_secrets`, `deploy_mission_control_stack`,
+`rollback_mission_control_stack`, `provision_monitoring_secret`,
 `deploy_monitoring_stack`, `repair_monitoring_grafana`,
 `rollback_monitoring_stack`, `retire_legacy_monitoring_stack`,
 `retire_legacy_monitoring_files`,
@@ -297,6 +307,8 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `preflight_monitoring_images`
 - [x] `preflight_mission_control_images`
 - [x] `provision_mission_control_secrets`
+- [x] `deploy_mission_control_stack`
+- [x] `rollback_mission_control_stack`
 - [x] `provision_monitoring_secret`
 - [x] `deploy_monitoring_stack`
 - [x] `repair_monitoring_grafana`
@@ -322,11 +334,12 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 Monitoring acceptance and cleanup are complete. A fresh 2026-07-22 collection
 found AgentDVR active with no pending updates or reboot requirement. USB work is
-deferred until the drive can be attached. The corrected Mission Control
-credential action and pinned Uptime Kuma bootstrap are implemented and dry-run
-verified, the corrected image/dependency preflight passed, and protected
-credentials are provisioned. Next, implement backup/restore, deployment, HTTPS,
-and acceptance actions. Use
+deferred until the drive can be attached. Mission Control images and protected
+credentials are ready; the bounded deploy/rollback lifecycle and pinned Uptime
+Kuma bootstrap are implemented. Three failed-closed live attempts exposed and
+corrected ntfy and Uptime Kuma ownership boundaries without retaining candidate
+state. Next, rerun full-stack acceptance with fresh approval, then implement
+backup/restore and local HTTPS. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

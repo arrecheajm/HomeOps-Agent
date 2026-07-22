@@ -376,3 +376,32 @@ Consequences:
   mounted into ntfy.
 - Rollback and failed deployment remove the derived runtime directory and both
   candidate data volumes, while retaining the five protected source files.
+
+## 0015: Uptime Kuma Runs As Its Pinned Image Data Owner
+
+Status: accepted
+
+Date: 2026-07-22
+
+Decision:
+
+Run Uptime Kuma as UID/GID `1000:1000`, matching the ownership of `/app/data`
+in the pinned 2.4.0 image, while retaining `no-new-privileges` and the complete
+capability drop.
+
+Reasoning:
+
+- The third acceptance attempt proved ntfy healthy but showed Uptime Kuma
+  repeatedly exiting after it could not create `data/upload/`.
+- Image inspection proved `/app/data` is mode `0755` and owned by `1000:1000`.
+  Fully capability-dropped container root cannot bypass that ownership.
+- A bounded isolated run using `1000:1000` reached the first-run database setup
+  listener and remained active until the test timeout.
+
+Consequences:
+
+- Compose records the image ownership contract instead of granting root
+  filesystem capabilities.
+- The pinned image's data ownership must be revalidated before upgrades.
+- The failed acceptance cleanup again removed all candidate Mission Control
+  runtime state; a fresh deployment approval is required.

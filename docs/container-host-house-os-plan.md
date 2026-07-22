@@ -218,8 +218,13 @@ backup target.
   corrected definition runs ntfy as the matching host identity `1000:1000` and
   initializes only its data volume to that owner. Isolated live checks proved
   all three protected inputs readable, the data volume writable, and ntfy
-  listening normally for the full bounded smoke-test window. A fresh approval
-  is required for full-stack acceptance.
+  listening normally for the full bounded smoke-test window. A third approved
+  attempt advanced through healthy ntfy startup but exposed Uptime Kuma's
+  separate ownership contract: with all capabilities dropped, container root
+  cannot write the image's `1000:1000`-owned `/app/data`. Cleanup again removed
+  all candidate state. A bounded isolated probe proved Uptime Kuma reaches its
+  first-run listener as `1000:1000`; Compose now declares that identity and a
+  fresh approval is required for full-stack acceptance.
 - The independent backup destination and recovery rules are now defined in
   `docs/mission-control-backup-restore.md`: encrypted and authenticated volume
   archives copied to the HomeOps workstation, followed by a destructive restore

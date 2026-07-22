@@ -2,12 +2,12 @@
 
 Status: image/dependency preflight and protected credential provisioning
 passed. The version-pinned Uptime Kuma bootstrap and bounded acceptance deploy
-and rollback actions are implemented and locally validated. Two live acceptance
-starts exposed the host/container ownership boundary and both automatic cleanup
-paths passed. The final correction runs ntfy as the matching `1000:1000`
-identity and initializes its data volume accordingly; an isolated live startup
-smoke test passed and full-stack acceptance awaits fresh approval. Retained use
-remains disabled until encrypted backup/restore is implemented and proven.
+and rollback actions are implemented and locally validated. Three live
+acceptance starts exposed two host/container ownership boundaries and every
+automatic cleanup path passed. Isolated live tests proved ntfy healthy as the
+matching host identity and Uptime Kuma listening as its image data owner. The
+corrected full-stack acceptance awaits fresh approval. Retained use remains
+disabled until encrypted backup/restore is implemented and proven.
 
 This internal-disk stack provides:
 
@@ -55,6 +55,10 @@ before deployment to detect tag movement.
   capabilities to set mode `0700` and ownership `1000:1000` on only the ntfy
   data volume. This follows ntfy's supported non-root container model and lets
   the process read the protected runtime directory and write its databases.
+- Uptime Kuma also runs as UID/GID `1000:1000`, matching the ownership declared
+  by its pinned image for `/app/data`. With every capability dropped, container
+  root cannot bypass that directory's mode; using its actual data owner keeps
+  the service writable without restoring broad root capabilities.
 - Homepage's required allowed-host value is restricted to the LAN address and
   port. It has no built-in authentication, so this stack must never be exposed
   publicly.

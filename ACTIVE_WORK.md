@@ -163,6 +163,14 @@ Recommended thinking level for the next work:
   list, refuses managed-name conflicts, and does not edit SQLite directly.
   Direct LAN HTTP is temporary; local HTTPS is required before routine
   credentialed phone use.
+- Three approved Mission Control acceptance starts failed closed and removed
+  all candidate containers, networks, volumes, and derived runtime secrets.
+  The third start proved ntfy healthy, then isolated Uptime Kuma as the only
+  blocker: capability-dropped container root could not write the pinned image's
+  `1000:1000`-owned `/app/data`. A bounded live probe proved the corrected
+  `1000:1000` service identity reaches the first-run listener. The desired
+  Compose definition and regression test now preserve that ownership contract;
+  full-stack acceptance requires a fresh approval.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the
