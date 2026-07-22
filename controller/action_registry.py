@@ -113,6 +113,14 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "execution_timeout_seconds": 240,
     },
     {
+        "action_id": "provision_mission_control_secrets",
+        "risk": "approval_required",
+        "description": "Generate or validate protected ntfy and Uptime Kuma credentials without printing them, then retain ignored local recovery copies.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 180,
+    },
+    {
         "action_id": "provision_monitoring_secret",
         "risk": "approval_required",
         "description": "Generate or validate the server-side Grafana admin secret without printing it, then copy it to the ignored local recovery path.",

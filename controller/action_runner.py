@@ -91,6 +91,30 @@ MISSION_CONTROL_VOLUMES = (
     "homeops-mission-control_ntfy-data",
 )
 MISSION_CONTROL_PORTS = (8081, 3001, 8082)
+LOCAL_MISSION_CONTROL_DIR = config.BASE_DIR / "stacks" / "mission-control"
+LOCAL_MISSION_CONTROL_SECRET_DIR = LOCAL_MISSION_CONTROL_DIR / "secrets"
+LOCAL_MISSION_CONTROL_RECOVERY_FILES = (
+    LOCAL_MISSION_CONTROL_SECRET_DIR / "uptime_kuma_admin_password",
+    LOCAL_MISSION_CONTROL_SECRET_DIR / "ntfy_admin_password",
+    LOCAL_MISSION_CONTROL_SECRET_DIR / "ntfy_access_token",
+)
+REMOTE_MISSION_CONTROL_SECRET_DIR = (
+    "/home/containerserver/.config/homeops/secrets/mission-control"
+)
+REMOTE_MISSION_CONTROL_SECRET_FILES = {
+    "uptime_kuma_admin_password": (
+        f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/uptime_kuma_admin_password"
+    ),
+    "ntfy_admin_password": (
+        f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy_admin_password"
+    ),
+    "ntfy_password_hash": (
+        f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy_password_hash"
+    ),
+    "ntfy_access_token": (
+        f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy_access_token"
+    ),
+}
 LOCAL_MONITORING_DIR = config.BASE_DIR / "stacks" / "monitoring"
 LOCAL_MONITORING_SECRET = (
     LOCAL_MONITORING_DIR / "secrets" / "grafana_admin_password"
@@ -387,6 +411,14 @@ def build_action_commands(
                 "its images, identities, tooling, and LAN ports are fixed."
             )
         return _preflight_mission_control_image_commands(server)
+
+    if action_id == "provision_mission_control_secrets":
+        if arguments:
+            raise ActionError(
+                "provision_mission_control_secrets does not accept arguments; "
+                "the identities, paths, generation, and recovery copies are fixed."
+            )
+        return _provision_mission_control_secret_commands(server)
 
     if action_id == "provision_monitoring_secret":
         if arguments:
@@ -782,6 +814,99 @@ def _preflight_mission_control_image_commands(
         build_ssh_base_command(server)
         + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(checks))]
     )
+    return commands
+
+
+def _provision_mission_control_secret_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Create protected Mission Control credentials without logging values."""
+
+    if not LOCAL_MISSION_CONTROL_SECRET_DIR.is_dir():
+        raise ActionError(
+            "Local Mission Control secret directory not found: "
+            f"{LOCAL_MISSION_CONTROL_SECRET_DIR}"
+        )
+
+    uptime_password = REMOTE_MISSION_CONTROL_SECRET_FILES[
+        "uptime_kuma_admin_password"
+    ]
+    ntfy_password = REMOTE_MISSION_CONTROL_SECRET_FILES["ntfy_admin_password"]
+    ntfy_hash = REMOTE_MISSION_CONTROL_SECRET_FILES["ntfy_password_hash"]
+    ntfy_token = REMOTE_MISSION_CONTROL_SECRET_FILES["ntfy_access_token"]
+    password_generation = "import secrets; print(secrets.token_urlsafe(32))"
+    token_generation = (
+        "import secrets,string; alphabet=string.ascii_lowercase+string.digits; "
+        "print('tk_'+''.join(secrets.choice(alphabet) for _ in range(29)))"
+    )
+    bcrypt_generation = (
+        "const fs=require('fs');const bcrypt=require('bcryptjs');"
+        "const password=fs.readFileSync(0,'utf8').trim();"
+        "bcrypt.hash(password,10).then(hash=>process.stdout.write(hash))"
+        ".catch(error=>{console.error(error.message);process.exit(1)})"
+    )
+    bcrypt_validation = (
+        "const fs=require('fs');const bcrypt=require('bcryptjs');"
+        "const password=fs.readFileSync('/secrets/ntfy_admin_password','utf8').trim();"
+        "const hash=fs.readFileSync('/secrets/ntfy_password_hash','utf8').trim();"
+        "if(!bcrypt.compareSync(password,hash))process.exit(1)"
+    )
+
+    script = (
+        "set -eu; "
+        f"secret_dir={quote(REMOTE_MISSION_CONTROL_SECRET_DIR)}; "
+        f"uptime_password={quote(uptime_password)}; "
+        f"ntfy_password={quote(ntfy_password)}; "
+        f"ntfy_hash={quote(ntfy_hash)}; "
+        f"ntfy_token={quote(ntfy_token)}; "
+        "install -d -m 0700 \"$secret_dir\"; "
+        "test ! -L \"$secret_dir\"; "
+        "test \"$(stat -c %a \"$secret_dir\")\" = 700; "
+        "test \"$(stat -c %u \"$secret_dir\")\" = \"$(id -u)\"; "
+        "for secret in \"$uptime_password\" \"$ntfy_password\"; do "
+        "if [ -e \"$secret\" ] || [ -L \"$secret\" ]; then "
+        "test -f \"$secret\"; test ! -L \"$secret\"; "
+        "else tmp=$(mktemp \"$secret_dir/.password.XXXXXX\"); "
+        "trap 'rm -f \"$tmp\"' HUP INT TERM EXIT; "
+        f"python3 -c {_shell_single_quote(password_generation)} > \"$tmp\"; "
+        "chmod 0600 \"$tmp\"; mv \"$tmp\" \"$secret\"; "
+        "trap - HUP INT TERM EXIT; fi; done; "
+        "if [ -e \"$ntfy_token\" ] || [ -L \"$ntfy_token\" ]; then "
+        "test -f \"$ntfy_token\"; test ! -L \"$ntfy_token\"; "
+        "else tmp=$(mktemp \"$secret_dir/.token.XXXXXX\"); "
+        "trap 'rm -f \"$tmp\"' HUP INT TERM EXIT; "
+        f"python3 -c {_shell_single_quote(token_generation)} > \"$tmp\"; "
+        "chmod 0600 \"$tmp\"; mv \"$tmp\" \"$ntfy_token\"; "
+        "trap - HUP INT TERM EXIT; fi; "
+        "if [ -e \"$ntfy_hash\" ] || [ -L \"$ntfy_hash\" ]; then "
+        "test -f \"$ntfy_hash\"; test ! -L \"$ntfy_hash\"; "
+        "else tmp=$(mktemp \"$secret_dir/.hash.XXXXXX\"); "
+        "trap 'rm -f \"$tmp\"' HUP INT TERM EXIT; "
+        f"docker run --rm -i --read-only --entrypoint node {quote(MISSION_CONTROL_IMAGE_REFS['uptime-kuma'])} "
+        f"-e {_shell_single_quote(bcrypt_generation)} < \"$ntfy_password\" > \"$tmp\"; "
+        "chmod 0600 \"$tmp\"; mv \"$tmp\" \"$ntfy_hash\"; "
+        "trap - HUP INT TERM EXIT; fi; "
+        "for secret in \"$uptime_password\" \"$ntfy_password\" \"$ntfy_hash\" \"$ntfy_token\"; do "
+        "test -s \"$secret\"; test -f \"$secret\"; test ! -L \"$secret\"; "
+        "test \"$(stat -c %a \"$secret\")\" = 600; "
+        "test \"$(stat -c %u \"$secret\")\" = \"$(id -u)\"; done; "
+        "grep -Eq '^tk_[a-z0-9]{29}$' \"$ntfy_token\"; "
+        "grep -Eq '^[$]2[aby][$][0-9]{2}[$]' \"$ntfy_hash\"; "
+        f"docker run --rm --read-only -v \"$secret_dir:/secrets:ro\" --entrypoint node {quote(MISSION_CONTROL_IMAGE_REFS['uptime-kuma'])} "
+        f"-e {_shell_single_quote(bcrypt_validation)}; "
+        "printf 'mission_control_secrets_provisioned\\n'"
+    )
+
+    commands = [
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", script)]
+    ]
+    for local_path in LOCAL_MISSION_CONTROL_RECOVERY_FILES:
+        remote_path = REMOTE_MISSION_CONTROL_SECRET_FILES[local_path.name]
+        commands.append(
+            _build_scp_base_command(server)
+            + [f"{server.ssh_target}:{remote_path}", str(local_path)]
+        )
     return commands
 
 

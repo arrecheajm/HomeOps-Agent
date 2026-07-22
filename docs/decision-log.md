@@ -276,3 +276,35 @@ Consequences:
   destructive policy patterns stay blocked.
 - `container-host` bypasses forbidden command pattern checks for
   `run_admin_command`, while still requiring exact approval and action history.
+
+## 0012: Uptime Kuma Bootstrap Is Version-Locked And Fails Closed
+
+Status: accepted
+
+Date: 2026-07-22
+
+Decision:
+
+HomeOps may bootstrap Uptime Kuma through its internal Socket.IO events only
+while the image remains pinned to version 2.4.0. The helper must run before LAN
+exposure, remain idempotent, refuse conflicting managed monitor names, and be
+revalidated before any image upgrade. It must not edit Uptime Kuma's SQLite
+database directly.
+
+Reasoning:
+
+- Uptime Kuma 2.4.0 has no documented environment variables or stable REST API
+  for declarative admin, monitor, and status-page provisioning.
+- Browser-only manual setup conflicts with the requirement that HomeOps fully
+  configure the server.
+- The version's own frontend and server use Socket.IO for setup and management,
+  so a narrowly pinned helper is testable without coupling to database schema.
+
+Consequences:
+
+- Changing the Uptime Kuma tag or digest requires a bootstrap compatibility
+  review and acceptance test.
+- The first start stays loopback-only until login, starter monitors, and the
+  `homeops` status page are verified.
+- Existing managed-name monitors with different definitions stop deployment
+  instead of being silently overwritten.

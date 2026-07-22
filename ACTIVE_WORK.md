@@ -3,7 +3,7 @@
 Purpose: this is the daily Codex handoff. Read this first before inspecting
 broader docs, history, generated reports, or source files.
 
-Last updated: 2026-07-21.
+Last updated: 2026-07-22.
 
 ## Session Start
 
@@ -137,14 +137,24 @@ Recommended thinking level for the next work:
   `192.168.86.58`: Homepage `8081`, Uptime Kuma `3001`, and ntfy `8082`.
   Homepage has no Docker socket, ntfy defaults to deny-all, and all services
   have health, restart, resource, PID, and log limits. Deployment remains
-  disabled until image/tooling preflight, protected ntfy credentials, automated
-  Uptime Kuma bootstrap, and backup/restore are implemented.
+  disabled until protected credentials are provisioned and backup/restore is
+  implemented and proven.
 - The approved `preflight_mission_control_images` execution completed at
   `2026-07-22T15:45:15Z`. All three exact images pulled, temporary tooling and
   amd64 architecture checks passed, and no planned container, volume, or port
   collisions were found. Post-action inventory confirmed the same 6 of 6
   existing containers running with zero findings; no Mission Control services
   were started.
+- `provision_mission_control_secrets` is implemented, registered, and dry-run
+  verified. It idempotently creates owner-only Uptime Kuma and ntfy credentials,
+  validates the ntfy token and bcrypt pairing without printing either, and
+  copies three Git-ignored recovery values locally. Live execution still needs
+  its exact approval.
+- The tracked Uptime Kuma bootstrap is version-locked to 2.4.0 and consumes the
+  admin password only through stdin. During the future loopback-only first
+  start it creates or verifies `admin`, Homepage/Grafana/Uptime Kuma/ntfy
+  monitors, and the `homeops` status page. It refuses conflicting managed-name
+  monitors and does not edit SQLite directly.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the
@@ -207,7 +217,7 @@ Recommended thinking level for the next work:
   clean startup, protected login, rejected `admin/admin`, the HomeOps dashboard,
   five of five targets up, only port 3000 exposed, and unchanged metric-service
   identities.
-- Full regression coverage now passes with 144 tests.
+- Full regression coverage now passes with 148 tests.
 - The Git-provisioned Grafana dashboard now uses `server_id` for host legends
   and target health: `192.168.86.25:9100` maps to `openvpn-server`,
   `192.168.86.27:9100` to `ispy-server`, and `node-exporter:9100` to
@@ -249,8 +259,7 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Implement protected ntfy secret provisioning and automated Uptime Kuma
-   admin, starter-monitor, and `homeops` status-page bootstrap.
+1. Review and approve `provision_mission_control_secrets` on `container-host`.
 2. Define Mission Control backup/restore and bounded deployment actions, then
    request approval for the selected direct LAN ports.
 3. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.

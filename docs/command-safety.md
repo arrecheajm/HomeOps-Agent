@@ -181,6 +181,22 @@ The corresponding approval phrase is:
 Approve action preflight_mission_control_images on container-host
 ```
 
+Mission Control credential provisioning is separately approval-gated. It
+creates or validates owner-only ntfy and Uptime Kuma credentials, derives and
+verifies the ntfy bcrypt hash in the pinned Uptime Kuma image, and copies three
+Git-ignored recovery values locally. It never prints secret values or accepts
+password arguments:
+
+```powershell
+python -m controller.main actions run provision_mission_control_secrets --server container-host --dry-run
+```
+
+The corresponding approval phrase is:
+
+```text
+Approve action provision_mission_control_secrets on container-host
+```
+
 Service restarts use the same exact approval model and accept only approved
 unit names for the target server role. Examples:
 

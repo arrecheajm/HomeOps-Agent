@@ -39,7 +39,7 @@ Live status:
 - `inspect_docker_container`, `replace_watchtower_container`,
   `migrate_watchtower_container`, `deploy_health_script`,
   `retire_disposable_containers`, `preflight_monitoring_images`,
-  `preflight_mission_control_images`,
+  `preflight_mission_control_images`, `provision_mission_control_secrets`,
   `provision_monitoring_secret`, `deploy_monitoring_stack`,
   `repair_monitoring_grafana`, `rollback_monitoring_stack`,
   `retire_legacy_monitoring_stack`, `retire_legacy_monitoring_files`,
@@ -61,6 +61,14 @@ Live status:
   2026-07-22. All three immutable images, required tooling, amd64 architecture,
   and identity/volume/port collision checks passed. Post-action inventory
   confirmed 6 of 6 existing containers running and zero findings.
+- `provision_mission_control_secrets` is implemented and dry-run verified. It
+  creates or validates four owner-only server files, checks token shape and the
+  bcrypt/password pairing without printing values, and retains three ignored
+  local recovery copies. Live execution remains approval-gated.
+- The version-pinned Uptime Kuma 2.4.0 bootstrap helper is implemented. It
+  accepts the admin password only on stdin, creates or verifies four core
+  monitors and the `homeops` status page, refuses conflicting managed-name
+  monitors, and avoids direct database edits.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -112,7 +120,7 @@ Live status:
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 - The live monitoring preflight is complete and the first
   `stacks/monitoring/` replacement bundle is implemented. Docker Compose
-  renders it successfully; 144 tests cover version pinning, LAN exposure,
+  renders it successfully; 148 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
   Linux/amd64 registry digests. Exact-image checks and the approved cutover have
   passed. Grafana startup cleanup, reboot persistence, destructive rollback,
@@ -263,7 +271,7 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `inspect_docker_container`, `replace_watchtower_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
 `preflight_monitoring_images`, `preflight_mission_control_images`,
-`provision_monitoring_secret`,
+`provision_mission_control_secrets`, `provision_monitoring_secret`,
 `deploy_monitoring_stack`, `repair_monitoring_grafana`,
 `rollback_monitoring_stack`, `retire_legacy_monitoring_stack`,
 `retire_legacy_monitoring_files`,
@@ -280,6 +288,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `retire_disposable_containers`
 - [x] `preflight_monitoring_images`
 - [x] `preflight_mission_control_images`
+- [x] `provision_mission_control_secrets`
 - [x] `provision_monitoring_secret`
 - [x] `deploy_monitoring_stack`
 - [x] `repair_monitoring_grafana`
@@ -306,8 +315,10 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 Monitoring acceptance and cleanup are complete. A fresh 2026-07-22 collection
 found AgentDVR active with no pending updates or reboot requirement. USB work is
 deferred until the drive can be attached. The next implementation item is a
-Mission Control credential/bootstrap workflow, followed by backup/restore,
-deployment, and acceptance actions. The image preflight is complete. Use
+The Mission Control credential action and pinned Uptime Kuma bootstrap are
+implemented and dry-run verified. Next, execute credential provisioning after
+exact approval, then implement backup/restore, deployment, and acceptance
+actions. The image preflight is complete. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

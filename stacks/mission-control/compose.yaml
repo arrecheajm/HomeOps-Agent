@@ -46,6 +46,7 @@ services:
       UPTIME_KUMA_PORT: "3001"
     volumes:
       - uptime-kuma-data:/app/data
+      - ./uptime-kuma/bootstrap.js:/app/homeops-bootstrap.js:ro
     ports:
       - "${HOMEOPS_LAN_IP:-192.168.86.58}:3001:3001"
     healthcheck:
@@ -75,17 +76,25 @@ services:
 
   ntfy:
     image: binwiederhier/ntfy:v2.23.0@sha256:33c067491862f2b302bb5a4571fa0e5a55721ef36d41820979c40533192deaec
+    entrypoint:
+      - /bin/sh
+      - -ec
     command:
-      - serve
+      - |
+        IFS= read -r ntfy_hash < /run/secrets/ntfy_password_hash
+        IFS= read -r ntfy_token < /run/secrets/ntfy_access_token
+        export NTFY_AUTH_USERS="admin:$${ntfy_hash}:admin"
+        export NTFY_AUTH_TOKENS="admin:$${ntfy_token}:HomeOps"
+        exec ntfy serve
     restart: unless-stopped
     init: true
     environment:
       TZ: America/New_York
       NTFY_BASE_URL: ${NTFY_BASE_URL:-http://192.168.86.58:8082}
-      NTFY_AUTH_USERS: ${NTFY_AUTH_USERS:-}
-      NTFY_AUTH_TOKENS: ${NTFY_AUTH_TOKENS:-}
     volumes:
       - ./ntfy/server.yml:/etc/ntfy/server.yml:ro
+      - ${MISSION_CONTROL_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control}/ntfy_password_hash:/run/secrets/ntfy_password_hash:ro
+      - ${MISSION_CONTROL_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control}/ntfy_access_token:/run/secrets/ntfy_access_token:ro
       - ntfy-data:/var/lib/ntfy
     ports:
       - "${HOMEOPS_LAN_IP:-192.168.86.58}:8082:8080"

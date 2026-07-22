@@ -60,10 +60,39 @@ class MissionControlStackTests(unittest.TestCase):
         compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
         example = (STACK_DIR / ".env.example").read_text(encoding="utf-8")
 
-        self.assertIn("${NTFY_AUTH_USERS:-}", compose)
-        self.assertIn("${NTFY_AUTH_TOKENS:-}", compose)
-        self.assertIn("NTFY_AUTH_USERS=\n", example)
-        self.assertIn("NTFY_AUTH_TOKENS=\n", example)
+        self.assertNotIn("NTFY_AUTH_USERS:", compose)
+        self.assertNotIn("NTFY_AUTH_TOKENS:", compose)
+        self.assertIn("/run/secrets/ntfy_password_hash:ro", compose)
+        self.assertIn("/run/secrets/ntfy_access_token:ro", compose)
+        self.assertIn("MISSION_CONTROL_SECRET_DIR=", example)
+
+    def test_ntfy_loads_secrets_at_runtime(self):
+        compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
+
+        self.assertIn('IFS= read -r ntfy_hash', compose)
+        self.assertIn('IFS= read -r ntfy_token', compose)
+        self.assertIn('admin:$${ntfy_hash}:admin', compose)
+        self.assertIn('admin:$${ntfy_token}:HomeOps', compose)
+        self.assertIn("exec ntfy serve", compose)
+
+    def test_uptime_kuma_bootstrap_is_pinned_and_idempotent(self):
+        compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
+        bootstrap = (STACK_DIR / "uptime-kuma/bootstrap.js").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("./uptime-kuma/bootstrap.js:/app/homeops-bootstrap.js:ro", compose)
+        self.assertIn('const ADMIN_USER = "admin"', bootstrap)
+        self.assertIn('const STATUS_PAGE_SLUG = "homeops"', bootstrap)
+        self.assertIn('emitAck("needSetup")', bootstrap)
+        self.assertIn('emitAck("setup", ADMIN_USER, password)', bootstrap)
+        self.assertIn('emitAck("login"', bootstrap)
+        self.assertIn('emitAck("add", monitorPayload(spec))', bootstrap)
+        self.assertIn('emitAck("addStatusPage"', bootstrap)
+        self.assertIn('"saveStatusPage"', bootstrap)
+        self.assertIn("Existing monitor", bootstrap)
+        self.assertIn("uptime_kuma_bootstrap_verified", bootstrap)
+        self.assertNotIn("process.argv", bootstrap)
 
 
 if __name__ == "__main__":

@@ -319,6 +319,51 @@ class ActionRunnerTests(unittest.TestCase):
                 actions_dir=self.actions_dir,
             )
 
+    def test_provision_mission_control_secrets_is_bounded_and_redacted(self):
+        attempt = run_action(
+            "provision_mission_control_secrets",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(command[-1] for command in record["commands"])
+
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 4)
+        self.assertEqual(sum(command[0] == "scp" for command in record["commands"]), 3)
+        self.assertIn("secrets.token_urlsafe(32)", rendered)
+        self.assertIn("tk_", rendered)
+        self.assertIn("bcryptjs", rendered)
+        self.assertIn("ntfy_password_hash", rendered)
+        self.assertIn("stat -c %a", rendered)
+        self.assertIn("test ! -L", rendered)
+        self.assertIn("--read-only", rendered)
+        self.assertNotIn("cat ", rendered)
+        self.assertNotIn("NTFY_AUTH_USERS=", rendered)
+        self.assertNotIn("NTFY_AUTH_TOKENS=", rendered)
+        self.assertTrue(record["commands"][1][-1].endswith("uptime_kuma_admin_password"))
+        self.assertTrue(record["commands"][2][-1].endswith("ntfy_admin_password"))
+        self.assertTrue(record["commands"][3][-1].endswith("ntfy_access_token"))
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action provision_mission_control_secrets on container-host",
+        )
+
+    def test_provision_mission_control_secrets_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "provision_mission_control_secrets",
+                "container-host",
+                [self._container_server()],
+                {"password": "must-not-be-accepted"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
     def test_deploy_monitoring_stack_dry_run_is_bounded_and_recoverable(self):
         attempt = run_action(
             "deploy_monitoring_stack",

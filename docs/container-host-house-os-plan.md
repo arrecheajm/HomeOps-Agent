@@ -159,7 +159,7 @@ backup target.
   explicitly distinguish older evidence where it was not collected.
 - Collection excludes logs, environment values, and labels other than Compose
   project/service identity.
-- Python regression suite passes with 144 tests, and the health script passes
+- Python regression suite passes with 148 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
 - Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
@@ -177,12 +177,20 @@ backup target.
 - The first Mission Control bundle is implemented under
   `stacks/mission-control/` with immutable Homepage, Uptime Kuma, and ntfy image
   references. Compose rendering passes. Its direct LAN ports are defined, but
-  deployment remains disabled until image preflight, credentials, Uptime Kuma
-  bootstrap, and backup/restore are implemented and reviewed.
+  deployment remains disabled until credentials are provisioned and
+  backup/restore is implemented and reviewed.
 - The approved `preflight_mission_control_images` action completed on
   2026-07-22. The exact images, required tooling, architecture, identities,
   volumes, and planned ports passed; post-action inventory proved no running
   service changed.
+- Protected ntfy and Uptime Kuma credential provisioning is implemented as the
+  fixed `provision_mission_control_secrets` action. Its dry-run proves
+  owner-only paths, idempotent generation, bcrypt verification, valid token
+  shape, ignored recovery copies, and no plaintext secret output.
+- The pinned Uptime Kuma 2.4.0 bootstrap helper is implemented without direct
+  database edits. It creates or verifies the admin login, four core-service
+  monitors, and the `homeops` status page; conflicting existing monitors fail
+  closed. It will run while the service is loopback-only during deployment.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.
