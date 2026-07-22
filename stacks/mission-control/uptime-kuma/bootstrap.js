@@ -1,19 +1,25 @@
 "use strict";
 
 // This helper is intentionally coupled to Uptime Kuma 2.4.0's Socket.IO API.
-// The deploy action runs it inside the pinned container and passes the admin
-// password only through stdin.
+// The deploy action runs it inside the pinned container and passes its two
+// secret inputs as a JSON object through stdin.
 const fs = require("node:fs");
 const { io } = require("socket.io-client");
+const {
+    findNotification,
+    findStatusPage,
+    notificationType,
+    ntfyNotificationPayload,
+    parseBootstrapInput,
+    withNotification,
+} = require("./bootstrap-contract");
 
 const ADMIN_USER = "admin";
 const STATUS_PAGE_SLUG = "homeops";
 const TIMEOUT_MS = 20_000;
-const password = fs.readFileSync(0, "utf8").trim();
-
-if (password.length < 20) {
-    throw new Error("Uptime Kuma bootstrap password is missing or too short");
-}
+const { password, ntfyAccessToken } = parseBootstrapInput(
+    fs.readFileSync(0, "utf8"),
+);
 
 const desiredMonitors = [
     { name: "Homepage", url: "http://homepage:3000" },
@@ -56,7 +62,7 @@ function emitAck(event, ...args) {
     });
 }
 
-function monitorPayload(spec) {
+function monitorPayload(spec, notificationID) {
     return {
         name: spec.name,
         description: "Provisioned by HomeOps",
@@ -74,7 +80,7 @@ function monitorPayload(spec) {
         upsideDown: false,
         expiryNotification: false,
         accepted_statuscodes: ["200-299"],
-        notificationIDList: {},
+        notificationIDList: withNotification({}, notificationID),
         kafkaProducerBrokers: [],
         kafkaProducerSaslOptions: {},
         rabbitmqNodes: [],
@@ -92,12 +98,30 @@ async function main() {
 
     const initialMonitorList = waitFor("monitorList");
     const initialStatusPageList = waitFor("statusPageList");
+    const initialNotificationList = waitFor("notificationList");
     await emitAck("login", { username: ADMIN_USER, password, token: "" });
 
     const monitorList = await initialMonitorList;
     const monitorByName = new Map(
         Object.values(monitorList || {}).map((monitor) => [monitor.name, monitor]),
     );
+    const notificationList = await initialNotificationList;
+    const desiredNotification = ntfyNotificationPayload(ntfyAccessToken);
+    const existingNotification = findNotification(notificationList);
+    if (existingNotification && notificationType(existingNotification) !== "ntfy") {
+        throw new Error("Existing HomeOps notification is not an ntfy provider");
+    }
+    const notificationResult = await emitAck(
+        "addNotification",
+        desiredNotification,
+        existingNotification ? existingNotification.id : null,
+    );
+    const notificationID = existingNotification
+        ? existingNotification.id
+        : notificationResult.id;
+    if (!Number.isInteger(notificationID) || notificationID < 1) {
+        throw new Error("Uptime Kuma returned an invalid notification ID");
+    }
 
     const managedMonitors = [];
     for (const spec of desiredMonitors) {
@@ -106,17 +130,26 @@ async function main() {
             if (existing.type !== "http" || existing.url !== spec.url) {
                 throw new Error(`Existing monitor ${spec.name} does not match HomeOps`);
             }
+            const detail = await emitAck("getMonitor", existing.id);
+            const notificationIDList = withNotification(
+                detail.monitor.notificationIDList,
+                notificationID,
+            );
+            if (!detail.monitor.notificationIDList?.[notificationID]) {
+                await emitAck("editMonitor", {
+                    ...detail.monitor,
+                    notificationIDList,
+                });
+            }
             managedMonitors.push({ id: existing.id });
             continue;
         }
-        const result = await emitAck("add", monitorPayload(spec));
+        const result = await emitAck("add", monitorPayload(spec, notificationID));
         managedMonitors.push({ id: result.monitorID });
     }
 
     const statusPages = await initialStatusPageList;
-    const existingPage = (statusPages || []).find(
-        (page) => page.slug === STATUS_PAGE_SLUG,
-    );
+    const existingPage = findStatusPage(statusPages, STATUS_PAGE_SLUG);
     if (!existingPage) {
         await emitAck("addStatusPage", "HomeOps Status", STATUS_PAGE_SLUG);
     }

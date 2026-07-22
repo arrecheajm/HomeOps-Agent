@@ -62,13 +62,16 @@ Live status:
   and identity/volume/port collision checks passed. Post-action inventory
   confirmed 6 of 6 existing containers running and zero findings.
 - `provision_mission_control_secrets` is implemented and dry-run verified. It
-  creates or validates four owner-only server files, checks token shape and the
-  bcrypt/password pairing without printing values, and retains three ignored
-  local recovery copies. Live execution remains approval-gated.
+  creates or validates five owner-only server files, verifies generated bcrypt
+  hashes and the scoped service-token shape without printing values, keeps the
+  service plaintext off disk, and retains three ignored local recovery copies.
+  Live execution remains approval-gated.
 - The version-pinned Uptime Kuma 2.4.0 bootstrap helper is implemented. It
-  accepts the admin password only on stdin, creates or verifies four core
-  monitors and the `homeops` status page, refuses conflicting managed-name
-  monitors, and avoids direct database edits.
+  accepts JSON containing the admin password and scoped ntfy token only on
+  stdin; creates or verifies four core monitors, their ntfy notification
+  associations, and the `homeops` status page; refuses conflicting managed
+  names; and avoids direct database edits. Executable contract tests cover the
+  real object-shaped status-page list and mocked Socket.IO lifecycle.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -120,7 +123,7 @@ Live status:
   upgrade and rationale in `docs/monitoring-stack-upgrade-review.md`.
 - The live monitoring preflight is complete and the first
   `stacks/monitoring/` replacement bundle is implemented. Docker Compose
-  renders it successfully; 148 tests cover version pinning, LAN exposure,
+  renders it successfully; 150 tests cover version pinning, LAN exposure,
   retained scrape targets, dashboard structure, and four committed
   Linux/amd64 registry digests. Exact-image checks and the approved cutover have
   passed. Grafana startup cleanup, reboot persistence, destructive rollback,
@@ -314,11 +317,11 @@ Currently blocked outside a future explicit rebuild workflow or policy change:
 
 Monitoring acceptance and cleanup are complete. A fresh 2026-07-22 collection
 found AgentDVR active with no pending updates or reboot requirement. USB work is
-deferred until the drive can be attached. The next implementation item is a
-The Mission Control credential action and pinned Uptime Kuma bootstrap are
-implemented and dry-run verified. Next, execute credential provisioning after
-exact approval, then implement backup/restore, deployment, and acceptance
-actions. The image preflight is complete. Use
+deferred until the drive can be attached. The corrected Mission Control
+credential action and pinned Uptime Kuma bootstrap are implemented and dry-run
+verified. Next, rerun the expanded image/dependency preflight after exact
+approval, then provision credentials and implement backup/restore, deployment,
+HTTPS, and acceptance actions. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

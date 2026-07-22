@@ -308,3 +308,37 @@ Consequences:
   `homeops` status page are verified.
 - Existing managed-name monitors with different definitions stop deployment
   instead of being silently overwritten.
+
+## 0013: Mission Control Alerts Use A Scoped ntfy Service Identity
+
+Status: accepted
+
+Date: 2026-07-22
+
+Decision:
+
+Keep the human ntfy `admin` login separate from a regular `homeops` service
+user. Give the service user read/write access only to `homeops-alerts`, issue
+the integration token to that user, and have the pinned Uptime Kuma bootstrap
+attach one managed ntfy provider only to the four HomeOps monitors. Treat the
+initial direct LAN HTTP ports as temporary bootstrap access; routine
+credentialed phone use requires local HTTPS.
+
+Reasoning:
+
+- ntfy tokens inherit their account's permissions, so an administrator token
+  would give an integration unnecessary control.
+- Monitors without notification associations record outages but do not alert
+  the household.
+- Passwords and bearer tokens sent over direct HTTP are not encrypted in
+  transit, even on a trusted home LAN.
+
+Consequences:
+
+- Credential provisioning retains separate admin and service bcrypt hashes,
+  but pipes the randomly generated service plaintext directly into the hasher;
+  only the scoped token is copied locally for integrations.
+- Bootstrap reconciles the managed provider and associations through Uptime
+  Kuma 2.4.0's version-locked Socket.IO events.
+- The expanded preflight must pass before credential provisioning, and HTTPS is
+  a gate for routine phone login rather than initial loopback deployment.

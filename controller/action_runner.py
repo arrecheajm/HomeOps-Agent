@@ -108,8 +108,11 @@ REMOTE_MISSION_CONTROL_SECRET_FILES = {
     "ntfy_admin_password": (
         f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy_admin_password"
     ),
-    "ntfy_password_hash": (
-        f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy_password_hash"
+    "ntfy_admin_password_hash": (
+        f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy_admin_password_hash"
+    ),
+    "ntfy_service_password_hash": (
+        f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy_service_password_hash"
     ),
     "ntfy_access_token": (
         f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy_access_token"
@@ -780,6 +783,24 @@ def _preflight_mission_control_image_commands(
                 "docker",
                 "run",
                 "--rm",
+                "--read-only",
+                "--entrypoint",
+                "node",
+                MISSION_CONTROL_IMAGE_REFS["uptime-kuma"],
+                "-e",
+                "require('bcryptjs'); require('socket.io-client')",
+            ),
+        ]
+    )
+
+    commands.append(
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command(
+                "docker",
+                "run",
+                "--rm",
                 "--entrypoint",
                 "sh",
                 MISSION_CONTROL_IMAGE_REFS["ntfy"],
@@ -832,7 +853,12 @@ def _provision_mission_control_secret_commands(
         "uptime_kuma_admin_password"
     ]
     ntfy_password = REMOTE_MISSION_CONTROL_SECRET_FILES["ntfy_admin_password"]
-    ntfy_hash = REMOTE_MISSION_CONTROL_SECRET_FILES["ntfy_password_hash"]
+    ntfy_admin_hash = REMOTE_MISSION_CONTROL_SECRET_FILES[
+        "ntfy_admin_password_hash"
+    ]
+    ntfy_service_hash = REMOTE_MISSION_CONTROL_SECRET_FILES[
+        "ntfy_service_password_hash"
+    ]
     ntfy_token = REMOTE_MISSION_CONTROL_SECRET_FILES["ntfy_access_token"]
     password_generation = "import secrets; print(secrets.token_urlsafe(32))"
     token_generation = (
@@ -842,13 +868,16 @@ def _provision_mission_control_secret_commands(
     bcrypt_generation = (
         "const fs=require('fs');const bcrypt=require('bcryptjs');"
         "const password=fs.readFileSync(0,'utf8').trim();"
-        "bcrypt.hash(password,10).then(hash=>process.stdout.write(hash))"
+        "if(password.length<20)throw new Error('password input is too short');"
+        "bcrypt.hash(password,10).then(hash=>{"
+        "if(!bcrypt.compareSync(password,hash))throw new Error('bcrypt verification failed');"
+        "process.stdout.write(hash+'\\n')})"
         ".catch(error=>{console.error(error.message);process.exit(1)})"
     )
     bcrypt_validation = (
         "const fs=require('fs');const bcrypt=require('bcryptjs');"
         "const password=fs.readFileSync('/secrets/ntfy_admin_password','utf8').trim();"
-        "const hash=fs.readFileSync('/secrets/ntfy_password_hash','utf8').trim();"
+        "const hash=fs.readFileSync('/secrets/ntfy_admin_password_hash','utf8').trim();"
         "if(!bcrypt.compareSync(password,hash))process.exit(1)"
     )
 
@@ -857,7 +886,8 @@ def _provision_mission_control_secret_commands(
         f"secret_dir={quote(REMOTE_MISSION_CONTROL_SECRET_DIR)}; "
         f"uptime_password={quote(uptime_password)}; "
         f"ntfy_password={quote(ntfy_password)}; "
-        f"ntfy_hash={quote(ntfy_hash)}; "
+        f"ntfy_admin_hash={quote(ntfy_admin_hash)}; "
+        f"ntfy_service_hash={quote(ntfy_service_hash)}; "
         f"ntfy_token={quote(ntfy_token)}; "
         "install -d -m 0700 \"$secret_dir\"; "
         "test ! -L \"$secret_dir\"; "
@@ -878,20 +908,30 @@ def _provision_mission_control_secret_commands(
         f"python3 -c {_shell_single_quote(token_generation)} > \"$tmp\"; "
         "chmod 0600 \"$tmp\"; mv \"$tmp\" \"$ntfy_token\"; "
         "trap - HUP INT TERM EXIT; fi; "
-        "if [ -e \"$ntfy_hash\" ] || [ -L \"$ntfy_hash\" ]; then "
-        "test -f \"$ntfy_hash\"; test ! -L \"$ntfy_hash\"; "
+        "if [ -e \"$ntfy_admin_hash\" ] || [ -L \"$ntfy_admin_hash\" ]; then "
+        "test -f \"$ntfy_admin_hash\"; test ! -L \"$ntfy_admin_hash\"; "
         "else tmp=$(mktemp \"$secret_dir/.hash.XXXXXX\"); "
         "trap 'rm -f \"$tmp\"' HUP INT TERM EXIT; "
         f"docker run --rm -i --read-only --entrypoint node {quote(MISSION_CONTROL_IMAGE_REFS['uptime-kuma'])} "
         f"-e {_shell_single_quote(bcrypt_generation)} < \"$ntfy_password\" > \"$tmp\"; "
-        "chmod 0600 \"$tmp\"; mv \"$tmp\" \"$ntfy_hash\"; "
+        "chmod 0600 \"$tmp\"; mv \"$tmp\" \"$ntfy_admin_hash\"; "
         "trap - HUP INT TERM EXIT; fi; "
-        "for secret in \"$uptime_password\" \"$ntfy_password\" \"$ntfy_hash\" \"$ntfy_token\"; do "
+        "if [ -e \"$ntfy_service_hash\" ] || [ -L \"$ntfy_service_hash\" ]; then "
+        "test -f \"$ntfy_service_hash\"; test ! -L \"$ntfy_service_hash\"; "
+        "else tmp=$(mktemp \"$secret_dir/.hash.XXXXXX\"); "
+        "trap 'rm -f \"$tmp\"' HUP INT TERM EXIT; "
+        f"python3 -c {_shell_single_quote(password_generation)} | "
+        f"docker run --rm -i --read-only --entrypoint node {quote(MISSION_CONTROL_IMAGE_REFS['uptime-kuma'])} "
+        f"-e {_shell_single_quote(bcrypt_generation)} > \"$tmp\"; "
+        "chmod 0600 \"$tmp\"; mv \"$tmp\" \"$ntfy_service_hash\"; "
+        "trap - HUP INT TERM EXIT; fi; "
+        "for secret in \"$uptime_password\" \"$ntfy_password\" \"$ntfy_admin_hash\" \"$ntfy_service_hash\" \"$ntfy_token\"; do "
         "test -s \"$secret\"; test -f \"$secret\"; test ! -L \"$secret\"; "
         "test \"$(stat -c %a \"$secret\")\" = 600; "
         "test \"$(stat -c %u \"$secret\")\" = \"$(id -u)\"; done; "
         "grep -Eq '^tk_[a-z0-9]{29}$' \"$ntfy_token\"; "
-        "grep -Eq '^[$]2[aby][$][0-9]{2}[$]' \"$ntfy_hash\"; "
+        "grep -Eq '^[$]2[aby][$][0-9]{2}[$]' \"$ntfy_admin_hash\"; "
+        "grep -Eq '^[$]2[aby][$][0-9]{2}[$]' \"$ntfy_service_hash\"; "
         f"docker run --rm --read-only -v \"$secret_dir:/secrets:ro\" --entrypoint node {quote(MISSION_CONTROL_IMAGE_REFS['uptime-kuma'])} "
         f"-e {_shell_single_quote(bcrypt_validation)}; "
         "printf 'mission_control_secrets_provisioned\\n'"

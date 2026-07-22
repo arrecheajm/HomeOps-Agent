@@ -47,6 +47,7 @@ services:
     volumes:
       - uptime-kuma-data:/app/data
       - ./uptime-kuma/bootstrap.js:/app/homeops-bootstrap.js:ro
+      - ./uptime-kuma/bootstrap-contract.js:/app/bootstrap-contract.js:ro
     ports:
       - "${HOMEOPS_LAN_IP:-192.168.86.58}:3001:3001"
     healthcheck:
@@ -81,10 +82,12 @@ services:
       - -ec
     command:
       - |
-        IFS= read -r ntfy_hash < /run/secrets/ntfy_password_hash
-        IFS= read -r ntfy_token < /run/secrets/ntfy_access_token
-        export NTFY_AUTH_USERS="admin:$${ntfy_hash}:admin"
-        export NTFY_AUTH_TOKENS="admin:$${ntfy_token}:HomeOps"
+        IFS= read -r ntfy_admin_hash < /run/secrets/ntfy_admin_password_hash || test -n "$${ntfy_admin_hash}"
+        IFS= read -r ntfy_service_hash < /run/secrets/ntfy_service_password_hash || test -n "$${ntfy_service_hash}"
+        IFS= read -r ntfy_token < /run/secrets/ntfy_access_token || test -n "$${ntfy_token}"
+        export NTFY_AUTH_USERS="admin:$${ntfy_admin_hash}:admin,homeops:$${ntfy_service_hash}:user"
+        export NTFY_AUTH_ACCESS="homeops:homeops-alerts:rw"
+        export NTFY_AUTH_TOKENS="homeops:$${ntfy_token}:HomeOps"
         exec ntfy serve
     restart: unless-stopped
     init: true
@@ -93,7 +96,8 @@ services:
       NTFY_BASE_URL: ${NTFY_BASE_URL:-http://192.168.86.58:8082}
     volumes:
       - ./ntfy/server.yml:/etc/ntfy/server.yml:ro
-      - ${MISSION_CONTROL_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control}/ntfy_password_hash:/run/secrets/ntfy_password_hash:ro
+      - ${MISSION_CONTROL_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control}/ntfy_admin_password_hash:/run/secrets/ntfy_admin_password_hash:ro
+      - ${MISSION_CONTROL_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control}/ntfy_service_password_hash:/run/secrets/ntfy_service_password_hash:ro
       - ${MISSION_CONTROL_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control}/ntfy_access_token:/run/secrets/ntfy_access_token:ro
       - ntfy-data:/var/lib/ntfy
     ports:

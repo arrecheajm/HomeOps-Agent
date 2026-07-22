@@ -1,7 +1,8 @@
 # HomeOps Mission Control
 
-Status: image preflight passed; protected credential provisioning and the
-version-pinned Uptime Kuma bootstrap are implemented and dry-run validated.
+Status: the original image preflight passed; corrected credential provisioning
+and the version-pinned Uptime Kuma bootstrap are implemented and locally
+validated. Re-run the expanded preflight before provisioning or deployment.
 Deployment remains disabled until credentials are provisioned and independent
 backup/restore is designed and proven.
 
@@ -11,9 +12,12 @@ This internal-disk stack provides:
 - Uptime Kuma at `http://192.168.86.58:3001`
 - ntfy at `http://192.168.86.58:8082`
 
-All ports bind only to the container host's LAN address. Local DNS and HTTPS
-belong to the later common-ingress phase. Homepage intentionally has no Docker
-socket and only contains reviewed static links and reachability checks.
+All ports bind only to the container host's LAN address. These initial HTTP
+bindings are for LAN bootstrap and acceptance, not secure routine login:
+passwords and bearer tokens are not encrypted in transit. Do not reuse these
+credentials elsewhere. Local DNS and HTTPS are required before routine
+credentialed phone use. Homepage intentionally has no Docker socket and only
+contains reviewed static links and reachability checks.
 
 ## Pinned Baseline
 
@@ -29,9 +33,12 @@ before deployment to detect tag movement.
 
 ## Security And Lifecycle Decisions
 
-- ntfy defaults to `deny-all`. Its bcrypt hash and 32-character access token
-  are read from owner-only files at container startup; neither value is stored
-  in Git or Docker's saved container environment.
+- ntfy defaults to `deny-all`. The interactive `admin` account remains
+  separate from a regular `homeops` service user. That service user's token is
+  limited to read/write access on `homeops-alerts`; it does not inherit ntfy
+  administrator access. Hashes and the token are read from owner-only server
+  files at container startup and are absent from Git and Docker's saved
+  container environment.
 - Homepage's required allowed-host value is restricted to the LAN address and
   port. It has no built-in authentication, so this stack must never be exposed
   publicly.
@@ -60,30 +67,42 @@ After reviewing it, the exact approval phrase is:
 Approve action provision_mission_control_secrets on container-host
 ```
 
-The action creates four owner-only server files, checks the bcrypt hash against
-the plaintext ntfy password without printing either, and copies three ignored
-login/recovery values into `stacks/mission-control/secrets/`. Existing regular
-files are retained, making reruns idempotent; links, empty files, wrong modes,
-wrong ownership, invalid tokens, and mismatched hashes fail closed.
+The action creates five owner-only server files: Uptime Kuma and ntfy admin
+passwords, both ntfy bcrypt hashes, and the service token. It pipes a generated
+service password directly into the hasher without writing that plaintext to
+disk and verifies the derived hash. It also verifies the retained ntfy
+admin password/hash pair without printing it and copies three ignored values
+into `stacks/mission-control/secrets/`. Existing regular files are retained,
+making reruns idempotent; links, empty files, wrong modes, wrong ownership,
+invalid tokens, and mismatched hashes fail closed. Git-ignore prevents commits
+but does not encrypt the local copies or establish a Windows ACL; the
+workstation account and disk must be protected.
 
 During the future deployment action, Uptime Kuma will first bind to loopback.
-The helper reads its admin password from stdin, creates or verifies user
-`admin`, and manages four starter HTTP monitors: Homepage, Grafana, Uptime Kuma,
-and ntfy. It creates or reconciles the `homeops` status page. If a monitor with
-a managed name has a different type or URL, bootstrap stops instead of
-overwriting the user's monitor.
+The helper reads one JSON object containing its admin password and the scoped
+ntfy token from stdin, creates or verifies user `admin`, and manages four
+starter HTTP monitors: Homepage, Grafana, Uptime Kuma, and ntfy. It creates or
+reconciles a `HomeOps ntfy` notification provider, attaches it only to those
+four monitors, and publishes them on the `homeops` status page. If a monitor
+with a managed name has a different type or URL, or the managed notification
+name belongs to a different provider type, bootstrap stops instead of
+overwriting it. The object-shaped status-page response used by Uptime Kuma
+2.4.0 is covered by an executable contract test.
 
 ## Remaining Gates
 
-1. Approve and execute protected Mission Control credential provisioning.
+1. Re-run the expanded image/dependency preflight, then approve and execute
+   protected Mission Control credential provisioning.
 2. Choose an independent encrypted backup destination and implement exports for
    both named volumes.
-3. Implement bounded deploy, health, phone-on-Wi-Fi, reboot, backup/restore, and
-   rollback acceptance actions.
+3. Implement bounded deploy, health, reboot, backup/restore, and rollback
+   acceptance actions.
+4. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.
 
-The approved image preflight passed on 2026-07-22. It pulled all three exact
-images, verified their required tools and amd64 architecture, found no planned
-identity, volume, or LAN-port collisions, and did not start the stack.
+The approved image preflight passed on 2026-07-22. The corrected preflight adds
+explicit `bcryptjs` and `socket.io-client` dependency checks, so it must be run
+again before live credential provisioning or deployment. It does not start the
+stack.
 
 Local configuration validation can use:
 

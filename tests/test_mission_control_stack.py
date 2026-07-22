@@ -1,4 +1,8 @@
 from pathlib import Path
+import json
+import os
+import shutil
+import subprocess
 import unittest
 
 
@@ -62,17 +66,23 @@ class MissionControlStackTests(unittest.TestCase):
 
         self.assertNotIn("NTFY_AUTH_USERS:", compose)
         self.assertNotIn("NTFY_AUTH_TOKENS:", compose)
-        self.assertIn("/run/secrets/ntfy_password_hash:ro", compose)
+        self.assertIn("/run/secrets/ntfy_admin_password_hash:ro", compose)
+        self.assertIn("/run/secrets/ntfy_service_password_hash:ro", compose)
         self.assertIn("/run/secrets/ntfy_access_token:ro", compose)
+        self.assertNotIn("/run/secrets/ntfy_service_password:ro", compose)
         self.assertIn("MISSION_CONTROL_SECRET_DIR=", example)
 
     def test_ntfy_loads_secrets_at_runtime(self):
         compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
 
-        self.assertIn('IFS= read -r ntfy_hash', compose)
+        self.assertIn('IFS= read -r ntfy_admin_hash', compose)
+        self.assertIn('IFS= read -r ntfy_service_hash', compose)
         self.assertIn('IFS= read -r ntfy_token', compose)
-        self.assertIn('admin:$${ntfy_hash}:admin', compose)
-        self.assertIn('admin:$${ntfy_token}:HomeOps', compose)
+        self.assertEqual(compose.count('|| test -n "$${ntfy_'), 3)
+        self.assertIn('admin:$${ntfy_admin_hash}:admin', compose)
+        self.assertIn('homeops:$${ntfy_service_hash}:user', compose)
+        self.assertIn('homeops:homeops-alerts:rw', compose)
+        self.assertIn('homeops:$${ntfy_token}:HomeOps', compose)
         self.assertIn("exec ntfy serve", compose)
 
     def test_uptime_kuma_bootstrap_is_pinned_and_idempotent(self):
@@ -82,17 +92,73 @@ class MissionControlStackTests(unittest.TestCase):
         )
 
         self.assertIn("./uptime-kuma/bootstrap.js:/app/homeops-bootstrap.js:ro", compose)
+        self.assertIn("./uptime-kuma/bootstrap-contract.js:/app/bootstrap-contract.js:ro", compose)
         self.assertIn('const ADMIN_USER = "admin"', bootstrap)
         self.assertIn('const STATUS_PAGE_SLUG = "homeops"', bootstrap)
         self.assertIn('emitAck("needSetup")', bootstrap)
         self.assertIn('emitAck("setup", ADMIN_USER, password)', bootstrap)
         self.assertIn('emitAck("login"', bootstrap)
-        self.assertIn('emitAck("add", monitorPayload(spec))', bootstrap)
+        self.assertIn('"addNotification"', bootstrap)
+        self.assertIn('emitAck("add", monitorPayload(spec, notificationID))', bootstrap)
+        self.assertIn('emitAck("editMonitor"', bootstrap)
         self.assertIn('emitAck("addStatusPage"', bootstrap)
         self.assertIn('"saveStatusPage"', bootstrap)
         self.assertIn("Existing monitor", bootstrap)
         self.assertIn("uptime_kuma_bootstrap_verified", bootstrap)
         self.assertNotIn("process.argv", bootstrap)
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is required for JS contract tests")
+    def test_uptime_kuma_contract_handles_real_collection_shapes(self):
+        contract_path = (STACK_DIR / "uptime-kuma/bootstrap-contract.js").resolve()
+        script = f"""
+const contract = require({json.dumps(str(contract_path))});
+const token = "tk_" + "a".repeat(29);
+const input = contract.parseBootstrapInput(JSON.stringify({{
+    uptimeKumaAdminPassword: "correct-horse-battery-staple",
+    ntfyAccessToken: token,
+}}));
+if (input.ntfyAccessToken !== token) process.exit(1);
+const page = contract.findStatusPage({{ 7: {{ id: 7, slug: "homeops" }} }}, "homeops");
+if (!page || page.id !== 7) process.exit(2);
+const notification = contract.ntfyNotificationPayload(token);
+if (notification.type !== "ntfy" || notification.ntfytopic !== "homeops-alerts") process.exit(3);
+if (contract.notificationType({{ config: JSON.stringify(notification) }}) !== "ntfy") process.exit(4);
+const ids = contract.withNotification({{ 3: true }}, 9);
+if (!ids[3] || !ids[9]) process.exit(5);
+"""
+        result = subprocess.run(
+            [shutil.which("node"), "-e", script],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is required for JS contract tests")
+    def test_uptime_kuma_bootstrap_provisions_scoped_alerts(self):
+        bootstrap_path = (STACK_DIR / "uptime-kuma/bootstrap.js").resolve()
+        node_modules = Path(
+            "tests/fixtures/uptime-kuma-node-modules"
+        ).resolve()
+        token = "tk_" + ("a" * 29)
+        bootstrap_input = json.dumps(
+            {
+                "uptimeKumaAdminPassword": "correct-horse-battery-staple",
+                "ntfyAccessToken": token,
+            }
+        )
+        environment = os.environ.copy()
+        environment["NODE_PATH"] = str(node_modules)
+        result = subprocess.run(
+            [shutil.which("node"), str(bootstrap_path)],
+            input=bootstrap_input,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=environment,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("uptime_kuma_bootstrap_verified", result.stdout)
 
 
 if __name__ == "__main__":

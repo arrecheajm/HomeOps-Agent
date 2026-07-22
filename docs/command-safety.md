@@ -182,10 +182,11 @@ Approve action preflight_mission_control_images on container-host
 ```
 
 Mission Control credential provisioning is separately approval-gated. It
-creates or validates owner-only ntfy and Uptime Kuma credentials, derives and
-verifies the ntfy bcrypt hash in the pinned Uptime Kuma image, and copies three
-Git-ignored recovery values locally. It never prints secret values or accepts
-password arguments:
+creates or validates owner-only Uptime Kuma, ntfy administrator, and scoped
+ntfy service credentials; derives and verifies both ntfy bcrypt hashes in the
+pinned Uptime Kuma image; and copies three Git-ignored recovery values locally.
+It never prints secret values or accepts password arguments. Git-ignore does
+not encrypt those workstation copies or replace workstation access controls:
 
 ```powershell
 python -m controller.main actions run provision_mission_control_secrets --server container-host --dry-run
