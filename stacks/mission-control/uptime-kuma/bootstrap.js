@@ -50,10 +50,13 @@ function waitFor(event) {
 
 function emitAck(event, ...args) {
     return new Promise((resolve, reject) => {
-        socket.timeout(TIMEOUT_MS).emit(event, ...args, (error, response) => {
-            if (error) {
-                reject(new Error(`${event} timed out`));
-            } else if (response && response.ok === false) {
+        const timer = setTimeout(
+            () => reject(new Error(`${event} timed out`)),
+            TIMEOUT_MS,
+        );
+        socket.emit(event, ...args, (response) => {
+            clearTimeout(timer);
+            if (response && response.ok === false) {
                 reject(new Error(`${event} failed: ${response.msg || "unknown error"}`));
             } else {
                 resolve(response);

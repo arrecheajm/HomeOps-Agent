@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from controller import approvals
-from controller.action_runner import ActionError, run_action
+from controller.action_runner import ActionError, _summary, run_action
 from controller.inventory import ServerInventoryItem
 
 
@@ -16,6 +16,16 @@ class ActionRunnerTests(unittest.TestCase):
         if self.actions_dir.exists():
             shutil.rmtree(self.actions_dir)
         self.actions_dir.mkdir(parents=True)
+
+    def test_action_summary_retains_failure_tail(self):
+        value = "start " + ("progress " * 100) + "final bootstrap error"
+
+        summary = _summary(value, limit=100)
+
+        self.assertEqual(len(summary), 100)
+        self.assertIn("...[truncated]...", summary)
+        self.assertTrue(summary.startswith("start "))
+        self.assertTrue(summary.endswith("final bootstrap error"))
 
     def test_restart_docker_container_dry_run_writes_history(self):
         attempt = run_action(
@@ -390,6 +400,7 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertIn("HOMEOPS_LAN_IP=127.0.0.1", rendered)
         self.assertGreaterEqual(rendered.count("node /app/homeops-bootstrap.js"), 2)
         self.assertIn("homeops-not-authorized", rendered)
+        self.assertIn("UPTIME_KUMA_DB_TYPE=sqlite", rendered)
         self.assertIn("docker compose", rendered)
         self.assertIn("down --volumes", rendered)
         self.assertIn("192.168.86.58:8081", rendered)

@@ -405,3 +405,37 @@ Consequences:
 - The pinned image's data ownership must be revalidated before upgrades.
 - The failed acceptance cleanup again removed all candidate Mission Control
   runtime state; a fresh deployment approval is required.
+
+## 0016: Uptime Kuma Uses Its Supported Non-Interactive SQLite Setup
+
+Status: accepted
+
+Date: 2026-07-22
+
+Decision:
+
+Set `UPTIME_KUMA_DB_TYPE=sqlite` in the Uptime Kuma service and let the pinned
+2.4.0 image create and maintain `db-config.json` in its named data volume.
+
+Reasoning:
+
+- Uptime Kuma 2.x serves a separate database-selection application on a fresh
+  volume; its main Socket.IO API is unavailable until a database is selected.
+- The fourth acceptance attempt made all containers healthy, but the versioned
+  account/monitor bootstrap timed out because the health check accepted that
+  database-selection application.
+- Inspection of the pinned source and a bounded live probe proved
+  `UPTIME_KUMA_DB_TYPE=sqlite` is the supported environment contract and starts
+  the main server after creating the configuration and applying migrations.
+
+Consequences:
+
+- HomeOps selects the already-planned local SQLite backend without writing the
+  application database directly.
+- Image preflight and regression tests must retain this environment contract.
+- Action summaries now retain both their beginning and failure tail so later
+  bootstrap errors remain visible in the recorded audit history.
+- The bootstrap uses a plain Socket.IO acknowledgement callback with its own
+  20-second timer. An isolated first run and immediate reconciliation run both
+  completed after the client library's timeout wrapper proved incompatible
+  with Kuma's primitive `needSetup` acknowledgement.

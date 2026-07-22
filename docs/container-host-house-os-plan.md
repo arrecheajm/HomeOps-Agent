@@ -224,7 +224,14 @@ backup target.
   cannot write the image's `1000:1000`-owned `/app/data`. Cleanup again removed
   all candidate state. A bounded isolated probe proved Uptime Kuma reaches its
   first-run listener as `1000:1000`; Compose now declares that identity and a
-  fresh approval is required for full-stack acceptance.
+  fresh approval is required for full-stack acceptance. A fourth attempt made
+  all three services healthy but timed out because Uptime Kuma 2.4 served its
+  separate database-selection UI instead of the main Socket.IO API. A bounded
+  probe proved its supported `UPTIME_KUMA_DB_TYPE=sqlite` path creates the
+  configuration, completes migrations, and reaches the main server; desired
+  state now makes that first-run choice explicitly. A compatible plain
+  acknowledgement callback with the same bounded timer subsequently passed
+  both first-run and idempotent bootstrap probes.
 - The independent backup destination and recovery rules are now defined in
   `docs/mission-control-backup-restore.md`: encrypted and authenticated volume
   archives copied to the HomeOps workstation, followed by a destructive restore

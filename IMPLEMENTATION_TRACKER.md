@@ -80,12 +80,18 @@ Live status:
   names; and avoids direct database edits. Executable contract tests cover the
   real object-shaped status-page list and mocked Socket.IO lifecycle.
 - The fixed Mission Control deploy and rollback actions are implemented and
-  dry-run verified. Three approved acceptance attempts failed closed and
+  dry-run verified. Four approved acceptance attempts failed closed and
   removed all candidate runtime state. The third proved ntfy healthy and
   isolated Uptime Kuma's remaining ownership mismatch. A bounded live probe
   proved the corrected `1000:1000` identity reaches Kuma's first-run listener;
   Compose and its regression test now preserve that image data-owner contract.
-  Full-stack acceptance requires fresh approval.
+  The fourth attempt made all services healthy but exposed Uptime Kuma 2.4's
+  separate first-run database-selection gate. A bounded live probe proved the
+  supported `UPTIME_KUMA_DB_TYPE=sqlite` path writes its own configuration,
+  completes migrations, and starts the main Socket.IO API. Desired state now
+  selects SQLite explicitly. A compatible plain acknowledgement callback with
+  a bounded timer passed both first-run and idempotent bootstrap probes;
+  full-stack acceptance requires fresh approval.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -336,9 +342,10 @@ Monitoring acceptance and cleanup are complete. A fresh 2026-07-22 collection
 found AgentDVR active with no pending updates or reboot requirement. USB work is
 deferred until the drive can be attached. Mission Control images and protected
 credentials are ready; the bounded deploy/rollback lifecycle and pinned Uptime
-Kuma bootstrap are implemented. Three failed-closed live attempts exposed and
-corrected ntfy and Uptime Kuma ownership boundaries without retaining candidate
-state. Next, rerun full-stack acceptance with fresh approval, then implement
+Kuma bootstrap are implemented. Four failed-closed live attempts exposed and
+corrected ntfy ownership, Uptime Kuma data ownership, and its first-run database
+selection without retaining candidate state. Next, rerun full-stack acceptance
+with fresh approval, then implement
 backup/restore and local HTTPS. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.

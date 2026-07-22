@@ -7,7 +7,7 @@ function io() {
 
     function reply(args, response) {
         const callback = args.at(-1);
-        callback(null, response);
+        callback(response);
     }
 
     function fire(event, value) {
@@ -25,9 +25,6 @@ function io() {
             if (event === "connect") {
                 setImmediate(() => fire("connect"));
             }
-        },
-        timeout() {
-            return socket;
         },
         emit(event, ...args) {
             if (event === "needSetup") {

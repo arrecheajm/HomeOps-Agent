@@ -45,6 +45,7 @@ services:
     environment:
       UPTIME_KUMA_HOST: 0.0.0.0
       UPTIME_KUMA_PORT: "3001"
+      UPTIME_KUMA_DB_TYPE: sqlite
     volumes:
       - uptime-kuma-data:/app/data
       - ./uptime-kuma/bootstrap.js:/app/homeops-bootstrap.js:ro

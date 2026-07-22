@@ -56,6 +56,11 @@ class MissionControlStackTests(unittest.TestCase):
         self.assertIn('    user: "1000:1000"', compose)
         self.assertEqual(compose.count('    user: "1000:1000"'), 2)
 
+    def test_uptime_kuma_selects_sqlite_non_interactively(self):
+        compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
+
+        self.assertIn("      UPTIME_KUMA_DB_TYPE: sqlite", compose)
+
     def test_homepage_starts_with_useful_links(self):
         services = (STACK_DIR / "homepage/services.yaml").read_text(
             encoding="utf-8"
@@ -104,6 +109,8 @@ class MissionControlStackTests(unittest.TestCase):
         self.assertIn('const ADMIN_USER = "admin"', bootstrap)
         self.assertIn('const STATUS_PAGE_SLUG = "homeops"', bootstrap)
         self.assertIn('emitAck("needSetup")', bootstrap)
+        self.assertIn("socket.emit(event, ...args", bootstrap)
+        self.assertNotIn("socket.timeout(TIMEOUT_MS).emit", bootstrap)
         self.assertIn('emitAck("setup", ADMIN_USER, password)', bootstrap)
         self.assertIn('emitAck("login"', bootstrap)
         self.assertIn('"addNotification"', bootstrap)

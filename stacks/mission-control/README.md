@@ -2,10 +2,11 @@
 
 Status: image/dependency preflight and protected credential provisioning
 passed. The version-pinned Uptime Kuma bootstrap and bounded acceptance deploy
-and rollback actions are implemented and locally validated. Three live
-acceptance starts exposed two host/container ownership boundaries and every
-automatic cleanup path passed. Isolated live tests proved ntfy healthy as the
-matching host identity and Uptime Kuma listening as its image data owner. The
+and rollback actions are implemented and locally validated. Four live
+acceptance starts exposed two ownership boundaries plus Uptime Kuma 2.x's new
+database-selection gate, and every automatic cleanup path passed. Isolated live
+tests proved ntfy healthy, Uptime Kuma writable as its image data owner, and the
+supported non-interactive SQLite path reaching the main Socket.IO server. The
 corrected full-stack acceptance awaits fresh approval. Retained use remains
 disabled until encrypted backup/restore is implemented and proven.
 
@@ -59,6 +60,14 @@ before deployment to detect tag movement.
   by its pinned image for `/app/data`. With every capability dropped, container
   root cannot bypass that directory's mode; using its actual data owner keeps
   the service writable without restoring broad root capabilities.
+- `UPTIME_KUMA_DB_TYPE=sqlite` uses Uptime Kuma 2.4's supported environment
+  contract to create `db-config.json` on first start. Without that explicit
+  choice, version 2 serves a database-selection UI instead of the Socket.IO API
+  required by the account, monitor, notification, and status-page bootstrap.
+- The bootstrap uses ordinary Socket.IO acknowledgements with its own bounded
+  timer. This matches Kuma's primitive `needSetup` response and avoids the
+  client timeout wrapper that failed to deliver that acknowledgement in a live
+  2.4.0 probe. Two consecutive disposable bootstrap runs passed.
 - Homepage's required allowed-host value is restricted to the LAN address and
   port. It has no built-in authentication, so this stack must never be exposed
   publicly.

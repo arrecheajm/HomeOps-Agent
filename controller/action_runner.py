@@ -1226,6 +1226,16 @@ def _deploy_mission_control_stack_commands(
         "'{{.Config.User}}' homeops-mission-control-ntfy-1)\" = 1000:1000"
     )
     verify.append(
+        "test \"$(docker inspect --type container --format "
+        "'{{.Config.User}}' homeops-mission-control-uptime-kuma-1)\" = 1000:1000"
+    )
+    verify.append(
+        "docker inspect --type container --format "
+        "'{{range .Config.Env}}{{println .}}{{end}}' "
+        "homeops-mission-control-uptime-kuma-1 | "
+        "grep -Fx UPTIME_KUMA_DB_TYPE=sqlite"
+    )
+    verify.append(
         "docker exec homeops-mission-control-ntfy-1 sh -ec "
         + _shell_single_quote(
             "test \"$(id -u)\" = 1000; test \"$(id -g)\" = 1000; "
@@ -2357,4 +2367,8 @@ def _summary(value: str, limit: int = 500) -> str:
     collapsed = " ".join(value.split())
     if len(collapsed) <= limit:
         return collapsed
-    return collapsed[: limit - 3] + "..."
+    marker = " ...[truncated]... "
+    available = limit - len(marker)
+    head = available // 2
+    tail = available - head
+    return collapsed[:head] + marker + collapsed[-tail:]
