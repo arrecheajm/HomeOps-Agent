@@ -5,7 +5,8 @@ starts exposed two ownership boundaries plus Uptime Kuma 2.x's database setup
 and Socket.IO acknowledgement contracts; every automatic cleanup path passed.
 The corrected fifth start passed loopback bootstrap, ntfy authorization, LAN
 cutover, idempotent reconciliation, exact-image/identity checks, health checks,
-and fixed-port verification. Retained household data remains gated until
+fixed-port verification, and a controlled reboot persistence test. Retained
+household data remains gated until
 encrypted backup/restore is implemented and proven.
 
 This internal-disk stack provides:
@@ -122,7 +123,7 @@ overwriting it. The object-shaped status-page response used by Uptime Kuma
 2. Implement the reviewed encrypted workstation backup contract in
    `docs/mission-control-backup-restore.md` and prove destructive restore of
    both named volumes.
-3. Verify host-reboot recovery.
+3. Host-reboot recovery passed on 2026-07-22.
 4. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.
 
 The deploy action intentionally treats its first generated state as

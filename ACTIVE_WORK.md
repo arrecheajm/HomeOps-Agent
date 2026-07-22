@@ -185,6 +185,12 @@ Recommended thinking level for the next work:
   passed. An independent post-check found all three containers healthy,
   Homepage returning `200`, Uptime Kuma returning its expected redirect, and
   anonymous ntfy publishing denied with `403`.
+- The approved controlled reboot completed on 2026-07-22. The boot ID changed,
+  all three Mission Control and four monitoring containers returned healthy,
+  Homepage and Kuma's persisted `homeops` status page remained reachable, ntfy
+  remained deny-by-default with the `homeops` account scoped only to
+  `homeops-alerts`, Grafana returned healthy, and Prometheus remained healthy
+  on its intentionally private endpoint.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the

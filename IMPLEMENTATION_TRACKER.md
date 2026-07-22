@@ -348,8 +348,11 @@ credentials are ready; the bounded deploy/rollback lifecycle and pinned Uptime
 Kuma bootstrap are implemented. Four failed-closed live attempts exposed and
 corrected ntfy ownership, Uptime Kuma data ownership, database selection, and
 Socket.IO acknowledgement handling without retaining candidate state. The
-fifth approved deployment passed full acceptance. Next, verify reboot
-persistence, then implement backup/restore and local HTTPS. Use
+fifth approved deployment passed full acceptance. The approved reboot completed
+on 2026-07-22: the boot ID changed, all seven Mission Control and monitoring
+containers returned healthy, the Kuma status page and ntfy ACL persisted, and
+private Prometheus remained healthy. Next, implement and prove encrypted
+backup/restore, then local HTTPS. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

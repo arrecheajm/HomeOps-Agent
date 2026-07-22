@@ -238,6 +238,10 @@ backup target.
   assertions, health checks, protected runtime-file checks, named-volume
   checks, and all three fixed LAN port assertions. An independent post-check
   confirmed all services healthy and anonymous publishing denied.
+- A subsequent approved controlled host reboot changed the boot ID and proved
+  all three Mission Control services return healthy with their named-volume
+  state, fixed LAN bindings, Kuma status page, and ntfy ACL intact. The four
+  private-by-default monitoring containers also returned healthy.
 - The independent backup destination and recovery rules are now defined in
   `docs/mission-control-backup-restore.md`: encrypted and authenticated volume
   archives copied to the HomeOps workstation, followed by a destructive restore
@@ -347,8 +351,8 @@ proposed capabilities, not currently implemented action IDs:
 3. Implement desired-state stack definitions, sanitized inventory, and the
    USB-storage preflight.
 4. Prepare and verify the 1 TB USB drive and the second-copy backup target.
-5. Run Mission Control deploy/rollback/redeploy acceptance, prove encrypted
-   backup and restore, then verify restart behavior.
+5. Mission Control deploy and reboot acceptance passed. Next, prove encrypted
+   backup and destructive restore.
 6. Deploy Home Assistant and integrate the known Wi-Fi devices conservatively.
 7. Deploy Mealie and prove backup and restore.
 8. Deploy Paperless-ngx, prove export and restore, then begin importing
