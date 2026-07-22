@@ -50,6 +50,12 @@ class MissionControlStackTests(unittest.TestCase):
         self.assertEqual(compose.count("    cpus:"), 3)
         self.assertEqual(compose.count("        max-size: 10m"), 3)
 
+    def test_ntfy_runs_as_the_protected_host_identity(self):
+        compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
+
+        self.assertIn('    user: "1000:1000"', compose)
+        self.assertEqual(compose.count('    user: "1000:1000"'), 1)
+
     def test_homepage_starts_with_useful_links(self):
         services = (STACK_DIR / "homepage/services.yaml").read_text(
             encoding="utf-8"

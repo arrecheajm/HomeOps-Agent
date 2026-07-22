@@ -212,6 +212,11 @@ directory read-only. It never copies either administrator plaintext password
 into the container. Failed deployment and explicit rollback remove those exact
 derived files and directory.
 
+ntfy then runs as the matching container-host UID/GID `1000:1000`. Compose
+creates its named data volume before startup; two network-disabled temporary
+containers from the same pinned image set that volume to mode `0700` and owner
+`1000:1000`. No other host path or volume ownership is changed.
+
 ```powershell
 python -m controller.main actions run deploy_mission_control_stack --server container-host --dry-run
 ```

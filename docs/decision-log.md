@@ -342,3 +342,37 @@ Consequences:
   Kuma 2.4.0's version-locked Socket.IO events.
 - The expanded preflight must pass before credential provisioning, and HTTPS is
   a gate for routine phone login rather than initial loopback deployment.
+
+## 0014: ntfy Uses The Dedicated Host Identity For Protected Bind Mounts
+
+Status: accepted
+
+Date: 2026-07-22
+
+Decision:
+
+Run ntfy as UID/GID `1000:1000`, matching the dedicated `containerserver`
+account. Copy only the two bcrypt hashes and scoped token into an owner-only
+runtime directory and mount that directory read-only. Before first start,
+initialize only the ntfy named data volume to mode `0700` and owner
+`1000:1000` using the pinned image in network-disabled temporary containers.
+
+Reasoning:
+
+- Two acceptance attempts proved that this Docker installation's container
+  root cannot read host-owned `0600` file mounts or a `0700` directory mount.
+- The matching non-root identity can read all three required protected files;
+  an isolated test also proved it can write the initialized volume and keep
+  ntfy listening normally.
+- [ntfy's Docker guidance](https://docs.ntfy.sh/install/) supports a configured
+  UID/GID and requires its cache and database paths to be owned by that
+  identity.
+
+Consequences:
+
+- Deployment fails closed if the container-host account is not UID/GID
+  `1000:1000`.
+- The Uptime Kuma password and ntfy administrator plaintext password are never
+  mounted into ntfy.
+- Rollback and failed deployment remove the derived runtime directory and both
+  candidate data volumes, while retaining the five protected source files.

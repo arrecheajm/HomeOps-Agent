@@ -91,6 +91,7 @@ services:
         exec ntfy serve
     restart: unless-stopped
     init: true
+    user: "1000:1000"
     environment:
       TZ: America/New_York
       NTFY_BASE_URL: ${NTFY_BASE_URL:-http://192.168.86.58:8082}

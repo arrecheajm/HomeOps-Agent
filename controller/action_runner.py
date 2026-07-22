@@ -91,6 +91,8 @@ MISSION_CONTROL_VOLUMES = (
     "homeops-mission-control_ntfy-data",
 )
 MISSION_CONTROL_PORTS = (8081, 3001, 8082)
+MISSION_CONTROL_NTFY_UID = 1000
+MISSION_CONTROL_NTFY_GID = 1000
 LOCAL_MISSION_CONTROL_DIR = config.BASE_DIR / "stacks" / "mission-control"
 LOCAL_MISSION_CONTROL_SECRET_DIR = LOCAL_MISSION_CONTROL_DIR / "secrets"
 LOCAL_MISSION_CONTROL_RECOVERY_FILES = (
@@ -1061,6 +1063,8 @@ def _deploy_mission_control_stack_commands(
     preflight = [
         "set -eu",
         f"test ! -L {quote(REMOTE_MISSION_CONTROL_DIR)}",
+        f"test \"$(id -u)\" = {MISSION_CONTROL_NTFY_UID}",
+        f"test \"$(id -g)\" = {MISSION_CONTROL_NTFY_GID}",
         "if [ -e "
         f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)} ] || [ -L "
         f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)} ]; then exit 1; fi",
@@ -1179,6 +1183,20 @@ def _deploy_mission_control_stack_commands(
         f"install -m 0600 {quote(REMOTE_MISSION_CONTROL_SECRET_DIR)}/\"$name\" "
         f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}/\"$name\"; done; "
         "HOMEOPS_LAN_IP=127.0.0.1 "
+        f"{_mission_control_compose_command('create')}; "
+        "docker run --rm --network none --read-only "
+        "--security-opt no-new-privileges:true --cap-drop ALL "
+        "--pids-limit 32 --memory 64m "
+        "-v homeops-mission-control_ntfy-data:/var/lib/ntfy "
+        f"--entrypoint chmod {quote(MISSION_CONTROL_IMAGE_REFS['ntfy'])} "
+        "0700 /var/lib/ntfy; "
+        "docker run --rm --network none --read-only "
+        "--security-opt no-new-privileges:true --cap-drop ALL --cap-add CHOWN "
+        "--pids-limit 32 --memory 64m "
+        "-v homeops-mission-control_ntfy-data:/var/lib/ntfy "
+        f"--entrypoint chown {quote(MISSION_CONTROL_IMAGE_REFS['ntfy'])} "
+        f"{MISSION_CONTROL_NTFY_UID}:{MISSION_CONTROL_NTFY_GID} /var/lib/ntfy; "
+        "HOMEOPS_LAN_IP=127.0.0.1 "
         f"{_mission_control_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
         f"{bootstrap}; "
         f"python3 -c {_shell_single_quote(ntfy_probe)}; "
@@ -1203,6 +1221,17 @@ def _deploy_mission_control_stack_commands(
                 f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy",
             )
         )
+    verify.append(
+        "test \"$(docker inspect --type container --format "
+        "'{{.Config.User}}' homeops-mission-control-ntfy-1)\" = 1000:1000"
+    )
+    verify.append(
+        "docker exec homeops-mission-control-ntfy-1 sh -ec "
+        + _shell_single_quote(
+            "test \"$(id -u)\" = 1000; test \"$(id -g)\" = 1000; "
+            "test -w /var/lib/ntfy"
+        )
+    )
     for volume in MISSION_CONTROL_VOLUMES:
         verify.append(f"docker volume inspect {quote(volume)} >/dev/null")
     verify.extend(

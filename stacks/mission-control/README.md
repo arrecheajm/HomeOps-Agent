@@ -2,11 +2,12 @@
 
 Status: image/dependency preflight and protected credential provisioning
 passed. The version-pinned Uptime Kuma bootstrap and bounded acceptance deploy
-and rollback actions are implemented and locally validated. The first live
-acceptance start exposed an individual secret-file bind permission mismatch;
-automatic cleanup passed and the protected-directory correction awaits a fresh
-approved run. Retained use remains disabled until encrypted backup/restore is
-implemented and proven.
+and rollback actions are implemented and locally validated. Two live acceptance
+starts exposed the host/container ownership boundary and both automatic cleanup
+paths passed. The final correction runs ntfy as the matching `1000:1000`
+identity and initializes its data volume accordingly; an isolated live startup
+smoke test passed and full-stack acceptance awaits fresh approval. Retained use
+remains disabled until encrypted backup/restore is implemented and proven.
 
 This internal-disk stack provides:
 
@@ -48,6 +49,12 @@ before deployment to detect tag movement.
   Kuma or ntfy administrator plaintext passwords to the container. The runtime
   copies are reconstructible, excluded from backup, and removed by acceptance
   rollback.
+- ntfy runs as UID/GID `1000:1000`, matching the dedicated container-host
+  account. Before first start, the bounded deploy action has Compose create the
+  named volumes, then uses the pinned ntfy image with no network and minimal
+  capabilities to set mode `0700` and ownership `1000:1000` on only the ntfy
+  data volume. This follows ntfy's supported non-root container model and lets
+  the process read the protected runtime directory and write its databases.
 - Homepage's required allowed-host value is restricted to the LAN address and
   port. It has no built-in authentication, so this stack must never be exposed
   publicly.

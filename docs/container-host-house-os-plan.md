@@ -212,7 +212,14 @@ backup target.
   volumes; a read-only event/state check confirmed no Mission Control runtime
   remained. Desired state now derives an owner-only `ntfy-runtime` directory
   containing only the two hashes and scoped token and mounts that directory
-  read-only. A fresh approval is required to validate the correction live.
+  read-only. A second approved attempt proved directory mounting alone was not
+  enough because ntfy still ran as container root, which cannot bypass this
+  host's bind-mount ownership. Cleanup again removed all candidate state. The
+  corrected definition runs ntfy as the matching host identity `1000:1000` and
+  initializes only its data volume to that owner. Isolated live checks proved
+  all three protected inputs readable, the data volume writable, and ntfy
+  listening normally for the full bounded smoke-test window. A fresh approval
+  is required for full-stack acceptance.
 - The independent backup destination and recovery rules are now defined in
   `docs/mission-control-backup-restore.md`: encrypted and authenticated volume
   archives copied to the HomeOps workstation, followed by a destructive restore
