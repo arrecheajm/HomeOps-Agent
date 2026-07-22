@@ -96,6 +96,12 @@ Live status:
   passed the full loopback-to-LAN acceptance lifecycle. An independent
   post-check confirmed all three containers healthy and anonymous ntfy
   publishing denied.
+- The encrypted Mission Control backup lifecycle is implemented and locally
+  validated. Approved `provision_mission_control_backup_secret` execution
+  completed at `2026-07-22T22:02:19Z`; metadata-only checks confirmed the server
+  key is a regular owner-only `0600` file of the required format and the valid
+  workstation recovery copy is Git-ignored. The separately approved first live
+  backup and the destructive restore implementation/proof remain open.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -355,8 +361,10 @@ Socket.IO acknowledgement handling without retaining candidate state. The
 fifth approved deployment passed full acceptance. The approved reboot completed
 on 2026-07-22: the boot ID changed, all seven Mission Control and monitoring
 containers returned healthy, the Kuma status page and ntfy ACL persisted, and
-private Prometheus remained healthy. Next, implement and prove encrypted
-backup/restore, then local HTTPS. Use
+private Prometheus remained healthy. The protected backup key was provisioned
+and independently metadata-checked at `2026-07-22T22:02:19Z`. Next, run and
+verify the separately approved encrypted backup, implement and prove the
+destructive restore drill, then add local HTTPS. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

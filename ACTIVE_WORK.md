@@ -136,9 +136,9 @@ Recommended thinking level for the next work:
 - Initial Mission Control ingress is defined as direct LAN-only bindings on
   `192.168.86.58`: Homepage `8081`, Uptime Kuma `3001`, and ntfy `8082`.
   Homepage has no Docker socket, ntfy defaults to deny-all, and all services
-  have health, restart, resource, PID, and log limits. Deployment remains
-  disabled until protected credentials are provisioned and backup/restore is
-  implemented and proven.
+  have health, restart, resource, PID, and log limits. Deployment and reboot
+  acceptance passed; retained household use remains gated until encrypted
+  backup and destructive restore are proven.
 - The corrected `preflight_mission_control_images` execution completed at
   `2026-07-22T16:49:20Z`. All three exact images, amd64 architecture, required
   tools, and the bootstrap's `bcryptjs` and `socket.io-client` dependencies
@@ -197,8 +197,12 @@ Recommended thinking level for the next work:
   Uptime Kuma image to archive both stopped volumes read-only, encrypts before
   transfer, authenticates the ciphertext, rotates current plus previous only
   after workstation verification, removes plaintext staging on every exit, and
-  restores healthy services through a recovery trap. Live key provisioning and
-  backup remain approval-gated; destructive restore is not yet implemented.
+  restores healthy services through a recovery trap. Approved backup-key
+  provisioning completed at `2026-07-22T22:02:19Z`; metadata-only checks proved
+  the server key is a regular owner-only `0600` file with the required format,
+  and its valid workstation recovery copy is Git-ignored. The first live backup
+  remains separately approval-gated; destructive restore is not yet
+  implemented.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the
@@ -304,14 +308,14 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Define Mission Control backup/restore and bounded deployment actions, then
-   request approval for the selected direct LAN ports.
-2. Add local HTTPS before routine credentialed phone access.
-3. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
-4. Record smart-switch and garage-controller brands/apps and phone platform.
-5. Deploy in stages: Mission Control, Home Assistant, Mealie, Paperless-ngx,
+1. Run and verify the separately approved encrypted Mission Control backup.
+2. Implement and prove the destructive Mission Control restore drill.
+3. Add local HTTPS before routine credentialed phone access.
+4. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
+5. Record smart-switch and garage-controller brands/apps and phone platform.
+6. Deploy in stages: Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
-6. Prove reboot persistence and backup/restore for each new stateful application
+7. Prove reboot persistence and backup/restore for each new stateful application
    before expanding its use.
 
 ## Relevant Files

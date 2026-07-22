@@ -246,8 +246,11 @@ backup target.
   `docs/mission-control-backup-restore.md`: encrypted and authenticated volume
   archives copied to the HomeOps workstation, followed by a destructive restore
   drill. Protected key provisioning and the fixed authenticated encrypted
-  backup action are implemented and locally validated; live approval and the
-  destructive restore implementation/proof remain open.
+  backup action are implemented and locally validated. Approved key provisioning
+  completed at `2026-07-22T22:02:19Z`; metadata-only checks confirmed the
+  owner-only server file and valid Git-ignored recovery copy without exposing
+  the key. The separately approved first live backup and destructive restore
+  implementation/proof remain open.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.

@@ -120,8 +120,8 @@ overwriting it. The object-shaped status-page response used by Uptime Kuma
 ## Remaining Gates
 
 1. Deployment acceptance passed on 2026-07-22.
-2. Protected key provisioning and authenticated encrypted backup are
-   implemented; run their separately approved live actions.
+2. Protected backup-key provisioning passed on 2026-07-22; run and verify the
+   separately approved authenticated encrypted backup action.
 3. Implement and prove destructive restore of both named volumes.
 4. Host-reboot recovery passed on 2026-07-22.
 5. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.

@@ -1,9 +1,9 @@
 # Mission Control Backup And Restore Contract
 
-Status: protected key provisioning and authenticated encrypted backup actions
-are implemented and locally validated. Live key provisioning, live backup, the
-destructive restore action, and restore proof are still required before Mission
-Control may hold retained household state.
+Status: protected key provisioning completed at `2026-07-22T22:02:19Z`, and the
+authenticated encrypted backup action is implemented and locally validated. The
+first live backup, destructive restore action, and restore proof are still
+required before Mission Control may hold retained household state.
 
 ## Lifecycle Boundary
 
@@ -85,6 +85,9 @@ restore drill completes and the resulting services pass all deployment checks.
   master key as a `0600` regular file under the existing `0700` server secret
   directory, copies it to the ignored recovery directory, and validates the
   copy without printing it.
+- Its approved execution completed at `2026-07-22T22:02:19Z`. Metadata-only
+  checks confirmed the server key's regular-file, owner, mode, and format
+  contract and independently validated that the recovery copy is Git-ignored.
 - `backup_mission_control_stack` accepts no paths or key arguments. It uses
   fixed volume names, fixed protected staging/export paths, and the ignored
   workstation destination.
