@@ -73,6 +73,23 @@ class MonitoringStackTests(unittest.TestCase):
         titles = {panel["title"] for panel in dashboard["panels"]}
 
         self.assertEqual(dashboard["uid"], "homeops-overview")
+        self.assertEqual(
+            dashboard["links"],
+            [
+                {
+                    "asDropdown": False,
+                    "icon": "external link",
+                    "includeVars": False,
+                    "keepTime": False,
+                    "tags": [],
+                    "targetBlank": True,
+                    "title": "HomeOps Mission Control",
+                    "tooltip": "Open the household HomeOps landing page",
+                    "type": "link",
+                    "url": "http://192.168.86.58:8081",
+                }
+            ],
+        )
         self.assertIn("Host CPU Used", titles)
         self.assertIn("Root Filesystem Used", titles)
         self.assertIn("Top Container Memory", titles)

@@ -27,7 +27,7 @@
           "storage_class": "internal",
           "backup_required": true,
           "deployment_enabled": false,
-          "prerequisites": ["approve temporary direct LAN ports 8081, 3001, and 8082", "execute protected Mission Control credential provisioning", "validate the pinned Uptime Kuma bootstrap during loopback-only deployment", "define backup destination and prove restore", "deploy local HTTPS before routine credentialed phone use"],
+          "prerequisites": ["run disposable deploy, rollback, and clean-redeploy acceptance", "implement the designed encrypted workstation backup and prove destructive restore", "deploy local HTTPS before routine credentialed phone use"],
           "acceptance": ["usable from a phone on home Wi-Fi through local HTTPS", "ports bind only to 192.168.86.58", "Homepage has no Docker socket", "ntfy denies anonymous access", "the scoped homeops token accesses only homeops-alerts", "Uptime Kuma sends managed-monitor alerts to ntfy", "service health appears in HomeOps", "all services survive reboot", "backup and restore are verified"]
         },
         {

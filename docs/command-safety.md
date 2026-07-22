@@ -198,6 +198,33 @@ The corresponding approval phrase is:
 Approve action provision_mission_control_secrets on container-host
 ```
 
+The first Mission Control deployment is also approval-gated. It is explicitly
+disposable acceptance state: the action stages and hashes the fixed files,
+validates all five protected secrets and pinned images, starts on loopback,
+bootstraps Uptime Kuma through stdin, verifies the scoped ntfy ACL, then moves
+the three fixed ports to `192.168.86.58`. Any failed check runs Compose `down
+--volumes` only for this new project:
+
+```powershell
+python -m controller.main actions run deploy_mission_control_stack --server container-host --dry-run
+```
+
+```text
+Approve action deploy_mission_control_stack on container-host
+```
+
+The companion destructive rollback is permitted only while this state remains
+an unretained acceptance candidate. It removes exactly the three Mission
+Control containers and two named volumes:
+
+```powershell
+python -m controller.main actions run rollback_mission_control_stack --server container-host --dry-run
+```
+
+```text
+Approve action rollback_mission_control_stack on container-host
+```
+
 Service restarts use the same exact approval model and accept only approved
 unit names for the target server role. Examples:
 

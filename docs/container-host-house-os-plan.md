@@ -176,9 +176,10 @@ backup target.
   Compose definitions and prerequisites are implemented.
 - The first Mission Control bundle is implemented under
   `stacks/mission-control/` with immutable Homepage, Uptime Kuma, and ntfy image
-  references. Compose rendering passes. Its direct LAN ports are defined, but
-  deployment remains disabled until credentials are provisioned and
-  backup/restore is implemented and reviewed.
+  references. Compose rendering passes. Its direct LAN ports are defined, and
+  its initial deploy/rollback lifecycle is implemented as disposable acceptance
+  state. Retained use remains disabled until backup/restore is implemented and
+  proven.
 - The corrected `preflight_mission_control_images` action completed at
   `2026-07-22T16:49:20Z`. The exact images, required tooling, explicit
   `bcryptjs` and `socket.io-client` dependencies, architecture, identities,
@@ -198,6 +199,16 @@ backup target.
   status page; conflicting existing definitions fail closed. Executable tests
   cover the object-shaped 2.4.0 status-page response and Socket.IO workflow. It
   will run while the service is loopback-only during deployment.
+- The fixed `deploy_mission_control_stack` action stages and hash-verifies the
+  tracked bundle, checks all protected inputs, starts on loopback, proves the
+  Uptime bootstrap and ntfy ACL, then moves the fixed ports to the LAN and
+  repeats acceptance. Any failure removes only its new candidate containers
+  and volumes. The companion rollback action remains valid only before the
+  stack contains retained data.
+- The independent backup destination and recovery rules are now defined in
+  `docs/mission-control-backup-restore.md`: encrypted and authenticated volume
+  archives copied to the HomeOps workstation, followed by a destructive restore
+  drill. Implementation and proof remain open.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.
@@ -303,7 +314,8 @@ proposed capabilities, not currently implemented action IDs:
 3. Implement desired-state stack definitions, sanitized inventory, and the
    USB-storage preflight.
 4. Prepare and verify the 1 TB USB drive and the second-copy backup target.
-5. Deploy the Mission Control base and verify restart behavior.
+5. Run Mission Control deploy/rollback/redeploy acceptance, prove encrypted
+   backup and restore, then verify restart behavior.
 6. Deploy Home Assistant and integrate the known Wi-Fi devices conservatively.
 7. Deploy Mealie and prove backup and restore.
 8. Deploy Paperless-ngx, prove export and restore, then begin importing

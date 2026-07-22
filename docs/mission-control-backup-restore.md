@@ -1,0 +1,75 @@
+# Mission Control Backup And Restore Contract
+
+Status: designed; implementation and restore proof are still required before
+Mission Control may hold retained household state.
+
+## Lifecycle Boundary
+
+The first deployment is an acceptance deployment. Uptime Kuma and ntfy data
+created during this phase is disposable. The deploy action starts the services
+on loopback, bootstraps and verifies them, moves the fixed ports to the LAN,
+then repeats the important checks. Any failed deploy or verification removes
+only the three new containers and two new named volumes.
+
+The acceptance stack must not be used for irreplaceable configuration until
+all of these gates pass:
+
+1. Deploy acceptance succeeds.
+2. The explicit rollback action removes the candidate containers and volumes.
+3. A clean redeploy succeeds, proving bootstrap reproducibility.
+4. An encrypted backup is copied to the HomeOps workstation.
+5. A destructive restore drill recreates both volumes and passes the same
+   health, bootstrap-idempotence, ntfy-ACL, and LAN-binding checks.
+
+## Backup Set And Destination
+
+The backup set is exactly:
+
+- `homeops-mission-control_uptime-kuma-data`
+- `homeops-mission-control_ntfy-data`
+- a manifest containing the schema version, UTC creation time, pinned image
+  references, archive names, sizes, and SHA-256 hashes
+
+The first independent destination will be the HomeOps workstation under the
+Git-ignored `backups/mission-control/` directory. This is independent of a
+container-host disk failure. The future 1 TB USB disk is not the first backup
+destination because it is not attached yet and a disk permanently attached to
+the same host is not sufficient as the only recovery copy.
+
+## Confidentiality And Integrity
+
+The backup must be encrypted before it leaves the protected temporary working
+directory on the server. A high-entropy backup password is stored as an
+owner-only server secret and retained in a Git-ignored local recovery file.
+The encrypted artifact also receives an HMAC-SHA-256 sidecar generated without
+placing the key in process arguments or logs. Restore verifies the HMAC before
+decryption, then validates the manifest and every inner SHA-256 hash.
+
+This design protects the workstation copy at rest and survives loss of the
+container host. Because the running host needs the key for an agent-operated
+backup, it does not protect against an attacker who simultaneously obtains the
+server, its secret, and the backup. A later offline or separately administered
+copy is required for that stronger threat model.
+
+## Consistency And Cleanup
+
+The backup action must stop Uptime Kuma and ntfy only after all tools, paths,
+space, secrets, and destination prerequisites pass. It archives the stopped
+volumes with pinned images, deletes plaintext staging on every exit path, and
+restarts and health-checks both services before reporting success. Homepage
+may remain running.
+
+The restore action must reject unsafe archive members, unexpected volume names,
+wrong image references, invalid hashes, and unauthenticated ciphertext before
+touching live state. Immediately before replacement it creates a rollback
+snapshot of the current volumes. If restore or post-restore acceptance fails,
+the action restores that snapshot and restarts the prior stack.
+
+## Retention And Proof
+
+The initial implementation keeps one known-good encrypted backup plus one
+previous encrypted backup on the workstation. An action is not considered a
+successful backup until the local encrypted artifact and HMAC sidecar are both
+present and non-empty. A backup is not considered proven until a destructive
+restore drill completes and the resulting services pass all deployment checks.
+

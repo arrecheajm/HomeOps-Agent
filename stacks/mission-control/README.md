@@ -1,9 +1,9 @@
 # HomeOps Mission Control
 
-Status: the corrected image/dependency preflight and protected credential
-provisioning passed; the version-pinned Uptime Kuma bootstrap is implemented
-and locally validated. Deployment remains disabled until independent
-backup/restore is designed and proven.
+Status: image/dependency preflight and protected credential provisioning
+passed. The version-pinned Uptime Kuma bootstrap and bounded acceptance deploy
+and rollback actions are implemented and locally validated. Retained use
+remains disabled until encrypted backup/restore is implemented and proven.
 
 This internal-disk stack provides:
 
@@ -90,11 +90,31 @@ overwriting it. The object-shaped status-page response used by Uptime Kuma
 
 ## Remaining Gates
 
-1. Choose an independent encrypted backup destination and implement exports for
+1. Run the disposable acceptance deploy, explicit rollback, and clean redeploy.
+2. Implement the reviewed encrypted workstation backup contract in
+   `docs/mission-control-backup-restore.md` and prove destructive restore of
    both named volumes.
-2. Implement bounded deploy, health, reboot, backup/restore, and rollback
-   acceptance actions.
-3. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.
+3. Verify host-reboot recovery.
+4. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.
+
+The deploy action intentionally treats its first generated state as
+disposable. It stages only the tracked bundle, verifies hashes and protected
+secrets, starts on loopback, runs the Uptime Kuma bootstrap, proves ntfy denies
+anonymous and out-of-scope publishing, moves the fixed ports to the LAN, and
+repeats the critical checks. Failure removes only the three candidate
+containers and two candidate volumes.
+
+Dry-run the deploy action with:
+
+```powershell
+python -m controller.main actions run deploy_mission_control_stack --server container-host --dry-run
+```
+
+Its exact approval phrase is:
+
+```text
+Approve action deploy_mission_control_stack on container-host
+```
 
 The corrected image preflight passed at `2026-07-22T16:49:20Z`, including
 explicit `bcryptjs` and `socket.io-client` dependency checks. A read-only

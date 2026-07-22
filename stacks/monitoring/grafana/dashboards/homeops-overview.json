@@ -6,7 +6,20 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "HomeOps Mission Control",
+      "tooltip": "Open the household HomeOps landing page",
+      "type": "link",
+      "url": "http://192.168.86.58:8081"
+    }
+  ],
   "panels": [
     {
       "datasource": {"type": "prometheus", "uid": "homeops-prometheus"},

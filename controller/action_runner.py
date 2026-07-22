@@ -118,6 +118,50 @@ REMOTE_MISSION_CONTROL_SECRET_FILES = {
         f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy_access_token"
     ),
 }
+REMOTE_MISSION_CONTROL_DIR = (
+    "/home/containerserver/.local/share/homeops/stacks/mission-control"
+)
+REMOTE_MISSION_CONTROL_COMPOSE = f"{REMOTE_MISSION_CONTROL_DIR}/compose.yaml"
+MISSION_CONTROL_DEPLOY_FILES = (
+    (LOCAL_MISSION_CONTROL_DIR / "compose.yaml", "compose.yaml"),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "homepage" / "bookmarks.yaml",
+        "homepage/bookmarks.yaml",
+    ),
+    (LOCAL_MISSION_CONTROL_DIR / "homepage" / "docker.yaml", "homepage/docker.yaml"),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "homepage" / "kubernetes.yaml",
+        "homepage/kubernetes.yaml",
+    ),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "homepage" / "services.yaml",
+        "homepage/services.yaml",
+    ),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "homepage" / "settings.yaml",
+        "homepage/settings.yaml",
+    ),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "homepage" / "widgets.yaml",
+        "homepage/widgets.yaml",
+    ),
+    (LOCAL_MISSION_CONTROL_DIR / "ntfy" / "server.yml", "ntfy/server.yml"),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "uptime-kuma" / "bootstrap.js",
+        "uptime-kuma/bootstrap.js",
+    ),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "uptime-kuma" / "bootstrap-contract.js",
+        "uptime-kuma/bootstrap-contract.js",
+    ),
+)
+MISSION_CONTROL_CONTAINER_IMAGES = {
+    "homeops-mission-control-homepage-1": MISSION_CONTROL_IMAGE_REFS["homepage"],
+    "homeops-mission-control-uptime-kuma-1": MISSION_CONTROL_IMAGE_REFS[
+        "uptime-kuma"
+    ],
+    "homeops-mission-control-ntfy-1": MISSION_CONTROL_IMAGE_REFS["ntfy"],
+}
 LOCAL_MONITORING_DIR = config.BASE_DIR / "stacks" / "monitoring"
 LOCAL_MONITORING_SECRET = (
     LOCAL_MONITORING_DIR / "secrets" / "grafana_admin_password"
@@ -422,6 +466,22 @@ def build_action_commands(
                 "the identities, paths, generation, and recovery copies are fixed."
             )
         return _provision_mission_control_secret_commands(server)
+
+    if action_id == "deploy_mission_control_stack":
+        if arguments:
+            raise ActionError(
+                "deploy_mission_control_stack does not accept arguments; "
+                "its files, containers, volumes, bootstrap, and recovery path are fixed."
+            )
+        return _deploy_mission_control_stack_commands(server)
+
+    if action_id == "rollback_mission_control_stack":
+        if arguments:
+            raise ActionError(
+                "rollback_mission_control_stack does not accept arguments; "
+                "it removes only the fixed acceptance containers and volumes."
+            )
+        return _rollback_mission_control_stack_commands(server)
 
     if action_id == "provision_monitoring_secret":
         if arguments:
@@ -948,6 +1008,249 @@ def _provision_mission_control_secret_commands(
             + [f"{server.ssh_target}:{remote_path}", str(local_path)]
         )
     return commands
+
+
+def _deploy_mission_control_stack_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Stage and verify the disposable first Mission Control deployment."""
+
+    for source, _ in MISSION_CONTROL_DEPLOY_FILES:
+        if not source.exists():
+            raise ActionError(f"Mission Control deployment file not found: {source}")
+
+    remote_directories = sorted(
+        {
+            REMOTE_MISSION_CONTROL_DIR,
+            *(
+                f"{REMOTE_MISSION_CONTROL_DIR}/{relative.rsplit('/', 1)[0]}"
+                for _, relative in MISSION_CONTROL_DEPLOY_FILES
+                if "/" in relative
+            ),
+        }
+    )
+    directory_preflight = (
+        "set -eu; "
+        + "; ".join(
+            f"if [ -L {quote(path)} ]; then exit 1; fi"
+            for path in remote_directories
+        )
+        + "; "
+        + _remote_command("install", "-d", "-m", "0755", *remote_directories)
+        + "; printf 'mission_control_directories_ready\\n'"
+    )
+    commands: list[list[str]] = [
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("sh", "-lc", directory_preflight),
+        ]
+    ]
+    for source, relative in MISSION_CONTROL_DEPLOY_FILES:
+        commands.append(
+            _build_scp_base_command(server)
+            + [
+                str(source),
+                f"{server.ssh_target}:{REMOTE_MISSION_CONTROL_DIR}/{relative}",
+            ]
+        )
+
+    preflight = ["set -eu", f"test ! -L {quote(REMOTE_MISSION_CONTROL_DIR)}"]
+    for remote_secret in REMOTE_MISSION_CONTROL_SECRET_FILES.values():
+        preflight.extend(
+            (
+                f"test -s {quote(remote_secret)}",
+                f"test -f {quote(remote_secret)}",
+                f"test ! -L {quote(remote_secret)}",
+                f"test \"$(stat -c %a {quote(remote_secret)})\" = 600",
+                f"test \"$(stat -c %u {quote(remote_secret)})\" = \"$(id -u)\"",
+            )
+        )
+    for image in MISSION_CONTROL_IMAGE_REFS.values():
+        preflight.append(f"docker image inspect {quote(image)} >/dev/null")
+    for name in MISSION_CONTROL_CONTAINERS:
+        preflight.append(
+            f"if docker container inspect {quote(name)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for volume in MISSION_CONTROL_VOLUMES:
+        preflight.append(
+            f"if docker volume inspect {quote(volume)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for port in MISSION_CONTROL_PORTS:
+        preflight.append(
+            "if ss -H -ltn | awk '{print $4}' | "
+            f"grep -Eq '(^|:){port}$'; then exit 1; fi"
+        )
+    for source, relative in MISSION_CONTROL_DEPLOY_FILES:
+        expected_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+        remote_path = f"{REMOTE_MISSION_CONTROL_DIR}/{relative}"
+        preflight.extend(
+            (
+                f"test ! -L {quote(remote_path)}",
+                "test \"$(sha256sum "
+                f"{quote(remote_path)} | cut -d ' ' -f 1)\" = {quote(expected_hash)}",
+            )
+        )
+    bcrypt_validation = (
+        "const fs=require('fs');const bcrypt=require('bcryptjs');"
+        "const password=fs.readFileSync('/secrets/ntfy_admin_password','utf8').trim();"
+        "const hash=fs.readFileSync('/secrets/ntfy_admin_password_hash','utf8').trim();"
+        "if(!bcrypt.compareSync(password,hash))process.exit(1)"
+    )
+    preflight.extend(
+        (
+            "grep -Eq '^tk_[a-z0-9]{29}$' "
+            + quote(REMOTE_MISSION_CONTROL_SECRET_FILES["ntfy_access_token"]),
+            "grep -Eq '^[$]2[aby][$][0-9]{2}[$]' "
+            + quote(
+                REMOTE_MISSION_CONTROL_SECRET_FILES["ntfy_admin_password_hash"]
+            ),
+            "grep -Eq '^[$]2[aby][$][0-9]{2}[$]' "
+            + quote(
+                REMOTE_MISSION_CONTROL_SECRET_FILES["ntfy_service_password_hash"]
+            ),
+            "docker run --rm --read-only "
+            f"-v {quote(REMOTE_MISSION_CONTROL_SECRET_DIR)}:/secrets:ro "
+            "--entrypoint node "
+            f"{quote(MISSION_CONTROL_IMAGE_REFS['uptime-kuma'])} "
+            f"-e {_shell_single_quote(bcrypt_validation)}",
+            _mission_control_compose_command("config", "--quiet"),
+            "printf 'mission_control_deploy_preflight_ok\\n'",
+        )
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(preflight))]
+    )
+
+    bootstrap_json = (
+        "import json,pathlib,sys;"
+        f"root=pathlib.Path({REMOTE_MISSION_CONTROL_SECRET_DIR!r});"
+        "json.dump({'uptimeKumaAdminPassword':(root/'uptime_kuma_admin_password').read_text().strip(),"
+        "'ntfyAccessToken':(root/'ntfy_access_token').read_text().strip()},sys.stdout)"
+    )
+    bootstrap = (
+        f"python3 -c {_shell_single_quote(bootstrap_json)} | "
+        "docker exec -i homeops-mission-control-uptime-kuma-1 "
+        "node /app/homeops-bootstrap.js"
+    )
+    ntfy_probe = (
+        "import pathlib,urllib.error,urllib.request;"
+        f"token=pathlib.Path({REMOTE_MISSION_CONTROL_SECRET_FILES['ntfy_access_token']!r}).read_text().strip();"
+        "base='http://127.0.0.1:8082/';"
+        "exec(\"def post(topic,auth=None):\\n"
+        " h={'Authorization':'Bearer '+auth} if auth else {}\\n"
+        " r=urllib.request.Request(base+topic,data=b'HomeOps acceptance check',headers=h,method='POST')\\n"
+        " try:\\n  return urllib.request.urlopen(r,timeout=10).status\\n"
+        " except urllib.error.HTTPError as e:\\n  return e.code\");"
+        "assert post('homeops-alerts') in (401,403);"
+        "assert post('homeops-alerts',token)==200;"
+        "assert post('homeops-not-authorized',token)==403"
+    )
+    ntfy_probe_lan = ntfy_probe.replace(
+        "http://127.0.0.1:8082/", "http://192.168.86.58:8082/"
+    )
+    recovery = (
+        "status=$?; trap - HUP INT TERM EXIT; "
+        f"{_mission_control_compose_command('down', '--volumes')} >/dev/null 2>&1 || true; "
+        "exit \"$status\""
+    )
+    deploy = (
+        "set -eu; "
+        f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT; "
+        "HOMEOPS_LAN_IP=127.0.0.1 "
+        f"{_mission_control_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
+        f"{bootstrap}; "
+        f"python3 -c {_shell_single_quote(ntfy_probe)}; "
+        f"{_mission_control_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
+        "trap - HUP INT TERM EXIT; "
+        "printf 'mission_control_acceptance_deployed\\n'"
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", deploy)]
+    )
+
+    verify = ["set -eu", f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT"]
+    for name, image in MISSION_CONTROL_CONTAINER_IMAGES.items():
+        verify.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy",
+            )
+        )
+    for volume in MISSION_CONTROL_VOLUMES:
+        verify.append(f"docker volume inspect {quote(volume)} >/dev/null")
+    for name, container_port, host_port in (
+        ("homeops-mission-control-homepage-1", 3000, 8081),
+        ("homeops-mission-control-uptime-kuma-1", 3001, 3001),
+        ("homeops-mission-control-ntfy-1", 8080, 8082),
+    ):
+        verify.append(
+            f"test \"$(docker port {quote(name)} {container_port}/tcp)\" = "
+            f"192.168.86.58:{host_port}"
+        )
+    verify.extend(
+        (
+            bootstrap,
+            f"python3 -c {_shell_single_quote(ntfy_probe_lan)}",
+            "trap - HUP INT TERM EXIT",
+            "printf 'mission_control_acceptance_verified\\n'",
+        )
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(verify))]
+    )
+    return commands
+
+
+def _rollback_mission_control_stack_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Remove only the still-disposable Mission Control acceptance state."""
+
+    preflight = ["set -eu", f"test -f {quote(REMOTE_MISSION_CONTROL_COMPOSE)}"]
+    for name, image in MISSION_CONTROL_CONTAINER_IMAGES.items():
+        preflight.extend(
+            (
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}",
+                "test \"$(docker inspect --type container --format "
+                f"'{{{{.State.Running}}}}' {quote(name)})\" = true",
+            )
+        )
+    for volume in MISSION_CONTROL_VOLUMES:
+        preflight.append(f"docker volume inspect {quote(volume)} >/dev/null")
+    preflight.append("printf 'mission_control_rollback_preflight_ok\\n'")
+
+    rollback = (
+        "set -eu; "
+        f"{_mission_control_compose_command('down', '--volumes')}; "
+        "printf 'mission_control_acceptance_rolled_back\\n'"
+    )
+    verify = ["set -eu"]
+    for name in MISSION_CONTROL_CONTAINERS:
+        verify.append(
+            f"if docker container inspect {quote(name)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    for volume in MISSION_CONTROL_VOLUMES:
+        verify.append(
+            f"if docker volume inspect {quote(volume)} >/dev/null 2>&1; then exit 1; fi"
+        )
+    verify.append("printf 'mission_control_rollback_verified\\n'")
+    return [
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(preflight))],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", rollback)],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", "; ".join(verify))],
+    ]
 
 
 def _deploy_monitoring_stack_commands(
@@ -1605,6 +1908,18 @@ def _monitoring_compose_command(*parts: str) -> str:
         REMOTE_MONITORING_DIR,
         "-f",
         REMOTE_MONITORING_COMPOSE,
+        *parts,
+    )
+
+
+def _mission_control_compose_command(*parts: str) -> str:
+    return _remote_command(
+        "docker",
+        "compose",
+        "--project-directory",
+        REMOTE_MISSION_CONTROL_DIR,
+        "-f",
+        REMOTE_MISSION_CONTROL_COMPOSE,
         *parts,
     )
 

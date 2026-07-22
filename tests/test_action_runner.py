@@ -371,6 +371,94 @@ class ActionRunnerTests(unittest.TestCase):
                 actions_dir=self.actions_dir,
             )
 
+    def test_deploy_mission_control_stack_is_bounded_and_recoverable(self):
+        attempt = run_action(
+            "deploy_mission_control_stack",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(command[-1] for command in record["commands"])
+
+        self.assertEqual(record["status"], "dry_run")
+        self.assertEqual(len(record["commands"]), 14)
+        self.assertEqual(sum(command[0] == "scp" for command in record["commands"]), 10)
+        self.assertIn("HOMEOPS_LAN_IP=127.0.0.1", rendered)
+        self.assertGreaterEqual(rendered.count("node /app/homeops-bootstrap.js"), 2)
+        self.assertIn("homeops-not-authorized", rendered)
+        self.assertIn("docker compose", rendered)
+        self.assertIn("down --volumes", rendered)
+        self.assertIn("192.168.86.58:8081", rendered)
+        self.assertIn("192.168.86.58:3001", rendered)
+        self.assertIn("192.168.86.58:8082", rendered)
+        self.assertIn("sha256sum", rendered)
+        self.assertNotIn("ntfy_service_password=/", rendered)
+        self.assertNotIn(".service-password.", rendered)
+        self.assertNotIn("docker system prune", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action deploy_mission_control_stack on container-host",
+        )
+
+    def test_deploy_mission_control_stack_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "deploy_mission_control_stack",
+                "container-host",
+                [self._container_server()],
+                {"image": "anything"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_rollback_mission_control_stack_removes_only_acceptance_state(self):
+        attempt = run_action(
+            "rollback_mission_control_stack",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(command[-1] for command in record["commands"])
+
+        self.assertEqual(len(record["commands"]), 3)
+        self.assertIn("down --volumes", rendered)
+        for name in (
+            "homeops-mission-control-homepage-1",
+            "homeops-mission-control-uptime-kuma-1",
+            "homeops-mission-control-ntfy-1",
+        ):
+            self.assertIn(name, rendered)
+        for volume in (
+            "homeops-mission-control_uptime-kuma-data",
+            "homeops-mission-control_ntfy-data",
+        ):
+            self.assertIn(volume, rendered)
+        self.assertNotIn("homeops-monitoring", rendered)
+        self.assertNotIn("docker volume prune", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action rollback_mission_control_stack on container-host",
+        )
+
+    def test_rollback_mission_control_stack_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "rollback_mission_control_stack",
+                "container-host",
+                [self._container_server()],
+                {"volume": "anything"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
     def test_deploy_monitoring_stack_dry_run_is_bounded_and_recoverable(self):
         attempt = run_action(
             "deploy_monitoring_stack",

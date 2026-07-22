@@ -121,6 +121,22 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "execution_timeout_seconds": 180,
     },
     {
+        "action_id": "deploy_mission_control_stack",
+        "risk": "approval_required",
+        "description": "Stage and bootstrap the fixed Mission Control bundle as disposable acceptance state, with automatic removal on failure.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 420,
+    },
+    {
+        "action_id": "rollback_mission_control_stack",
+        "risk": "approval_required",
+        "description": "Remove only the Mission Control acceptance containers and named volumes before they contain retained household state.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 180,
+    },
+    {
         "action_id": "provision_monitoring_secret",
         "risk": "approval_required",
         "description": "Generate or validate the server-side Grafana admin secret without printing it, then copy it to the ignored local recovery path.",

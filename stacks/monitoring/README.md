@@ -27,7 +27,10 @@ tag. The version decision and old-to-new rationale are documented in
 - Host panels and target health use the existing `server_id` labels, mapping
   the scrape endpoints to `container-host`, `openvpn-server`, and `ispy-server`
   instead of displaying internal addresses. The generated HomeOps HTML
-  dashboard links directly to Grafana's HomeOps Overview.
+  dashboard links directly to Grafana's HomeOps Overview. The tracked Grafana
+  dashboard now includes the reciprocal `HomeOps Mission Control` link; apply
+  that provisioning update only after Mission Control is accepted on port
+  `8081`.
 - Grafana plugin preinstall and automatic plugin updates are disabled so its
   read-only image remains immutable.
 - The Grafana admin password remains in a server-side `0600` file outside the
@@ -75,3 +78,6 @@ Before any server change:
 9. The approved fixed cleanup removed the three verified inert files and the
    empty old proof-of-concept Compose directory on 2026-07-22. Final monitoring
    health and targeted inventory checks passed.
+10. A 2026-07-22 desired-state follow-up adds the reciprocal Mission Control
+    dashboard link. It is intentionally not yet applied to live Grafana because
+    the target service has not passed deployment acceptance.

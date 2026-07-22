@@ -13,3 +13,7 @@ history/rebuild-plans/
 stacks/**/.env
 stacks/**/secrets/*
 !stacks/**/secrets/README.md
+
+# Encrypted application backups are local recovery artifacts, not source.
+backups/mission-control/*
+!backups/mission-control/README.md
