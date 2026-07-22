@@ -101,6 +101,9 @@ LOCAL_MISSION_CONTROL_RECOVERY_FILES = (
 REMOTE_MISSION_CONTROL_SECRET_DIR = (
     "/home/containerserver/.config/homeops/secrets/mission-control"
 )
+REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR = (
+    f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy-runtime"
+)
 REMOTE_MISSION_CONTROL_SECRET_FILES = {
     "uptime_kuma_admin_password": (
         f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/uptime_kuma_admin_password"
@@ -1055,7 +1058,13 @@ def _deploy_mission_control_stack_commands(
             ]
         )
 
-    preflight = ["set -eu", f"test ! -L {quote(REMOTE_MISSION_CONTROL_DIR)}"]
+    preflight = [
+        "set -eu",
+        f"test ! -L {quote(REMOTE_MISSION_CONTROL_DIR)}",
+        "if [ -e "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)} ] || [ -L "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)} ]; then exit 1; fi",
+    ]
     for remote_secret in REMOTE_MISSION_CONTROL_SECRET_FILES.values():
         preflight.extend(
             (
@@ -1153,11 +1162,22 @@ def _deploy_mission_control_stack_commands(
     recovery = (
         "status=$?; trap - HUP INT TERM EXIT; "
         f"{_mission_control_compose_command('down', '--volumes')} >/dev/null 2>&1 || true; "
+        "rm -f -- "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}/ntfy_admin_password_hash "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}/ntfy_service_password_hash "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}/ntfy_access_token; "
+        f"rmdir -- {quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)} "
+        ">/dev/null 2>&1 || true; "
         "exit \"$status\""
     )
     deploy = (
         "set -eu; "
         f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT; "
+        f"install -d -m 0700 {quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}; "
+        "for name in ntfy_admin_password_hash ntfy_service_password_hash "
+        "ntfy_access_token; do "
+        f"install -m 0600 {quote(REMOTE_MISSION_CONTROL_SECRET_DIR)}/\"$name\" "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}/\"$name\"; done; "
         "HOMEOPS_LAN_IP=127.0.0.1 "
         f"{_mission_control_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
         f"{bootstrap}; "
@@ -1185,6 +1205,28 @@ def _deploy_mission_control_stack_commands(
         )
     for volume in MISSION_CONTROL_VOLUMES:
         verify.append(f"docker volume inspect {quote(volume)} >/dev/null")
+    verify.extend(
+        (
+            "test \"$(stat -c %a "
+            f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)})\" = 700",
+            "test \"$(stat -c %u "
+            f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)})\" = \"$(id -u)\"",
+        )
+    )
+    for name in (
+        "ntfy_admin_password_hash",
+        "ntfy_service_password_hash",
+        "ntfy_access_token",
+    ):
+        runtime_secret = f"{REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR}/{name}"
+        verify.extend(
+            (
+                f"test -s {quote(runtime_secret)}",
+                f"test ! -L {quote(runtime_secret)}",
+                f"test \"$(stat -c %a {quote(runtime_secret)})\" = 600",
+                f"test \"$(stat -c %u {quote(runtime_secret)})\" = \"$(id -u)\"",
+            )
+        )
     for name, container_port, host_port in (
         ("homeops-mission-control-homepage-1", 3000, 8081),
         ("homeops-mission-control-uptime-kuma-1", 3001, 3001),
@@ -1231,6 +1273,11 @@ def _rollback_mission_control_stack_commands(
     rollback = (
         "set -eu; "
         f"{_mission_control_compose_command('down', '--volumes')}; "
+        "rm -f -- "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}/ntfy_admin_password_hash "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}/ntfy_service_password_hash "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}/ntfy_access_token; "
+        f"rmdir -- {quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)}; "
         "printf 'mission_control_acceptance_rolled_back\\n'"
     )
     verify = ["set -eu"]
@@ -1242,6 +1289,11 @@ def _rollback_mission_control_stack_commands(
         verify.append(
             f"if docker volume inspect {quote(volume)} >/dev/null 2>&1; then exit 1; fi"
         )
+    verify.append(
+        "if [ -e "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)} ] || [ -L "
+        f"{quote(REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR)} ]; then exit 1; fi"
+    )
     verify.append("printf 'mission_control_rollback_verified\\n'")
     return [
         build_ssh_base_command(server)

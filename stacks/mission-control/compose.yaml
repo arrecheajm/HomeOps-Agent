@@ -96,9 +96,7 @@ services:
       NTFY_BASE_URL: ${NTFY_BASE_URL:-http://192.168.86.58:8082}
     volumes:
       - ./ntfy/server.yml:/etc/ntfy/server.yml:ro
-      - ${MISSION_CONTROL_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control}/ntfy_admin_password_hash:/run/secrets/ntfy_admin_password_hash:ro
-      - ${MISSION_CONTROL_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control}/ntfy_service_password_hash:/run/secrets/ntfy_service_password_hash:ro
-      - ${MISSION_CONTROL_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control}/ntfy_access_token:/run/secrets/ntfy_access_token:ro
+      - ${MISSION_CONTROL_NTFY_SECRET_DIR:-/home/containerserver/.config/homeops/secrets/mission-control/ntfy-runtime}:/run/secrets:ro
       - ntfy-data:/var/lib/ntfy
     ports:
       - "${HOMEOPS_LAN_IP:-192.168.86.58}:8082:8080"

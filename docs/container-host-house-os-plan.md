@@ -205,6 +205,14 @@ backup target.
   repeats acceptance. Any failure removes only its new candidate containers
   and volumes. The companion rollback action remains valid only before the
   stack contains retained data.
+- The first approved acceptance attempt on 2026-07-22 passed file, image,
+  credential, port, and Compose preflight, then ntfy exited because this host's
+  Docker isolation could not read three individually bind-mounted `0600`
+  files. The recovery trap removed the candidate containers, network, and both
+  volumes; a read-only event/state check confirmed no Mission Control runtime
+  remained. Desired state now derives an owner-only `ntfy-runtime` directory
+  containing only the two hashes and scoped token and mounts that directory
+  read-only. A fresh approval is required to validate the correction live.
 - The independent backup destination and recovery rules are now defined in
   `docs/mission-control-backup-restore.md`: encrypted and authenticated volume
   archives copied to the HomeOps workstation, followed by a destructive restore

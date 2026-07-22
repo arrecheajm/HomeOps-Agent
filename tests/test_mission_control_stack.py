@@ -66,11 +66,13 @@ class MissionControlStackTests(unittest.TestCase):
 
         self.assertNotIn("NTFY_AUTH_USERS:", compose)
         self.assertNotIn("NTFY_AUTH_TOKENS:", compose)
-        self.assertIn("/run/secrets/ntfy_admin_password_hash:ro", compose)
-        self.assertIn("/run/secrets/ntfy_service_password_hash:ro", compose)
-        self.assertIn("/run/secrets/ntfy_access_token:ro", compose)
+        self.assertIn("ntfy-runtime}:/run/secrets:ro", compose)
+        self.assertNotIn("ntfy_admin_password_hash:/run/secrets", compose)
+        self.assertNotIn("ntfy_service_password_hash:/run/secrets", compose)
+        self.assertNotIn("ntfy_access_token:/run/secrets", compose)
         self.assertNotIn("/run/secrets/ntfy_service_password:ro", compose)
-        self.assertIn("MISSION_CONTROL_SECRET_DIR=", example)
+        self.assertIn("MISSION_CONTROL_NTFY_SECRET_DIR=", example)
+        self.assertIn("/ntfy-runtime", example)
 
     def test_ntfy_loads_secrets_at_runtime(self):
         compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")

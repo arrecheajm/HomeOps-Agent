@@ -396,6 +396,9 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertIn("192.168.86.58:3001", rendered)
         self.assertIn("192.168.86.58:8082", rendered)
         self.assertIn("sha256sum", rendered)
+        self.assertIn("ntfy-runtime", rendered)
+        self.assertIn("install -m 0600", rendered)
+        self.assertIn("rmdir --", rendered)
         self.assertNotIn("ntfy_service_password=/", rendered)
         self.assertNotIn(".service-password.", rendered)
         self.assertNotIn("docker system prune", rendered)
@@ -441,6 +444,8 @@ class ActionRunnerTests(unittest.TestCase):
             "homeops-mission-control_ntfy-data",
         ):
             self.assertIn(volume, rendered)
+        self.assertIn("ntfy-runtime", rendered)
+        self.assertIn("rm -f --", rendered)
         self.assertNotIn("homeops-monitoring", rendered)
         self.assertNotIn("docker volume prune", rendered)
         self.assertEqual(

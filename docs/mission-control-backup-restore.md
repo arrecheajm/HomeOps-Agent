@@ -30,6 +30,10 @@ The backup set is exactly:
 - a manifest containing the schema version, UTC creation time, pinned image
   references, archive names, sizes, and SHA-256 hashes
 
+The protected `ntfy-runtime` directory is not application data and is excluded.
+It contains only deploy-time copies of two hashes and the scoped token and is
+reconstructed from the five owner-only source files.
+
 The first independent destination will be the HomeOps workstation under the
 Git-ignored `backups/mission-control/` directory. This is independent of a
 container-host disk failure. The future 1 TB USB disk is not the first backup
@@ -72,4 +76,3 @@ previous encrypted backup on the workstation. An action is not considered a
 successful backup until the local encrypted artifact and HMAC sidecar are both
 present and non-empty. A backup is not considered proven until a destructive
 restore drill completes and the resulting services pass all deployment checks.
-

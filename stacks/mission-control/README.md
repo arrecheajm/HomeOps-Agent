@@ -2,8 +2,11 @@
 
 Status: image/dependency preflight and protected credential provisioning
 passed. The version-pinned Uptime Kuma bootstrap and bounded acceptance deploy
-and rollback actions are implemented and locally validated. Retained use
-remains disabled until encrypted backup/restore is implemented and proven.
+and rollback actions are implemented and locally validated. The first live
+acceptance start exposed an individual secret-file bind permission mismatch;
+automatic cleanup passed and the protected-directory correction awaits a fresh
+approved run. Retained use remains disabled until encrypted backup/restore is
+implemented and proven.
 
 This internal-disk stack provides:
 
@@ -38,6 +41,13 @@ before deployment to detect tag movement.
   administrator access. Hashes and the token are read from owner-only server
   files at container startup and are absent from Git and Docker's saved
   container environment.
+- The server keeps the five source credentials owner-only. Deployment copies
+  only the two ntfy hashes and scoped token into an owner-only `ntfy-runtime`
+  subdirectory and mounts that directory read-only. This avoids the host's
+  individual-file bind-mount permission failure without exposing the Uptime
+  Kuma or ntfy administrator plaintext passwords to the container. The runtime
+  copies are reconstructible, excluded from backup, and removed by acceptance
+  rollback.
 - Homepage's required allowed-host value is restricted to the LAN address and
   port. It has no built-in authentication, so this stack must never be exposed
   publicly.
@@ -102,7 +112,8 @@ disposable. It stages only the tracked bundle, verifies hashes and protected
 secrets, starts on loopback, runs the Uptime Kuma bootstrap, proves ntfy denies
 anonymous and out-of-scope publishing, moves the fixed ports to the LAN, and
 repeats the critical checks. Failure removes only the three candidate
-containers and two candidate volumes.
+containers, two candidate data volumes, and protected derived ntfy runtime
+directory.
 
 Dry-run the deploy action with:
 

@@ -205,6 +205,13 @@ bootstraps Uptime Kuma through stdin, verifies the scoped ntfy ACL, then moves
 the three fixed ports to `192.168.86.58`. Any failed check runs Compose `down
 --volumes` only for this new project:
 
+Because individual owner-only file bind mounts are not readable through this
+host's Docker isolation, deployment creates an owner-only `ntfy-runtime`
+directory containing only the two hashes and scoped token, then mounts that
+directory read-only. It never copies either administrator plaintext password
+into the container. Failed deployment and explicit rollback remove those exact
+derived files and directory.
+
 ```powershell
 python -m controller.main actions run deploy_mission_control_stack --server container-host --dry-run
 ```
@@ -215,7 +222,7 @@ Approve action deploy_mission_control_stack on container-host
 
 The companion destructive rollback is permitted only while this state remains
 an unretained acceptance candidate. It removes exactly the three Mission
-Control containers and two named volumes:
+Control containers, two named data volumes, and derived ntfy runtime directory:
 
 ```powershell
 python -m controller.main actions run rollback_mission_control_stack --server container-host --dry-run
