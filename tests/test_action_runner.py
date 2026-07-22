@@ -6,7 +6,13 @@ import unittest
 from unittest.mock import patch
 
 from controller import approvals
-from controller.action_runner import ActionError, _summary, run_action
+from controller.action_runner import (
+    ActionError,
+    _mission_control_backup_hmac_script,
+    _mission_control_backup_manifest_script,
+    _summary,
+    run_action,
+)
 from controller.inventory import ServerInventoryItem
 
 
@@ -380,6 +386,93 @@ class ActionRunnerTests(unittest.TestCase):
                 dry_run=True,
                 actions_dir=self.actions_dir,
             )
+
+    def test_provision_mission_control_backup_secret_is_bounded_and_redacted(self):
+        attempt = run_action(
+            "provision_mission_control_backup_secret",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(" ".join(command) for command in record["commands"])
+
+        self.assertEqual(len(record["commands"]), 3)
+        self.assertEqual(sum(command[0] == "scp" for command in record["commands"]), 1)
+        self.assertIn("secrets.token_urlsafe(48)", rendered)
+        self.assertIn("backup_key", rendered)
+        self.assertIn("validate-key", rendered)
+        self.assertIn("stat -c %a", rendered)
+        self.assertIn("test ! -L", rendered)
+        self.assertNotIn("A" * 32, rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action provision_mission_control_backup_secret on container-host",
+        )
+
+    def test_provision_mission_control_backup_secret_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "provision_mission_control_backup_secret",
+                "container-host",
+                [self._container_server()],
+                {"key": "must-not-be-accepted"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_backup_mission_control_stack_is_encrypted_and_recoverable(self):
+        attempt = run_action(
+            "backup_mission_control_stack",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(" ".join(command) for command in record["commands"])
+
+        self.assertEqual(len(record["commands"]), 6)
+        self.assertEqual(sum(command[0] == "scp" for command in record["commands"]), 2)
+        self.assertIn("aes-256-cbc", rendered)
+        self.assertIn("-pbkdf2", rendered)
+        self.assertIn("-iter 310000", rendered)
+        self.assertIn("homeops-mission-control-backup-hmac-v1", rendered)
+        self.assertIn("mission-control.incoming.enc", rendered)
+        self.assertIn("controller.backup_artifact promote", rendered)
+        self.assertIn("homeops-mission-control_uptime-kuma-data:/source:ro", rendered)
+        self.assertIn("homeops-mission-control_ntfy-data:/source:ro", rendered)
+        self.assertIn("docker stop homeops-mission-control-uptime-kuma-1", rendered)
+        self.assertIn("docker start homeops-mission-control-uptime-kuma-1", rendered)
+        self.assertIn("trap", rendered)
+        self.assertIn("rm -f --", rendered)
+        self.assertNotIn("rm -rf", rendered)
+        self.assertNotIn("docker volume rm", rendered)
+        self.assertNotIn("docker system prune", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action backup_mission_control_stack on container-host",
+        )
+
+    def test_backup_mission_control_stack_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "backup_mission_control_stack",
+                "container-host",
+                [self._container_server()],
+                {"destination": "unbounded"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def test_mission_control_backup_python_fragments_compile(self):
+        compile(_mission_control_backup_manifest_script(), "<manifest>", "exec")
+        compile(_mission_control_backup_hmac_script(), "<hmac>", "exec")
 
     def test_deploy_mission_control_stack_is_bounded_and_recoverable(self):
         attempt = run_action(

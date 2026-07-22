@@ -1,7 +1,9 @@
 # Mission Control Backup And Restore Contract
 
-Status: designed; implementation and restore proof are still required before
-Mission Control may hold retained household state.
+Status: protected key provisioning and authenticated encrypted backup actions
+are implemented and locally validated. Live key provisioning, live backup, the
+destructive restore action, and restore proof are still required before Mission
+Control may hold retained household state.
 
 ## Lifecycle Boundary
 
@@ -76,3 +78,25 @@ previous encrypted backup on the workstation. An action is not considered a
 successful backup until the local encrypted artifact and HMAC sidecar are both
 present and non-empty. A backup is not considered proven until a destructive
 restore drill completes and the resulting services pass all deployment checks.
+
+## Implemented Backup Mechanics
+
+- `provision_mission_control_backup_secret` creates or validates a 64-character
+  master key as a `0600` regular file under the existing `0700` server secret
+  directory, copies it to the ignored recovery directory, and validates the
+  copy without printing it.
+- `backup_mission_control_stack` accepts no paths or key arguments. It uses
+  fixed volume names, fixed protected staging/export paths, and the ignored
+  workstation destination.
+- The pinned Uptime Kuma image supplies GNU tar and reads both stopped volumes
+  through read-only mounts as UID/GID `1000:1000`. The manifest records schema
+  version, UTC time, immutable image references, archive names, byte sizes, and
+  inner SHA-256 hashes.
+- OpenSSL 3 encrypts the payload with AES-256-CBC, PBKDF2-SHA-256, a random
+  salt, and 310,000 iterations. Python derives a purpose-specific HMAC key from
+  the master key and authenticates the entire ciphertext with HMAC-SHA-256.
+- A local helper verifies the HMAC before rotating `current` to `previous`.
+  Tampered or incomplete incoming artifacts cannot replace the current pair.
+- Exact-file cleanup removes plaintext staging on every remote exit. A recovery
+  trap restarts Uptime Kuma and ntfy and waits for Compose health if backup
+  creation fails after they stop.

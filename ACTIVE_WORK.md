@@ -191,6 +191,14 @@ Recommended thinking level for the next work:
   remained deny-by-default with the `homeops` account scoped only to
   `homeops-alerts`, Grafana returned healthy, and Prometheus remained healthy
   on its intentionally private endpoint.
+- `provision_mission_control_backup_secret` and
+  `backup_mission_control_stack` are implemented, registered, policy-allowed,
+  and dry-run/local-test validated. The fixed backup lifecycle uses the pinned
+  Uptime Kuma image to archive both stopped volumes read-only, encrypts before
+  transfer, authenticates the ciphertext, rotates current plus previous only
+  after workstation verification, removes plaintext staging on every exit, and
+  restores healthy services through a recovery trap. Live key provisioning and
+  backup remain approval-gated; destructive restore is not yet implemented.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the

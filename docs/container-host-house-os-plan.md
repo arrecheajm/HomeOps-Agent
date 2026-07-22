@@ -245,7 +245,9 @@ backup target.
 - The independent backup destination and recovery rules are now defined in
   `docs/mission-control-backup-restore.md`: encrypted and authenticated volume
   archives copied to the HomeOps workstation, followed by a destructive restore
-  drill. Implementation and proof remain open.
+  drill. Protected key provisioning and the fixed authenticated encrypted
+  backup action are implemented and locally validated; live approval and the
+  destructive restore implementation/proof remain open.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.

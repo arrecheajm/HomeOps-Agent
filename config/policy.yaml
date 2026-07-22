@@ -10,6 +10,8 @@
     "preflight_monitoring_images",
     "preflight_mission_control_images",
     "provision_mission_control_secrets",
+    "provision_mission_control_backup_secret",
+    "backup_mission_control_stack",
     "deploy_mission_control_stack",
     "rollback_mission_control_stack",
     "provision_monitoring_secret",

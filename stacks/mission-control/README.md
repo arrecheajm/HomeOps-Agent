@@ -106,7 +106,7 @@ invalid tokens, and mismatched hashes fail closed. Git-ignore prevents commits
 but does not encrypt the local copies or establish a Windows ACL; the
 workstation account and disk must be protected.
 
-During the future deployment action, Uptime Kuma will first bind to loopback.
+During deployment, Uptime Kuma first binds to loopback.
 The helper reads one JSON object containing its admin password and the scoped
 ntfy token from stdin, creates or verifies user `admin`, and manages four
 starter HTTP monitors: Homepage, Grafana, Uptime Kuma, and ntfy. It creates or
@@ -119,12 +119,12 @@ overwriting it. The object-shaped status-page response used by Uptime Kuma
 
 ## Remaining Gates
 
-1. Run the disposable acceptance deploy, explicit rollback, and clean redeploy.
-2. Implement the reviewed encrypted workstation backup contract in
-   `docs/mission-control-backup-restore.md` and prove destructive restore of
-   both named volumes.
-3. Host-reboot recovery passed on 2026-07-22.
-4. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.
+1. Deployment acceptance passed on 2026-07-22.
+2. Protected key provisioning and authenticated encrypted backup are
+   implemented; run their separately approved live actions.
+3. Implement and prove destructive restore of both named volumes.
+4. Host-reboot recovery passed on 2026-07-22.
+5. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.
 
 The deploy action intentionally treats its first generated state as
 disposable. It stages only the tracked bundle, verifies hashes and protected

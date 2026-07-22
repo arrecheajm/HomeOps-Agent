@@ -121,6 +121,21 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "execution_timeout_seconds": 180,
     },
     {
+        "action_id": "provision_mission_control_backup_secret",
+        "risk": "approval_required",
+        "description": "Generate or validate the protected Mission Control backup master key and retain one ignored local recovery copy without printing it.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+    },
+    {
+        "action_id": "backup_mission_control_stack",
+        "risk": "approval_required",
+        "description": "Stop only the two stateful Mission Control services, create an authenticated encrypted backup of both named volumes, transfer and rotate it on the workstation, then restore healthy service.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 420,
+    },
+    {
         "action_id": "deploy_mission_control_stack",
         "risk": "approval_required",
         "description": "Stage and bootstrap the fixed Mission Control bundle as disposable acceptance state, with automatic removal on failure.",

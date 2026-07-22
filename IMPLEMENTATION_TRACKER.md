@@ -40,6 +40,7 @@ Live status:
   `migrate_watchtower_container`, `deploy_health_script`,
   `retire_disposable_containers`, `preflight_monitoring_images`,
   `preflight_mission_control_images`, `provision_mission_control_secrets`,
+  `provision_mission_control_backup_secret`, `backup_mission_control_stack`,
   `deploy_mission_control_stack`, `rollback_mission_control_stack`,
   `provision_monitoring_secret`, `deploy_monitoring_stack`,
   `repair_monitoring_grafana`, `rollback_monitoring_stack`,
@@ -297,7 +298,8 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `inspect_docker_container`, `replace_watchtower_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
 `preflight_monitoring_images`, `preflight_mission_control_images`,
-`provision_mission_control_secrets`, `deploy_mission_control_stack`,
+`provision_mission_control_secrets`, `provision_mission_control_backup_secret`,
+`backup_mission_control_stack`, `deploy_mission_control_stack`,
 `rollback_mission_control_stack`, `provision_monitoring_secret`,
 `deploy_monitoring_stack`, `repair_monitoring_grafana`,
 `rollback_monitoring_stack`, `retire_legacy_monitoring_stack`,
@@ -316,6 +318,8 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `preflight_monitoring_images`
 - [x] `preflight_mission_control_images`
 - [x] `provision_mission_control_secrets`
+- [x] `provision_mission_control_backup_secret`
+- [x] `backup_mission_control_stack`
 - [x] `deploy_mission_control_stack`
 - [x] `rollback_mission_control_stack`
 - [x] `provision_monitoring_secret`

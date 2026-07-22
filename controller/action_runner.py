@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from os.path import expanduser, expandvars
@@ -100,11 +101,36 @@ LOCAL_MISSION_CONTROL_RECOVERY_FILES = (
     LOCAL_MISSION_CONTROL_SECRET_DIR / "ntfy_admin_password",
     LOCAL_MISSION_CONTROL_SECRET_DIR / "ntfy_access_token",
 )
+LOCAL_MISSION_CONTROL_BACKUP_KEY = (
+    LOCAL_MISSION_CONTROL_SECRET_DIR / "backup_key"
+)
+LOCAL_MISSION_CONTROL_BACKUP_DIR = config.BASE_DIR / "backups" / "mission-control"
+LOCAL_MISSION_CONTROL_BACKUP_INCOMING = (
+    LOCAL_MISSION_CONTROL_BACKUP_DIR / "mission-control.incoming.enc"
+)
+LOCAL_MISSION_CONTROL_BACKUP_HMAC_INCOMING = (
+    LOCAL_MISSION_CONTROL_BACKUP_DIR / "mission-control.incoming.hmac"
+)
 REMOTE_MISSION_CONTROL_SECRET_DIR = (
     "/home/containerserver/.config/homeops/secrets/mission-control"
 )
 REMOTE_MISSION_CONTROL_NTFY_RUNTIME_SECRET_DIR = (
     f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/ntfy-runtime"
+)
+REMOTE_MISSION_CONTROL_BACKUP_KEY = (
+    f"{REMOTE_MISSION_CONTROL_SECRET_DIR}/backup_key"
+)
+REMOTE_MISSION_CONTROL_BACKUP_ROOT = (
+    "/home/containerserver/.local/share/homeops/backups/mission-control"
+)
+REMOTE_MISSION_CONTROL_BACKUP_STAGE = (
+    f"{REMOTE_MISSION_CONTROL_BACKUP_ROOT}/.stage"
+)
+REMOTE_MISSION_CONTROL_BACKUP_ENCRYPTED = (
+    f"{REMOTE_MISSION_CONTROL_BACKUP_ROOT}/mission-control-backup.enc"
+)
+REMOTE_MISSION_CONTROL_BACKUP_HMAC = (
+    f"{REMOTE_MISSION_CONTROL_BACKUP_ROOT}/mission-control-backup.hmac"
 )
 REMOTE_MISSION_CONTROL_SECRET_FILES = {
     "uptime_kuma_admin_password": (
@@ -471,6 +497,22 @@ def build_action_commands(
                 "the identities, paths, generation, and recovery copies are fixed."
             )
         return _provision_mission_control_secret_commands(server)
+
+    if action_id == "provision_mission_control_backup_secret":
+        if arguments:
+            raise ActionError(
+                "provision_mission_control_backup_secret does not accept arguments; "
+                "the key format, server path, and ignored recovery copy are fixed."
+            )
+        return _provision_mission_control_backup_secret_commands(server)
+
+    if action_id == "backup_mission_control_stack":
+        if arguments:
+            raise ActionError(
+                "backup_mission_control_stack does not accept arguments; its "
+                "volumes, encryption, authentication, destination, and retention are fixed."
+            )
+        return _backup_mission_control_stack_commands(server)
 
     if action_id == "deploy_mission_control_stack":
         if arguments:
@@ -1013,6 +1055,237 @@ def _provision_mission_control_secret_commands(
             + [f"{server.ssh_target}:{remote_path}", str(local_path)]
         )
     return commands
+
+
+def _provision_mission_control_backup_secret_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Create the protected backup master key and ignored recovery copy."""
+
+    if not LOCAL_MISSION_CONTROL_SECRET_DIR.is_dir():
+        raise ActionError(
+            "Local Mission Control secret directory not found: "
+            f"{LOCAL_MISSION_CONTROL_SECRET_DIR}"
+        )
+    generation = "import secrets; print(secrets.token_urlsafe(48))"
+    script = (
+        "set -eu; "
+        f"secret_dir={quote(REMOTE_MISSION_CONTROL_SECRET_DIR)}; "
+        f"key={quote(REMOTE_MISSION_CONTROL_BACKUP_KEY)}; "
+        "install -d -m 0700 \"$secret_dir\"; test ! -L \"$secret_dir\"; "
+        "test \"$(stat -c %a \"$secret_dir\")\" = 700; "
+        "test \"$(stat -c %u \"$secret_dir\")\" = \"$(id -u)\"; "
+        "if [ -e \"$key\" ] || [ -L \"$key\" ]; then "
+        "test -f \"$key\"; test ! -L \"$key\"; "
+        "else tmp=$(mktemp \"$secret_dir/.backup-key.XXXXXX\"); "
+        "trap 'rm -f \"$tmp\"' HUP INT TERM EXIT; "
+        f"python3 -c {_shell_single_quote(generation)} > \"$tmp\"; "
+        "chmod 0600 \"$tmp\"; mv \"$tmp\" \"$key\"; "
+        "trap - HUP INT TERM EXIT; fi; "
+        "test -s \"$key\"; test -f \"$key\"; test ! -L \"$key\"; "
+        "test \"$(stat -c %a \"$key\")\" = 600; "
+        "test \"$(stat -c %u \"$key\")\" = \"$(id -u)\"; "
+        "grep -Eq '^[A-Za-z0-9_-]{64}$' \"$key\"; "
+        "printf 'mission_control_backup_secret_provisioned\\n'"
+    )
+    return [
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", script)],
+        _build_scp_base_command(server)
+        + [
+            f"{server.ssh_target}:{REMOTE_MISSION_CONTROL_BACKUP_KEY}",
+            str(LOCAL_MISSION_CONTROL_BACKUP_KEY),
+        ],
+        [
+            sys.executable,
+            "-m",
+            "controller.backup_artifact",
+            "validate-key",
+            "--path",
+            str(LOCAL_MISSION_CONTROL_BACKUP_KEY),
+        ],
+    ]
+
+
+def _mission_control_backup_manifest_script() -> str:
+    return (
+        "import datetime,hashlib,json,pathlib;"
+        f"root=pathlib.Path({REMOTE_MISSION_CONTROL_BACKUP_STAGE!r});"
+        "exec(\"def item(name,archive):\\n p=root/archive\\n return "
+        "{'name':name,'archive':archive,'size':p.stat().st_size,"
+        "'sha256':hashlib.file_digest(p.open('rb'),'sha256').hexdigest()}\");"
+        "manifest={'schema_version':1,"
+        "'created_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),"
+        f"'images':{dict(sorted(MISSION_CONTROL_IMAGE_REFS.items()))!r},"
+        "'volumes':[item('homeops-mission-control_uptime-kuma-data','uptime-kuma.tar'),"
+        "item('homeops-mission-control_ntfy-data','ntfy.tar')]};"
+        "(root/'manifest.json').write_text(json.dumps(manifest,sort_keys=True,indent=2)+'\\n')"
+    )
+
+
+def _mission_control_backup_hmac_script() -> str:
+    return (
+        "import hashlib,hmac,pathlib;"
+        f"master=pathlib.Path({REMOTE_MISSION_CONTROL_BACKUP_KEY!r}).read_bytes().strip();"
+        "key=hmac.new(master,b'homeops-mission-control-backup-hmac-v1',hashlib.sha256).digest();"
+        f"source=pathlib.Path({REMOTE_MISSION_CONTROL_BACKUP_ENCRYPTED!r});"
+        "digest=hmac.new(key,digestmod=hashlib.sha256);"
+        "exec(\"with source.open('rb') as handle:\\n for block in iter(lambda: handle.read(1048576),b''):\\n  digest.update(block)\");"
+        f"pathlib.Path({REMOTE_MISSION_CONTROL_BACKUP_HMAC!r}).write_text(digest.hexdigest()+'\\n')"
+    )
+
+
+def _backup_mission_control_stack_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Create, authenticate, transfer, and rotate an encrypted volume backup."""
+
+    if not LOCAL_MISSION_CONTROL_BACKUP_DIR.is_dir():
+        raise ActionError(
+            "Local Mission Control backup directory not found: "
+            f"{LOCAL_MISSION_CONTROL_BACKUP_DIR}"
+        )
+
+    manifest_script = _mission_control_backup_manifest_script()
+    hmac_script = _mission_control_backup_hmac_script()
+    stage_files = tuple(
+        f"{REMOTE_MISSION_CONTROL_BACKUP_STAGE}/{name}"
+        for name in (
+            "uptime-kuma.tar",
+            "ntfy.tar",
+            "manifest.json",
+            "payload.tar",
+        )
+    )
+    cleanup_plaintext = "rm -f -- " + " ".join(quote(path) for path in stage_files)
+    restart = (
+        "docker start homeops-mission-control-uptime-kuma-1 "
+        "homeops-mission-control-ntfy-1 >/dev/null 2>&1 || true; "
+        f"{_mission_control_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}"
+    )
+    recovery = (
+        "status=$?; trap - HUP INT TERM EXIT; "
+        f"{cleanup_plaintext}; "
+        f"rmdir -- {quote(REMOTE_MISSION_CONTROL_BACKUP_STAGE)} >/dev/null 2>&1 || true; "
+        "if [ \"$stopped\" = 1 ]; then "
+        f"{restart} || status=1; fi; exit \"$status\""
+    )
+    uptime_image = quote(MISSION_CONTROL_IMAGE_REFS["uptime-kuma"])
+    archive_options = (
+        "--sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner"
+    )
+    script = (
+        "set -eu; umask 077; stopped=0; "
+        f"root={quote(REMOTE_MISSION_CONTROL_BACKUP_ROOT)}; "
+        f"stage={quote(REMOTE_MISSION_CONTROL_BACKUP_STAGE)}; "
+        f"key={quote(REMOTE_MISSION_CONTROL_BACKUP_KEY)}; "
+        f"encrypted={quote(REMOTE_MISSION_CONTROL_BACKUP_ENCRYPTED)}; "
+        f"sidecar={quote(REMOTE_MISSION_CONTROL_BACKUP_HMAC)}; "
+        "install -d -m 0700 \"$root\"; test ! -L \"$root\"; "
+        "test \"$(stat -c %a \"$root\")\" = 700; "
+        "test \"$(stat -c %u \"$root\")\" = \"$(id -u)\"; "
+        "if [ -L \"$stage\" ]; then exit 1; fi; "
+        "if [ -e \"$stage\" ]; then test -d \"$stage\"; "
+        f"{cleanup_plaintext}; rmdir -- \"$stage\"; fi; "
+        "for output in \"$encrypted\" \"$sidecar\"; do "
+        "test ! -L \"$output\"; rm -f -- \"$output\"; done; "
+        "test -s \"$key\"; test -f \"$key\"; test ! -L \"$key\"; "
+        "test \"$(stat -c %a \"$key\")\" = 600; "
+        "test \"$(stat -c %u \"$key\")\" = \"$(id -u)\"; "
+        "grep -Eq '^[A-Za-z0-9_-]{64}$' \"$key\"; "
+        "openssl version >/dev/null; python3 --version >/dev/null; "
+        f"docker image inspect {uptime_image} >/dev/null; "
+        "awk 'NR==2 {exit !($4 >= 524288)}' < <(df -Pk \"$root\"); "
+        f"test -f {quote(REMOTE_MISSION_CONTROL_COMPOSE)}; "
+        + " ".join(
+            "test \"$(docker inspect --type container --format "
+            f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}; "
+            "test \"$(docker inspect --type container --format "
+            f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy;"
+            for name, image in MISSION_CONTROL_CONTAINER_IMAGES.items()
+        )
+        + " "
+        + " ".join(
+            f"docker volume inspect {quote(volume)} >/dev/null;"
+            for volume in MISSION_CONTROL_VOLUMES
+        )
+        + " install -d -m 0700 \"$stage\"; "
+        f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT; "
+        "stopped=1; docker stop homeops-mission-control-uptime-kuma-1 "
+        "homeops-mission-control-ntfy-1 >/dev/null; "
+        "docker run --rm --network none --read-only --user 1000:1000 "
+        "--security-opt no-new-privileges:true --cap-drop ALL --pids-limit 64 --memory 128m "
+        "-v homeops-mission-control_uptime-kuma-data:/source:ro "
+        "-v \"$stage:/backup\" --entrypoint tar "
+        f"{uptime_image} {archive_options} -cf /backup/uptime-kuma.tar -C /source .; "
+        "docker run --rm --network none --read-only --user 1000:1000 "
+        "--security-opt no-new-privileges:true --cap-drop ALL --pids-limit 64 --memory 128m "
+        "-v homeops-mission-control_ntfy-data:/source:ro "
+        "-v \"$stage:/backup\" --entrypoint tar "
+        f"{uptime_image} {archive_options} -cf /backup/ntfy.tar -C /source .; "
+        f"python3 -c {_shell_single_quote(manifest_script)}; "
+        "docker run --rm --network none --read-only --user 1000:1000 "
+        "--security-opt no-new-privileges:true --cap-drop ALL --pids-limit 64 --memory 128m "
+        "-v \"$stage:/backup\" --entrypoint tar "
+        f"{uptime_image} {archive_options} -cf /backup/payload.tar -C /backup "
+        "manifest.json uptime-kuma.tar ntfy.tar; "
+        "openssl enc -aes-256-cbc -salt -pbkdf2 -iter 310000 -md sha256 "
+        "-pass \"file:$key\" -in \"$stage/payload.tar\" -out \"$encrypted\"; "
+        f"python3 -c {_shell_single_quote(hmac_script)}; "
+        "chmod 0600 \"$encrypted\" \"$sidecar\"; "
+        "test -s \"$encrypted\"; grep -Eq '^[0-9a-f]{64}$' \"$sidecar\"; "
+        f"{cleanup_plaintext}; rmdir -- \"$stage\"; "
+        f"{restart}; stopped=0; "
+        "test \"$(docker inspect --type container --format '{{.State.Health.Status}}' "
+        "homeops-mission-control-uptime-kuma-1)\" = healthy; "
+        "test \"$(docker inspect --type container --format '{{.State.Health.Status}}' "
+        "homeops-mission-control-ntfy-1)\" = healthy; "
+        "curl -fsS http://192.168.86.58:3001/status/homeops >/dev/null; "
+        "docker exec homeops-mission-control-ntfy-1 ntfy access homeops | "
+        "grep -F 'read-write access to topic homeops-alerts' >/dev/null; "
+        "trap - HUP INT TERM EXIT; printf 'mission_control_encrypted_backup_ready\\n'"
+    )
+    cleanup_remote = (
+        "set -eu; "
+        f"for path in {quote(REMOTE_MISSION_CONTROL_BACKUP_ENCRYPTED)} "
+        f"{quote(REMOTE_MISSION_CONTROL_BACKUP_HMAC)}; do "
+        "test ! -L \"$path\"; rm -f -- \"$path\"; done; "
+        "printf 'mission_control_remote_backup_export_removed\\n'"
+    )
+    return [
+        [
+            sys.executable,
+            "-m",
+            "controller.backup_artifact",
+            "prepare",
+            "--destination",
+            str(LOCAL_MISSION_CONTROL_BACKUP_DIR),
+        ],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("bash", "-lc", script)],
+        _build_scp_base_command(server)
+        + [
+            f"{server.ssh_target}:{REMOTE_MISSION_CONTROL_BACKUP_ENCRYPTED}",
+            str(LOCAL_MISSION_CONTROL_BACKUP_INCOMING),
+        ],
+        _build_scp_base_command(server)
+        + [
+            f"{server.ssh_target}:{REMOTE_MISSION_CONTROL_BACKUP_HMAC}",
+            str(LOCAL_MISSION_CONTROL_BACKUP_HMAC_INCOMING),
+        ],
+        [
+            sys.executable,
+            "-m",
+            "controller.backup_artifact",
+            "promote",
+            "--destination",
+            str(LOCAL_MISSION_CONTROL_BACKUP_DIR),
+            "--key",
+            str(LOCAL_MISSION_CONTROL_BACKUP_KEY),
+        ],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", cleanup_remote)],
+    ]
 
 
 def _deploy_mission_control_stack_commands(

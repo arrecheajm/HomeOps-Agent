@@ -198,6 +198,35 @@ The corresponding approval phrase is:
 Approve action provision_mission_control_secrets on container-host
 ```
 
+Backup-key provisioning is a separate approval boundary. It creates or
+validates one owner-only 64-character master key on the server, copies it to
+the ignored Mission Control recovery directory, and validates the local copy
+without printing the value:
+
+```powershell
+python -m controller.main actions run provision_mission_control_backup_secret --server container-host --dry-run
+```
+
+```text
+Approve action provision_mission_control_backup_secret on container-host
+```
+
+The encrypted backup action stops only Uptime Kuma and ntfy after all
+prerequisites pass. The pinned Uptime Kuma image archives both named volumes
+read-only; the host encrypts the payload with AES-256-CBC, PBKDF2, and the
+owner-only key, then creates an HMAC-SHA-256 sidecar with a derived key. The
+workstation authenticates the ciphertext before rotating `current` to
+`previous`. Plaintext staging is removed on every exit, Homepage remains
+running, and a recovery trap restarts and health-checks the stateful services:
+
+```powershell
+python -m controller.main actions run backup_mission_control_stack --server container-host --dry-run
+```
+
+```text
+Approve action backup_mission_control_stack on container-host
+```
+
 The first Mission Control deployment is also approval-gated. It is explicitly
 disposable acceptance state: the action stages and hashes the fixed files,
 validates all five protected secrets and pinned images, starts on loopback,

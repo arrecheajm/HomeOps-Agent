@@ -17,6 +17,9 @@ Generated files:
 - `ntfy_admin_password`: login password for ntfy user `admin`
 - `ntfy_access_token`: token for regular ntfy user `homeops`, limited to the
   `homeops-alerts` topic
+- `backup_key`: separately approval-gated master key for Mission Control
+  backup encryption and derived HMAC authentication; never pass it on a command
+  line or commit it
 
 The server additionally retains `ntfy_admin_password_hash` and
 `ntfy_service_password_hash`. The two hashes and service token are mounted

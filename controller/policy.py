@@ -22,6 +22,8 @@ DEFAULT_POLICY: dict[str, Any] = {
         "preflight_monitoring_images",
         "preflight_mission_control_images",
         "provision_mission_control_secrets",
+        "provision_mission_control_backup_secret",
+        "backup_mission_control_stack",
         "provision_monitoring_secret",
         "deploy_monitoring_stack",
         "repair_monitoring_grafana",
