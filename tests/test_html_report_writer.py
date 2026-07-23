@@ -25,11 +25,12 @@ class HtmlReportWriterTests(unittest.TestCase):
         )
 
         self.assertIn("HomeOps Dashboard", html)
-        self.assertIn("Grafana HomeOps Overview", html)
+        self.assertIn("Mission Control", html)
         self.assertIn(
-            "http://192.168.86.58:3000/d/homeops-overview/homeops-overview",
+            "http://192.168.86.58:8081",
             html,
         )
+        self.assertNotIn("Grafana HomeOps Overview", html)
         self.assertIn("Fleet Catalog", html)
         self.assertIn("Latest Server State", html)
         self.assertIn("Historical Data", html)

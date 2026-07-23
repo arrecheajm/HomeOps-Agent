@@ -23,9 +23,7 @@ ROLE_LABELS = {
     "container_host": "Containers",
 }
 
-GRAFANA_HOMEOPS_URL = (
-    "http://192.168.86.58:3000/d/homeops-overview/homeops-overview"
-)
+MISSION_CONTROL_URL = "http://192.168.86.58:8081"
 
 
 def write_dashboard(
@@ -116,7 +114,7 @@ def _dashboard_nav() -> list[str]:
     return [
         '<nav class="tabbar" aria-label="Dashboard views">',
         '<a href="#overview">Overview</a>',
-        f'<a href="{GRAFANA_HOMEOPS_URL}">Grafana HomeOps Overview</a>',
+        f'<a href="{MISSION_CONTROL_URL}">Mission Control</a>',
         '<a href="#history">Historical Data</a>',
         '<a href="#agent-history">Agent History</a>',
         '<a href="#runs">Run Timeline</a>',
