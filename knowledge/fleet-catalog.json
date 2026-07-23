@@ -3,17 +3,17 @@
     "collection_failed": 0,
     "cpu_threads": 10,
     "docker_hosts": 1,
-    "not_collected": 2,
-    "pending_updates": 3,
+    "not_collected": 0,
+    "pending_updates": 9,
     "reboots_required": 0,
-    "running_containers": 6,
+    "running_containers": 9,
     "servers": 3
   },
-  "generated_at": "2026-07-22T15:46:36Z",
+  "generated_at": "2026-07-23T14:17:43Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
-    "Use container-host as the Codex lab and default Docker experiment target.",
+    "Keep container-host maintenance current before increasing Docker workload.",
     "Apply pending package maintenance before using current capacity numbers for long-term planning."
   ],
   "schema_version": "1.0",
@@ -24,14 +24,18 @@
         "Low background workload",
         "Small CPU footprint"
       ],
-      "collected_at": "2026-07-21T12:13:29Z",
-      "collection_status": "not_in_latest_run",
+      "collected_at": "2026-07-23T14:17:46Z",
       "constraints": [
-        "Not collected in latest run",
-        "3 package updates pending",
+        "2 package updates pending",
         "VPN availability affects remote access"
       ],
-      "current_findings": [],
+      "current_findings": [
+        {
+          "code": "updates_pending",
+          "message": "2 package updates are pending.",
+          "severity": "info"
+        }
+      ],
       "docker": {
         "containers": [],
         "containers_running": 0,
@@ -47,10 +51,9 @@
         "virtualization": "none"
       },
       "hostname": "vpnserver",
-      "last_successful_collected_at": "2026-07-21T12:13:29Z",
       "maintenance": {
         "pending_security_updates": 0,
-        "pending_updates": 3,
+        "pending_updates": 2,
         "reboot_required": false
       },
       "os": {
@@ -64,10 +67,10 @@
       ],
       "resources": {
         "cpu_count": 2,
-        "load_1m": 1.37,
-        "memory_used_percent": 19.9,
+        "load_1m": 1.39,
+        "memory_used_percent": 21.3,
         "swap_used_percent": 0.0,
-        "uptime_days": 2.8
+        "uptime_days": 4.9
       },
       "role": "openvpn_server",
       "role_label": "VPN",
@@ -110,10 +113,8 @@
         "AgentDVR workload",
         "Moderate CPU headroom"
       ],
-      "collected_at": "2026-07-22T14:26:33Z",
-      "collection_status": "not_in_latest_run",
+      "collected_at": "2026-07-23T14:17:50Z",
       "constraints": [
-        "Not collected in latest run",
         "Camera recording interruption risk"
       ],
       "current_findings": [],
@@ -132,7 +133,6 @@
         "virtualization": "none"
       },
       "hostname": "ispyserver",
-      "last_successful_collected_at": "2026-07-22T14:26:33Z",
       "maintenance": {
         "pending_security_updates": 0,
         "pending_updates": 0,
@@ -149,10 +149,10 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.56,
-        "memory_used_percent": 10.1,
+        "load_1m": 0.32,
+        "memory_used_percent": 8.7,
         "swap_used_percent": 0.0,
-        "uptime_days": 3.9
+        "uptime_days": 4.9
       },
       "role": "ispy_server",
       "role_label": "Security Cameras",
@@ -201,13 +201,134 @@
         "Docker application host",
         "Container consolidation target",
         "Moderate CPU headroom",
-        "Docker installed with 6 running containers"
+        "Docker installed with 9 running containers"
       ],
-      "collected_at": "2026-07-22T15:46:44Z",
-      "constraints": [],
-      "current_findings": [],
+      "collected_at": "2026-07-23T14:18:00Z",
+      "constraints": [
+        "7 package updates pending"
+      ],
+      "current_findings": [
+        {
+          "code": "security_updates_pending",
+          "message": "7 security updates are pending.",
+          "severity": "warning"
+        }
+      ],
       "docker": {
         "containers": [
+          {
+            "classification": "unclassified",
+            "classification_rationale": "",
+            "compose_project": "homeops-mission-control",
+            "compose_service": "homepage",
+            "exposure": "published",
+            "health": "healthy",
+            "image": "ghcr.io/gethomepage/homepage:v1.13.2@sha256:c881120b024d6a8e2f3c9664efc568984e4352e47df459d6b32e225374c71955",
+            "mounts": [
+              {
+                "destination": "/app/config",
+                "read_only": true,
+                "source": "/home/containerserver/.local/share/homeops/stacks/mission-control/homepage",
+                "type": "bind"
+              }
+            ],
+            "name": "homeops-mission-control-homepage-1",
+            "network_mode": "homeops-mission-control",
+            "ports": [
+              {
+                "container_port": "3000/tcp",
+                "host_ip": "192.168.86.58",
+                "host_port": "8081"
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          },
+          {
+            "classification": "unclassified",
+            "classification_rationale": "",
+            "compose_project": "homeops-mission-control",
+            "compose_service": "ntfy",
+            "exposure": "published",
+            "health": "healthy",
+            "image": "binwiederhier/ntfy:v2.23.0@sha256:33c067491862f2b302bb5a4571fa0e5a55721ef36d41820979c40533192deaec",
+            "mounts": [
+              {
+                "destination": "/etc/ntfy/server.yml",
+                "read_only": true,
+                "source": "/home/containerserver/.local/share/homeops/stacks/mission-control/ntfy/server.yml",
+                "type": "bind"
+              },
+              {
+                "destination": "/run/secrets",
+                "read_only": true,
+                "source": "/home/containerserver/.config/homeops/secrets/mission-control/ntfy-runtime",
+                "type": "bind"
+              },
+              {
+                "destination": "/var/lib/ntfy",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/homeops-mission-control_ntfy-data/_data",
+                "type": "volume"
+              }
+            ],
+            "name": "homeops-mission-control-ntfy-1",
+            "network_mode": "homeops-mission-control",
+            "ports": [
+              {
+                "container_port": "80/tcp",
+                "host_ip": "",
+                "host_port": ""
+              },
+              {
+                "container_port": "8080/tcp",
+                "host_ip": "192.168.86.58",
+                "host_port": "8082"
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          },
+          {
+            "classification": "unclassified",
+            "classification_rationale": "",
+            "compose_project": "homeops-mission-control",
+            "compose_service": "uptime-kuma",
+            "exposure": "published",
+            "health": "healthy",
+            "image": "louislam/uptime-kuma:2.4.0@sha256:7e26105b7c8445474a310131590bbfe619e955ed308b5af7e3f0a324bb40ea4d",
+            "mounts": [
+              {
+                "destination": "/app/bootstrap-contract.js",
+                "read_only": true,
+                "source": "/home/containerserver/.local/share/homeops/stacks/mission-control/uptime-kuma/bootstrap-contract.js",
+                "type": "bind"
+              },
+              {
+                "destination": "/app/data",
+                "read_only": false,
+                "source": "/var/lib/docker/volumes/homeops-mission-control_uptime-kuma-data/_data",
+                "type": "volume"
+              },
+              {
+                "destination": "/app/homeops-bootstrap.js",
+                "read_only": true,
+                "source": "/home/containerserver/.local/share/homeops/stacks/mission-control/uptime-kuma/bootstrap.js",
+                "type": "bind"
+              }
+            ],
+            "name": "homeops-mission-control-uptime-kuma-1",
+            "network_mode": "homeops-mission-control",
+            "ports": [
+              {
+                "container_port": "3001/tcp",
+                "host_ip": "192.168.86.58",
+                "host_port": "3001"
+              }
+            ],
+            "restart_policy": "unless-stopped",
+            "state": "running"
+          },
           {
             "classification": "keep",
             "classification_rationale": "Active desired-state cAdvisor using the reviewed pinned image, private network, health check, and bounded resources.",
@@ -451,8 +572,8 @@
             "state": "running"
           }
         ],
-        "containers_running": 6,
-        "containers_total": 6,
+        "containers_running": 9,
+        "containers_total": 9,
         "installed": true,
         "inventory_collected": true,
         "unhealthy": []
@@ -465,8 +586,8 @@
       },
       "hostname": "containerserver",
       "maintenance": {
-        "pending_security_updates": 0,
-        "pending_updates": 0,
+        "pending_security_updates": 7,
+        "pending_updates": 7,
         "reboot_required": false
       },
       "os": {
@@ -476,14 +597,14 @@
       },
       "placement_guidance": [
         "Prefer this host for Codex lab experiments and Docker-backed applications.",
-        "Current host maintenance is clean; suitable for lab workloads."
+        "Clear host maintenance before increasing workload."
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.9,
-        "memory_used_percent": 12.8,
+        "load_1m": 0.32,
+        "memory_used_percent": 16.1,
         "swap_used_percent": 0.0,
-        "uptime_days": 1.0
+        "uptime_days": 0.7
       },
       "role": "container_host",
       "role_label": "Containers",
@@ -528,8 +649,8 @@
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-22T15-46-36Z/fleet-health.json",
-    "generated_at": "2026-07-22T15:46:36Z",
-    "run_id": "2026-07-22T15-46-36Z"
+    "fleet_path": "history/runs/2026-07-23T14-17-43Z/fleet-health.json",
+    "generated_at": "2026-07-23T14:17:43Z",
+    "run_id": "2026-07-23T14-17-43Z"
   }
 }
