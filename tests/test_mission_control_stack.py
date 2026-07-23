@@ -71,6 +71,24 @@ class MissionControlStackTests(unittest.TestCase):
         self.assertIn("Notifications", services)
         self.assertIn("Portainer", services)
 
+    def test_homepage_tracks_every_required_read_only_skeleton_file(self):
+        required = {
+            "bookmarks.yaml",
+            "custom.css",
+            "custom.js",
+            "docker.yaml",
+            "kubernetes.yaml",
+            "proxmox.yaml",
+            "services.yaml",
+            "settings.yaml",
+            "widgets.yaml",
+        }
+
+        self.assertEqual(
+            {path.name for path in (STACK_DIR / "homepage").iterdir() if path.is_file()},
+            required,
+        )
+
     def test_secret_values_are_not_committed(self):
         compose = (STACK_DIR / "compose.yaml").read_text(encoding="utf-8")
         example = (STACK_DIR / ".env.example").read_text(encoding="utf-8")

@@ -41,7 +41,8 @@ Live status:
   `retire_disposable_containers`, `preflight_monitoring_images`,
   `preflight_mission_control_images`, `provision_mission_control_secrets`,
   `provision_mission_control_backup_secret`, `backup_mission_control_stack`,
-  `restore_mission_control_stack`, `deploy_mission_control_stack`,
+  `restore_mission_control_stack`, `repair_mission_control_homepage`,
+  `deploy_mission_control_stack`,
   `rollback_mission_control_stack`,
   `provision_monitoring_secret`, `deploy_monitoring_stack`,
   `repair_monitoring_grafana`, `rollback_monitoring_stack`,
@@ -307,7 +308,7 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `preflight_monitoring_images`, `preflight_mission_control_images`,
 `provision_mission_control_secrets`, `provision_mission_control_backup_secret`,
 `backup_mission_control_stack`, `restore_mission_control_stack`,
-`deploy_mission_control_stack`,
+`repair_mission_control_homepage`, `deploy_mission_control_stack`,
 `rollback_mission_control_stack`, `provision_monitoring_secret`,
 `deploy_monitoring_stack`, `repair_monitoring_grafana`,
 `rollback_monitoring_stack`, `retire_legacy_monitoring_stack`,
@@ -329,6 +330,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `provision_mission_control_backup_secret`
 - [x] `backup_mission_control_stack`
 - [x] `restore_mission_control_stack`
+- [x] `repair_mission_control_homepage`
 - [x] `deploy_mission_control_stack`
 - [x] `rollback_mission_control_stack`
 - [x] `provision_monitoring_secret`
@@ -369,7 +371,12 @@ and independently metadata-checked at `2026-07-22T22:02:19Z`. The bounded
 restore action is implemented, remotely syntax-checked without execution, and
 covered by valid, tampered, incomplete, and unsafe-archive tests. Next, run and
 verify the separately approved encrypted backup, then prove the separately
-approved destructive restore drill before adding local HTTPS. Use
+approved destructive restore drill before adding local HTTPS. The first backup
+attempt failed before archive creation when Homepage entered a non-OOM
+configuration crash loop. Inspection proved its read-only directory lacked the
+three empty/default files required by v1.13.2. The tracked bundle and deploy
+acceptance now cover them, and a Homepage-only repair action is ready for exact
+approval before the backup retry. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

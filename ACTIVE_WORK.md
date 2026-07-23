@@ -209,6 +209,19 @@ Recommended thinking level for the next work:
   Bash passed remote syntax checking, and the full 173-test suite passed. The
   destructive live drill remains separately approval-gated and must follow a
   successful live backup.
+- The first approved live backup attempt at `2026-07-23T13:03:21Z` failed
+  closed before archive/export because Homepage was restarting during the
+  all-services-healthy preflight. Kuma and ntfy remained healthy, no workstation
+  artifact was promoted, and protected server staging was clean.
+- Approved Homepage inspection at `2026-07-23T13:14:55Z` found the pinned image
+  exiting with code `1` because the read-only `/app/config` lacked required
+  `custom.css`, `custom.js`, and `proxmox.yaml` skeleton files. The browser
+  consequently showed sample fallback cards and API errors. All other tracked
+  Homepage file hashes and the live bind mount matched Git; this was not drift
+  or an OOM failure. The three harmless files are now tracked, future deployment
+  verifies real services/widgets API content, and the bounded
+  `repair_mission_control_homepage` action is implemented and dry-run/syntax
+  validated. Its live execution requires separate approval before backup retry.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the

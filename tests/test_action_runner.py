@@ -659,8 +659,8 @@ class ActionRunnerTests(unittest.TestCase):
         rendered = "\n".join(command[-1] for command in record["commands"])
 
         self.assertEqual(record["status"], "dry_run")
-        self.assertEqual(len(record["commands"]), 14)
-        self.assertEqual(sum(command[0] == "scp" for command in record["commands"]), 10)
+        self.assertEqual(len(record["commands"]), 17)
+        self.assertEqual(sum(command[0] == "scp" for command in record["commands"]), 13)
         self.assertIn("HOMEOPS_LAN_IP=127.0.0.1", rendered)
         self.assertGreaterEqual(rendered.count("node /app/homeops-bootstrap.js"), 2)
         self.assertIn("homeops-not-authorized", rendered)
@@ -679,6 +679,8 @@ class ActionRunnerTests(unittest.TestCase):
         self.assertIn("--entrypoint chown", rendered)
         self.assertIn("1000:1000 /var/lib/ntfy", rendered)
         self.assertIn("{{.Config.User}}", rendered)
+        self.assertIn("Home Operations", rendered)
+        self.assertIn("Failed to initialize required config|EROFS", rendered)
         self.assertNotIn("ntfy_service_password=/", rendered)
         self.assertNotIn(".service-password.", rendered)
         self.assertNotIn("docker system prune", rendered)
@@ -686,6 +688,48 @@ class ActionRunnerTests(unittest.TestCase):
             record["expected_approval"],
             "Approve action deploy_mission_control_stack on container-host",
         )
+
+    def test_repair_mission_control_homepage_is_bounded_and_stable(self):
+        attempt = run_action(
+            "repair_mission_control_homepage",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(" ".join(command) for command in record["commands"])
+
+        self.assertEqual(len(record["commands"]), 5)
+        self.assertEqual(sum(command[0] == "scp" for command in record["commands"]), 3)
+        self.assertIn("custom.css", rendered)
+        self.assertIn("custom.js", rendered)
+        self.assertIn("proxmox.yaml", rendered)
+        self.assertIn("--no-deps --force-recreate", rendered)
+        self.assertIn("Home Operations", rendered)
+        self.assertIn("RestartCount", rendered)
+        self.assertIn("Failed to initialize required config|EROFS", rendered)
+        self.assertIn("kuma_id", rendered)
+        self.assertIn("ntfy_id", rendered)
+        self.assertNotIn("docker volume rm", rendered)
+        self.assertNotIn("down --volumes", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action repair_mission_control_homepage on container-host",
+        )
+
+    def test_repair_mission_control_homepage_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "repair_mission_control_homepage",
+                "container-host",
+                [self._container_server()],
+                {"file": "unbounded"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
 
     def test_deploy_mission_control_stack_rejects_arguments(self):
         with self.assertRaisesRegex(ActionError, "does not accept arguments"):

@@ -25,6 +25,7 @@ DEFAULT_POLICY: dict[str, Any] = {
         "provision_mission_control_backup_secret",
         "backup_mission_control_stack",
         "restore_mission_control_stack",
+        "repair_mission_control_homepage",
         "deploy_mission_control_stack",
         "rollback_mission_control_stack",
         "provision_monitoring_secret",

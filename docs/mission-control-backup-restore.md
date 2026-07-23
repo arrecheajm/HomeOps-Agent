@@ -6,6 +6,12 @@ implemented and locally validated. The first live backup and destructive restore
 proof are still required before Mission Control may hold retained household
 state.
 
+The first approved live-backup attempt on 2026-07-23 failed before archive
+creation because Homepage was restarting during preflight. No encrypted export
+or workstation artifact was created. Inspection isolated a missing-required-file
+failure in Homepage's read-only configuration; the tracked repair must pass
+before backup is retried.
+
 ## Lifecycle Boundary
 
 The first deployment is an acceptance deployment. Uptime Kuma and ntfy data

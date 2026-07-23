@@ -252,6 +252,11 @@ backup target.
   the key. The bounded destructive restore action is also implemented and
   locally validated with automatic two-volume rollback. The separately approved
   first live backup and destructive restore proof remain open.
+- The first live-backup attempt failed closed before archive creation because
+  Homepage entered a configuration crash loop. Approved inspection found that
+  v1.13.2 requires three additional skeleton files even with a read-only config
+  mount. Those files and real API-content acceptance are now tracked; a bounded
+  Homepage-only repair is ready for approval before backup retry.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.

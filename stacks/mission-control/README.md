@@ -9,6 +9,13 @@ fixed-port verification, and a controlled reboot persistence test. Retained
 household data remains gated until
 encrypted backup/restore is implemented and proven.
 
+The first live-backup preflight later exposed a Homepage v1.13.2 read-only
+configuration contract: `custom.css`, `custom.js`, and `proxmox.yaml` must
+already exist because the container cannot copy its skeleton defaults into the
+read-only mount. All nine skeleton files are now tracked. The bounded
+`repair_mission_control_homepage` action installs only those three files,
+recreates only Homepage, and verifies real API content plus restart stability.
+
 This internal-disk stack provides:
 
 - Homepage at `http://192.168.86.58:8081`
@@ -121,7 +128,8 @@ overwriting it. The object-shaped status-page response used by Uptime Kuma
 
 1. Deployment acceptance passed on 2026-07-22.
 2. Protected backup-key provisioning passed on 2026-07-22; run and verify the
-   separately approved authenticated encrypted backup action.
+   separately approved Homepage repair, then retry the authenticated encrypted
+   backup action.
 3. The bounded restore action is implemented; run and prove its separately
    approved destructive two-volume restore drill after backup succeeds.
 4. Host-reboot recovery passed on 2026-07-22.

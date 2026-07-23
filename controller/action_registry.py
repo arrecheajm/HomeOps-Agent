@@ -144,6 +144,14 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "execution_timeout_seconds": 600,
     },
     {
+        "action_id": "repair_mission_control_homepage",
+        "risk": "approval_required",
+        "description": "Install the three required tracked Homepage skeleton files, recreate only Homepage, and verify stable HomeOps API content without replacing Kuma or ntfy.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 300,
+    },
+    {
         "action_id": "deploy_mission_control_stack",
         "risk": "approval_required",
         "description": "Stage and bootstrap the fixed Mission Control bundle as disposable acceptance state, with automatic removal on failure.",

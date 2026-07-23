@@ -168,10 +168,22 @@ MISSION_CONTROL_DEPLOY_FILES = (
         LOCAL_MISSION_CONTROL_DIR / "homepage" / "bookmarks.yaml",
         "homepage/bookmarks.yaml",
     ),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "homepage" / "custom.css",
+        "homepage/custom.css",
+    ),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "homepage" / "custom.js",
+        "homepage/custom.js",
+    ),
     (LOCAL_MISSION_CONTROL_DIR / "homepage" / "docker.yaml", "homepage/docker.yaml"),
     (
         LOCAL_MISSION_CONTROL_DIR / "homepage" / "kubernetes.yaml",
         "homepage/kubernetes.yaml",
+    ),
+    (
+        LOCAL_MISSION_CONTROL_DIR / "homepage" / "proxmox.yaml",
+        "homepage/proxmox.yaml",
     ),
     (
         LOCAL_MISSION_CONTROL_DIR / "homepage" / "services.yaml",
@@ -194,6 +206,19 @@ MISSION_CONTROL_DEPLOY_FILES = (
         LOCAL_MISSION_CONTROL_DIR / "uptime-kuma" / "bootstrap-contract.js",
         "uptime-kuma/bootstrap-contract.js",
     ),
+)
+MISSION_CONTROL_HOMEPAGE_REPAIR_FILES = tuple(
+    item
+    for item in MISSION_CONTROL_DEPLOY_FILES
+    if item[1]
+    in {
+        "homepage/custom.css",
+        "homepage/custom.js",
+        "homepage/proxmox.yaml",
+    }
+)
+REMOTE_MISSION_CONTROL_HOMEPAGE_REPAIR_STAGE = (
+    f"{REMOTE_MISSION_CONTROL_DIR}/.homepage-repair"
 )
 MISSION_CONTROL_CONTAINER_IMAGES = {
     "homeops-mission-control-homepage-1": MISSION_CONTROL_IMAGE_REFS["homepage"],
@@ -530,6 +555,14 @@ def build_action_commands(
                 "authenticated source, volumes, rollback snapshots, and verification are fixed."
             )
         return _restore_mission_control_stack_commands(server)
+
+    if action_id == "repair_mission_control_homepage":
+        if arguments:
+            raise ActionError(
+                "repair_mission_control_homepage does not accept arguments; its "
+                "required files, container identity, restart, and verification are fixed."
+            )
+        return _repair_mission_control_homepage_commands(server)
 
     if action_id == "deploy_mission_control_stack":
         if arguments:
@@ -1623,6 +1656,171 @@ def _restore_mission_control_stack_commands(
     ]
 
 
+def _repair_mission_control_homepage_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Install required read-only Homepage skeleton files and recreate Homepage."""
+
+    for source, _ in MISSION_CONTROL_HOMEPAGE_REPAIR_FILES:
+        if not source.is_file():
+            raise ActionError(f"Homepage repair file not found: {source}")
+
+    stage = REMOTE_MISSION_CONTROL_HOMEPAGE_REPAIR_STAGE
+    stage_files = tuple(
+        f"{stage}/{Path(relative).name}"
+        for _, relative in MISSION_CONTROL_HOMEPAGE_REPAIR_FILES
+    )
+    cleanup_stage = (
+        "rm -f -- "
+        + " ".join(quote(path) for path in stage_files)
+        + f"; rmdir -- {quote(stage)} >/dev/null 2>&1 || true"
+    )
+    preflight = [
+        "set -eu",
+        f"test -d {quote(REMOTE_MISSION_CONTROL_DIR)}",
+        f"test ! -L {quote(REMOTE_MISSION_CONTROL_DIR)}",
+        f"test -d {quote(f'{REMOTE_MISSION_CONTROL_DIR}/homepage')}",
+        f"test ! -L {quote(f'{REMOTE_MISSION_CONTROL_DIR}/homepage')}",
+    ]
+    for source, relative in MISSION_CONTROL_DEPLOY_FILES:
+        if (source, relative) in MISSION_CONTROL_HOMEPAGE_REPAIR_FILES:
+            target = f"{REMOTE_MISSION_CONTROL_DIR}/{relative}"
+            preflight.append(
+                f"if [ -e {quote(target)} ] || [ -L {quote(target)} ]; then "
+                f"test -f {quote(target)}; test ! -L {quote(target)}; fi"
+            )
+            continue
+        expected_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+        target = f"{REMOTE_MISSION_CONTROL_DIR}/{relative}"
+        preflight.extend(
+            (
+                f"test -f {quote(target)}",
+                f"test ! -L {quote(target)}",
+                "test \"$(sha256sum "
+                f"{quote(target)} | cut -d ' ' -f 1)\" = {quote(expected_hash)}",
+            )
+        )
+    preflight.extend(
+        (
+            _mission_control_compose_command("config", "--quiet"),
+            "test \"$(docker inspect --type container --format "
+            "'{{.Config.Image}}' homeops-mission-control-homepage-1)\" = "
+            + quote(MISSION_CONTROL_IMAGE_REFS["homepage"]),
+            "test \"$(docker inspect --type container --format "
+            "'{{range .Mounts}}{{.Source}}:{{.Destination}}:{{.RW}}{{end}}' "
+            "homeops-mission-control-homepage-1)\" = "
+            + quote(
+                f"{REMOTE_MISSION_CONTROL_DIR}/homepage:/app/config:false"
+            ),
+            "test \"$(docker inspect --type container --format "
+            "'{{.Config.Image}}' homeops-mission-control-uptime-kuma-1)\" = "
+            + quote(MISSION_CONTROL_IMAGE_REFS["uptime-kuma"]),
+            "test \"$(docker inspect --type container --format "
+            "'{{.State.Health.Status}}' homeops-mission-control-uptime-kuma-1)\" "
+            "= healthy",
+            "test \"$(docker inspect --type container --format "
+            "'{{.Config.Image}}' homeops-mission-control-ntfy-1)\" = "
+            + quote(MISSION_CONTROL_IMAGE_REFS["ntfy"]),
+            "test \"$(docker inspect --type container --format "
+            "'{{.State.Health.Status}}' homeops-mission-control-ntfy-1)\" = healthy",
+            f"if [ -L {quote(stage)} ]; then exit 1; fi",
+            f"if [ -e {quote(stage)} ]; then test -d {quote(stage)}; "
+            f"{cleanup_stage}; fi",
+            f"install -d -m 0700 {quote(stage)}",
+            "printf 'mission_control_homepage_repair_stage_ready\\n'",
+        )
+    )
+    commands: list[list[str]] = [
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("sh", "-lc", "; ".join(preflight)),
+        ]
+    ]
+    for source, relative in MISSION_CONTROL_HOMEPAGE_REPAIR_FILES:
+        commands.append(
+            _build_scp_base_command(server)
+            + [
+                str(source),
+                f"{server.ssh_target}:{stage}/{Path(relative).name}",
+            ]
+        )
+
+    recovery = (
+        "status=$?; trap - HUP INT TERM EXIT; "
+        f"{cleanup_stage}; "
+        f"{_mission_control_compose_command('up', '-d', '--no-deps', 'homepage')} "
+        ">/dev/null 2>&1 || status=1; exit \"$status\""
+    )
+    activate = [
+        "set -eu",
+        f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT",
+        "kuma_id=$(docker inspect --type container --format '{{.Id}}' "
+        "homeops-mission-control-uptime-kuma-1)",
+        "ntfy_id=$(docker inspect --type container --format '{{.Id}}' "
+        "homeops-mission-control-ntfy-1)",
+    ]
+    for source, relative in MISSION_CONTROL_HOMEPAGE_REPAIR_FILES:
+        expected_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+        candidate = f"{stage}/{Path(relative).name}"
+        target = f"{REMOTE_MISSION_CONTROL_DIR}/{relative}"
+        activate.extend(
+            (
+                f"test -f {quote(candidate)}",
+                f"test ! -L {quote(candidate)}",
+                "test \"$(sha256sum "
+                f"{quote(candidate)} | cut -d ' ' -f 1)\" = {quote(expected_hash)}",
+                f"install -m 0644 {quote(candidate)} {quote(target)}",
+                f"test ! -L {quote(target)}",
+                "test \"$(sha256sum "
+                f"{quote(target)} | cut -d ' ' -f 1)\" = {quote(expected_hash)}",
+            )
+        )
+    activate.extend(
+        (
+            cleanup_stage,
+            _mission_control_compose_command(
+                "up",
+                "-d",
+                "--no-deps",
+                "--force-recreate",
+                "--wait",
+                "--wait-timeout",
+                "180",
+                "homepage",
+            ),
+            "test \"$(docker inspect --type container --format '{{.Id}}' "
+            "homeops-mission-control-uptime-kuma-1)\" = \"$kuma_id\"",
+            "test \"$(docker inspect --type container --format '{{.Id}}' "
+            "homeops-mission-control-ntfy-1)\" = \"$ntfy_id\"",
+            "test \"$(docker port homeops-mission-control-homepage-1 3000/tcp)\" "
+            "= 192.168.86.58:8081",
+            "curl -fsS --max-time 15 "
+            "http://192.168.86.58:8081/api/services | grep -F 'Home Operations' "
+            ">/dev/null",
+            "curl -fsS --max-time 15 "
+            "http://192.168.86.58:8081/api/widgets | grep -F 'datetime' >/dev/null",
+            "if docker logs homeops-mission-control-homepage-1 2>&1 | "
+            "grep -Eq 'Failed to initialize required config|EROFS'; then exit 1; fi",
+            "sleep 20",
+            "test \"$(docker inspect --type container --format "
+            "'{{.State.Health.Status}}' homeops-mission-control-homepage-1)\" = healthy",
+            "test \"$(docker inspect --type container --format "
+            "'{{.RestartCount}}' homeops-mission-control-homepage-1)\" = 0",
+            "trap - HUP INT TERM EXIT",
+            "printf 'mission_control_homepage_repaired\\n'",
+        )
+    )
+    commands.append(
+        build_ssh_base_command(server)
+        + [
+            server.ssh_target,
+            _remote_command("sh", "-lc", "; ".join(activate)),
+        ]
+    )
+    return commands
+
+
 def _deploy_mission_control_stack_commands(
     server: ServerInventoryItem,
 ) -> list[list[str]]:
@@ -1885,6 +2083,13 @@ def _deploy_mission_control_stack_commands(
         )
     verify.extend(
         (
+            "curl -fsS --max-time 15 "
+            "http://192.168.86.58:8081/api/services | grep -F 'Home Operations' "
+            ">/dev/null",
+            "curl -fsS --max-time 15 "
+            "http://192.168.86.58:8081/api/widgets | grep -F 'datetime' >/dev/null",
+            "if docker logs homeops-mission-control-homepage-1 2>&1 | "
+            "grep -Eq 'Failed to initialize required config|EROFS'; then exit 1; fi",
             bootstrap,
             f"python3 -c {_shell_single_quote(ntfy_probe_lan)}",
             "trap - HUP INT TERM EXIT",

@@ -244,6 +244,22 @@ python -m controller.main actions run restore_mission_control_stack --server con
 Approve action restore_mission_control_stack on container-host
 ```
 
+Homepage-only repair is a separate approval boundary. It stages the three
+non-secret skeleton files required by Homepage v1.13.2, verifies every other
+Mission Control file and both stateful services before activation, and
+force-recreates only Homepage. It then proves the intended Home Operations and
+datetime API content, fixed LAN binding, absence of required-config/EROFS log
+errors, and zero restarts during a stability window. Kuma and ntfy container
+identities must remain unchanged:
+
+```powershell
+python -m controller.main actions run repair_mission_control_homepage --server container-host --dry-run
+```
+
+```text
+Approve action repair_mission_control_homepage on container-host
+```
+
 The first Mission Control deployment is also approval-gated. It is explicitly
 disposable acceptance state: the action stages and hashes the fixed files,
 validates all five protected secrets and pinned images, starts on loopback,
