@@ -162,8 +162,10 @@ dry-run, exact approval, execution, and action history support. The health
 script deployment action has been exercised successfully on all configured
 servers. The bounded Homepage repair was exercised successfully on
 `container-host` at `2026-07-23T13:25:13Z`, with Homepage-only recreation and
-independent health/browser acceptance. `apply_security_updates` uses the
-server's unattended-upgrades policy,
+independent health/browser acceptance. The encrypted Mission Control backup was
+exercised successfully at `2026-07-23T13:29:54Z`, including independent local
+authentication and post-backup service checks. `apply_security_updates` uses
+the server's unattended-upgrades policy,
 `apply_package_updates` is scoped to the container lab host, and
 `reboot_server` uses an exact-approval one-minute delayed reboot command.
 

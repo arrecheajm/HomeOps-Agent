@@ -201,8 +201,12 @@ Recommended thinking level for the next work:
   services through a recovery trap. Approved backup-key
   provisioning completed at `2026-07-22T22:02:19Z`; metadata-only checks proved
   the server key is a regular owner-only `0600` file with the required format,
-  and its valid workstation recovery copy is Git-ignored. The first live backup
-  remains separately approval-gated. Restore authenticates locally and again
+  and its valid workstation recovery copy is Git-ignored. The approved live
+  backup completed at `2026-07-23T13:29:54Z`; the authenticated encrypted
+  `current` pair was promoted to the Git-ignored workstation destination and
+  independently re-authenticated at 1,136,672 encrypted bytes. Remote export
+  files were removed, and all three services independently verified healthy
+  with zero restarts afterward. Restore authenticates locally and again
   before decryption, validates the fixed manifest, hashes, images, volumes, and
   safe archive members before downtime, snapshots both live volumes, restores
   in place, and automatically restores both snapshots on failure. Its generated
@@ -228,7 +232,7 @@ Recommended thinking level for the next work:
   container inspection confirmed Homepage, Kuma, and ntfy healthy with zero
   restarts, while a fresh browser load showed the intended Home Operations and
   Server Tools groups with responsive status cards. The next boundary is a
-  fresh, separately approved encrypted backup retry.
+  separately approved destructive restore drill.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the
@@ -334,10 +338,10 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Run and verify the separately approved encrypted Mission Control backup.
-2. Implement and prove the destructive Mission Control restore drill.
-3. Add local HTTPS before routine credentialed phone access.
-4. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
+1. Run and prove the separately approved destructive Mission Control restore
+   drill.
+2. Add local HTTPS before routine credentialed phone access.
+3. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
 5. Record smart-switch and garage-controller brands/apps and phone platform.
 6. Deploy in stages: Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.

@@ -250,8 +250,12 @@ backup target.
   completed at `2026-07-22T22:02:19Z`; metadata-only checks confirmed the
   owner-only server file and valid Git-ignored recovery copy without exposing
   the key. The bounded destructive restore action is also implemented and
-  locally validated with automatic two-volume rollback. The separately approved
-  first live backup and destructive restore proof remain open.
+  locally validated with automatic two-volume rollback. The approved live
+  backup completed at `2026-07-23T13:29:54Z`; its authenticated encrypted
+  `current` pair was promoted to the Git-ignored workstation destination,
+  independently re-authenticated at 1,136,672 bytes, and removed from remote
+  export staging. All three services were healthy with zero restarts afterward.
+  Only the separately approved destructive restore proof remains open.
 - The first live-backup attempt failed closed before archive creation because
   Homepage entered a configuration crash loop. Approved inspection found that
   v1.13.2 requires three additional skeleton files even with a read-only config
@@ -261,7 +265,8 @@ backup target.
   eliminated the required-config/read-only errors, and held healthy with zero
   restarts. Independent container and browser checks confirmed all three
   services healthy and the intended Home Operations dashboard content visible.
-  A fresh encrypted backup approval is the next recovery-proof boundary.
+  The encrypted backup subsequently passed; the destructive restore drill is
+  the next recovery-proof boundary.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.
