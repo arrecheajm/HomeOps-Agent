@@ -41,7 +41,8 @@ Live status:
   `retire_disposable_containers`, `preflight_monitoring_images`,
   `preflight_mission_control_images`, `provision_mission_control_secrets`,
   `provision_mission_control_backup_secret`, `backup_mission_control_stack`,
-  `deploy_mission_control_stack`, `rollback_mission_control_stack`,
+  `restore_mission_control_stack`, `deploy_mission_control_stack`,
+  `rollback_mission_control_stack`,
   `provision_monitoring_secret`, `deploy_monitoring_stack`,
   `repair_monitoring_grafana`, `rollback_monitoring_stack`,
   `retire_legacy_monitoring_stack`, `retire_legacy_monitoring_files`,
@@ -305,7 +306,8 @@ Approval-required action IDs are registered. `restart_docker_container`,
 `migrate_watchtower_container`, `retire_disposable_containers`,
 `preflight_monitoring_images`, `preflight_mission_control_images`,
 `provision_mission_control_secrets`, `provision_mission_control_backup_secret`,
-`backup_mission_control_stack`, `deploy_mission_control_stack`,
+`backup_mission_control_stack`, `restore_mission_control_stack`,
+`deploy_mission_control_stack`,
 `rollback_mission_control_stack`, `provision_monitoring_secret`,
 `deploy_monitoring_stack`, `repair_monitoring_grafana`,
 `rollback_monitoring_stack`, `retire_legacy_monitoring_stack`,
@@ -326,6 +328,7 @@ approval. `run_admin_command` is also executable after exact approval on
 - [x] `provision_mission_control_secrets`
 - [x] `provision_mission_control_backup_secret`
 - [x] `backup_mission_control_stack`
+- [x] `restore_mission_control_stack`
 - [x] `deploy_mission_control_stack`
 - [x] `rollback_mission_control_stack`
 - [x] `provision_monitoring_secret`
@@ -362,9 +365,11 @@ fifth approved deployment passed full acceptance. The approved reboot completed
 on 2026-07-22: the boot ID changed, all seven Mission Control and monitoring
 containers returned healthy, the Kuma status page and ntfy ACL persisted, and
 private Prometheus remained healthy. The protected backup key was provisioned
-and independently metadata-checked at `2026-07-22T22:02:19Z`. Next, run and
-verify the separately approved encrypted backup, implement and prove the
-destructive restore drill, then add local HTTPS. Use
+and independently metadata-checked at `2026-07-22T22:02:19Z`. The bounded
+restore action is implemented, remotely syntax-checked without execution, and
+covered by valid, tampered, incomplete, and unsafe-archive tests. Next, run and
+verify the separately approved encrypted backup, then prove the separately
+approved destructive restore drill before adding local HTTPS. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

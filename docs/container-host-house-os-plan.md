@@ -249,8 +249,9 @@ backup target.
   backup action are implemented and locally validated. Approved key provisioning
   completed at `2026-07-22T22:02:19Z`; metadata-only checks confirmed the
   owner-only server file and valid Git-ignored recovery copy without exposing
-  the key. The separately approved first live backup and destructive restore
-  implementation/proof remain open.
+  the key. The bounded destructive restore action is also implemented and
+  locally validated with automatic two-volume rollback. The separately approved
+  first live backup and destructive restore proof remain open.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.
@@ -340,7 +341,9 @@ proposed capabilities, not currently implemented action IDs:
   ownership, and expected directories.
 - [ ] Dedicated lifecycle operations for every stack phase. Monitoring
   preflight, secret provisioning, deployment, Grafana repair, rollback, and
-  final removal are implemented; backup, restore, and upgrade remain open.
+  final removal are implemented. Mission Control backup and restore are
+  implemented but not live-proven; upgrades and later-stack lifecycles remain
+  open.
 - [ ] Health verification after deployment, upgrade, host reboot, and restore.
 - [ ] Pinned application versions and controlled HomeOps upgrades. Automatic
   Watchtower updates should remain opt-in and should not be enabled for

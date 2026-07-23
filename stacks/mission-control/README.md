@@ -122,7 +122,8 @@ overwriting it. The object-shaped status-page response used by Uptime Kuma
 1. Deployment acceptance passed on 2026-07-22.
 2. Protected backup-key provisioning passed on 2026-07-22; run and verify the
    separately approved authenticated encrypted backup action.
-3. Implement and prove destructive restore of both named volumes.
+3. The bounded restore action is implemented; run and prove its separately
+   approved destructive two-volume restore drill after backup succeeds.
 4. Host-reboot recovery passed on 2026-07-22.
 5. Add local HTTPS, then perform credentialed phone-on-Wi-Fi acceptance.
 

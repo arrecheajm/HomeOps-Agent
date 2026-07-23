@@ -154,6 +154,7 @@ Status: in progress. The registry exists, `actions list` works, and
 `migrate_watchtower_container`, `preflight_monitoring_images`,
 `preflight_mission_control_images`, `provision_mission_control_secrets`,
 `provision_mission_control_backup_secret`, `backup_mission_control_stack`,
+`restore_mission_control_stack`,
 `deploy_health_script`,
 `deploy_sudoers_profile`, `restart_docker_container`, `restart_service`,
 `apply_package_updates`, `apply_security_updates`, and `reboot_server` have

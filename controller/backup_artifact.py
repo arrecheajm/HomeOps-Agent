@@ -52,6 +52,34 @@ def _ciphertext_hmac(ciphertext: Path, master_key: bytes) -> str:
     return digest.hexdigest()
 
 
+def validate_pair(ciphertext: Path, sidecar: Path, key_path: Path) -> int:
+    """Authenticate one encrypted backup pair without changing it."""
+
+    for path in (ciphertext, sidecar):
+        if path.is_symlink() or not path.is_file() or path.stat().st_size == 0:
+            raise BackupArtifactError(f"Backup artifact is invalid: {path}")
+
+    expected = sidecar.read_text(encoding="ascii").strip()
+    if not HMAC_RE.fullmatch(expected):
+        raise BackupArtifactError("Backup HMAC sidecar has an invalid format")
+    actual = _ciphertext_hmac(ciphertext, read_key(key_path))
+    if not hmac.compare_digest(actual, expected):
+        raise BackupArtifactError("Backup ciphertext HMAC verification failed")
+    return ciphertext.stat().st_size
+
+
+def validate_current(destination: Path, key_path: Path) -> int:
+    """Authenticate the fixed current backup pair for a restore action."""
+
+    if destination.is_symlink() or not destination.is_dir():
+        raise BackupArtifactError(f"Backup destination is unsafe: {destination}")
+    return validate_pair(
+        destination / "mission-control.current.enc",
+        destination / "mission-control.current.hmac",
+        key_path,
+    )
+
+
 def promote_incoming(destination: Path, key_path: Path) -> None:
     """Authenticate incoming files, then retain current plus one previous set."""
 
@@ -65,16 +93,7 @@ def promote_incoming(destination: Path, key_path: Path) -> None:
     }
     ciphertext = prepare_names["ciphertext"]
     sidecar = prepare_names["sidecar"]
-    for path in (ciphertext, sidecar):
-        if path.is_symlink() or not path.is_file() or path.stat().st_size == 0:
-            raise BackupArtifactError(f"Incoming backup artifact is invalid: {path}")
-
-    expected = sidecar.read_text(encoding="ascii").strip()
-    if not HMAC_RE.fullmatch(expected):
-        raise BackupArtifactError("Backup HMAC sidecar has an invalid format")
-    actual = _ciphertext_hmac(ciphertext, read_key(key_path))
-    if not hmac.compare_digest(actual, expected):
-        raise BackupArtifactError("Backup ciphertext HMAC verification failed")
+    validate_pair(ciphertext, sidecar, key_path)
 
     current_pair = (
         prepare_names["current_ciphertext"],
@@ -117,6 +136,10 @@ def _parser() -> argparse.ArgumentParser:
     promote = subparsers.add_parser("promote")
     promote.add_argument("--destination", type=Path, required=True)
     promote.add_argument("--key", type=Path, required=True)
+
+    validate_current_parser = subparsers.add_parser("validate-current")
+    validate_current_parser.add_argument("--destination", type=Path, required=True)
+    validate_current_parser.add_argument("--key", type=Path, required=True)
     return parser
 
 
@@ -129,8 +152,11 @@ def main() -> int:
         elif args.command == "prepare":
             prepare_incoming(args.destination)
             print("mission_control_backup_destination_ready")
-        else:
+        elif args.command == "promote":
             promote_incoming(args.destination, args.key)
+        else:
+            size = validate_current(args.destination, args.key)
+            print(f"mission_control_current_backup_authenticated bytes={size}")
     except (BackupArtifactError, OSError, UnicodeError) as exc:
         raise SystemExit(str(exc)) from exc
     return 0

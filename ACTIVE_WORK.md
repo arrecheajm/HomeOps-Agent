@@ -191,18 +191,24 @@ Recommended thinking level for the next work:
   remained deny-by-default with the `homeops` account scoped only to
   `homeops-alerts`, Grafana returned healthy, and Prometheus remained healthy
   on its intentionally private endpoint.
-- `provision_mission_control_backup_secret` and
-  `backup_mission_control_stack` are implemented, registered, policy-allowed,
-  and dry-run/local-test validated. The fixed backup lifecycle uses the pinned
-  Uptime Kuma image to archive both stopped volumes read-only, encrypts before
-  transfer, authenticates the ciphertext, rotates current plus previous only
-  after workstation verification, removes plaintext staging on every exit, and
-  restores healthy services through a recovery trap. Approved backup-key
+- `provision_mission_control_backup_secret`,
+  `backup_mission_control_stack`, and `restore_mission_control_stack` are
+  implemented, registered, policy-allowed, and dry-run/local-test validated.
+  The fixed backup lifecycle uses the pinned Uptime Kuma image to archive both
+  stopped volumes read-only, encrypts before transfer, authenticates the
+  ciphertext, rotates current plus previous only after workstation
+  verification, removes plaintext staging on every exit, and restores healthy
+  services through a recovery trap. Approved backup-key
   provisioning completed at `2026-07-22T22:02:19Z`; metadata-only checks proved
   the server key is a regular owner-only `0600` file with the required format,
   and its valid workstation recovery copy is Git-ignored. The first live backup
-  remains separately approval-gated; destructive restore is not yet
-  implemented.
+  remains separately approval-gated. Restore authenticates locally and again
+  before decryption, validates the fixed manifest, hashes, images, volumes, and
+  safe archive members before downtime, snapshots both live volumes, restores
+  in place, and automatically restores both snapshots on failure. Its generated
+  Bash passed remote syntax checking, and the full 173-test suite passed. The
+  destructive live drill remains separately approval-gated and must follow a
+  successful live backup.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the

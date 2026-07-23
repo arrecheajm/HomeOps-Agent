@@ -136,6 +136,14 @@ ACTIONS: tuple[dict[str, Any], ...] = (
         "execution_timeout_seconds": 420,
     },
     {
+        "action_id": "restore_mission_control_stack",
+        "risk": "approval_required",
+        "description": "Authenticate and validate the fixed current Mission Control backup, snapshot both live volumes, restore them, and automatically roll back both volumes if acceptance fails.",
+        "server_roles": ["container_host"],
+        "implemented": True,
+        "execution_timeout_seconds": 600,
+    },
+    {
         "action_id": "deploy_mission_control_stack",
         "risk": "approval_required",
         "description": "Stage and bootstrap the fixed Mission Control bundle as disposable acceptance state, with automatic removal on failure.",

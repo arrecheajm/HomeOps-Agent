@@ -111,6 +111,12 @@ LOCAL_MISSION_CONTROL_BACKUP_INCOMING = (
 LOCAL_MISSION_CONTROL_BACKUP_HMAC_INCOMING = (
     LOCAL_MISSION_CONTROL_BACKUP_DIR / "mission-control.incoming.hmac"
 )
+LOCAL_MISSION_CONTROL_BACKUP_CURRENT = (
+    LOCAL_MISSION_CONTROL_BACKUP_DIR / "mission-control.current.enc"
+)
+LOCAL_MISSION_CONTROL_BACKUP_HMAC_CURRENT = (
+    LOCAL_MISSION_CONTROL_BACKUP_DIR / "mission-control.current.hmac"
+)
 REMOTE_MISSION_CONTROL_SECRET_DIR = (
     "/home/containerserver/.config/homeops/secrets/mission-control"
 )
@@ -131,6 +137,9 @@ REMOTE_MISSION_CONTROL_BACKUP_ENCRYPTED = (
 )
 REMOTE_MISSION_CONTROL_BACKUP_HMAC = (
     f"{REMOTE_MISSION_CONTROL_BACKUP_ROOT}/mission-control-backup.hmac"
+)
+REMOTE_MISSION_CONTROL_RESTORE_STAGE = (
+    f"{REMOTE_MISSION_CONTROL_BACKUP_ROOT}/.restore-stage"
 )
 REMOTE_MISSION_CONTROL_SECRET_FILES = {
     "uptime_kuma_admin_password": (
@@ -513,6 +522,14 @@ def build_action_commands(
                 "volumes, encryption, authentication, destination, and retention are fixed."
             )
         return _backup_mission_control_stack_commands(server)
+
+    if action_id == "restore_mission_control_stack":
+        if arguments:
+            raise ActionError(
+                "restore_mission_control_stack does not accept arguments; its "
+                "authenticated source, volumes, rollback snapshots, and verification are fixed."
+            )
+        return _restore_mission_control_stack_commands(server)
 
     if action_id == "deploy_mission_control_stack":
         if arguments:
@@ -1285,6 +1302,324 @@ def _backup_mission_control_stack_commands(
         ],
         build_ssh_base_command(server)
         + [server.ssh_target, _remote_command("sh", "-lc", cleanup_remote)],
+    ]
+
+
+def _mission_control_restore_hmac_script(
+    stage_path: str = REMOTE_MISSION_CONTROL_RESTORE_STAGE,
+    key_path: str = REMOTE_MISSION_CONTROL_BACKUP_KEY,
+) -> str:
+    """Return the remote HMAC verification fragment for the restore input."""
+
+    return (
+        "import hashlib,hmac,pathlib,re\n"
+        f"stage=pathlib.Path({stage_path!r})\n"
+        f"master=pathlib.Path({key_path!r}).read_bytes().strip()\n"
+        "source=stage/'mission-control.current.enc'\n"
+        "expected=(stage/'mission-control.current.hmac').read_text(encoding='ascii').strip()\n"
+        "if not re.fullmatch(r'[0-9a-f]{64}',expected):\n"
+        " raise ValueError('restore HMAC format is invalid')\n"
+        "key=hmac.new(master,b'homeops-mission-control-backup-hmac-v1',hashlib.sha256).digest()\n"
+        "digest=hmac.new(key,digestmod=hashlib.sha256)\n"
+        "with source.open('rb') as handle:\n"
+        " for block in iter(lambda: handle.read(1048576),b''):\n"
+        "  digest.update(block)\n"
+        "if not hmac.compare_digest(digest.hexdigest(),expected):\n"
+        " raise ValueError('restore HMAC verification failed')"
+    )
+
+
+def _mission_control_restore_validation_script(
+    stage_path: str = REMOTE_MISSION_CONTROL_RESTORE_STAGE,
+) -> str:
+    """Return strict payload, manifest, hash, and inner-tar validation."""
+
+    expected_images = dict(sorted(MISSION_CONTROL_IMAGE_REFS.items()))
+    expected_volumes = (
+        (
+            "homeops-mission-control_uptime-kuma-data",
+            "uptime-kuma.tar",
+        ),
+        (
+            "homeops-mission-control_ntfy-data",
+            "ntfy.tar",
+        ),
+    )
+    return (
+        "import datetime,hashlib,json,pathlib,shutil,tarfile\n"
+        f"stage=pathlib.Path({stage_path!r})\n"
+        "payload=stage/'payload.tar'\n"
+        "expected_names={'manifest.json','uptime-kuma.tar','ntfy.tar'}\n"
+        "with tarfile.open(payload,'r:') as archive:\n"
+        " members=archive.getmembers()\n"
+        " by_name={}\n"
+        " for member in members:\n"
+        "  if member.name in by_name or member.name not in expected_names or not member.isfile():\n"
+        "   raise ValueError('unsafe outer backup member')\n"
+        "  by_name[member.name]=member\n"
+        " if set(by_name)!=expected_names:\n"
+        "  raise ValueError('incomplete outer backup payload')\n"
+        " for name in sorted(expected_names):\n"
+        "  target=stage/name\n"
+        "  if target.exists() or target.is_symlink():\n"
+        "   raise ValueError('restore output already exists')\n"
+        "  source=archive.extractfile(by_name[name])\n"
+        "  if source is None:\n"
+        "   raise ValueError('backup member is unreadable')\n"
+        "  with source,target.open('xb') as output:\n"
+        "   shutil.copyfileobj(source,output,1024*1024)\n"
+        "manifest=json.loads((stage/'manifest.json').read_text(encoding='utf-8'))\n"
+        "if set(manifest)!={'schema_version','created_at','images','volumes'}:\n"
+        " raise ValueError('unexpected manifest fields')\n"
+        "if manifest['schema_version']!=1:\n"
+        " raise ValueError('unsupported manifest schema')\n"
+        "created=datetime.datetime.fromisoformat(manifest['created_at'])\n"
+        "if created.tzinfo is None:\n"
+        " raise ValueError('manifest time is not timezone-aware')\n"
+        f"if manifest['images']!={expected_images!r}:\n"
+        " raise ValueError('backup image references do not match desired state')\n"
+        f"expected_volumes={expected_volumes!r}\n"
+        "if not isinstance(manifest['volumes'],list) or len(manifest['volumes'])!=len(expected_volumes):\n"
+        " raise ValueError('unexpected backup volume count')\n"
+        "for entry,(volume_name,archive_name) in zip(manifest['volumes'],expected_volumes,strict=True):\n"
+        " if set(entry)!={'name','archive','size','sha256'} or entry['name']!=volume_name or entry['archive']!=archive_name:\n"
+        "  raise ValueError('unexpected backup volume manifest')\n"
+        " path=stage/archive_name\n"
+        " if type(entry['size']) is not int or entry['size']<=0 or path.stat().st_size!=entry['size']:\n"
+        "  raise ValueError('backup archive size mismatch')\n"
+        " if not isinstance(entry['sha256'],str) or len(entry['sha256'])!=64 or any(c not in '0123456789abcdef' for c in entry['sha256']):\n"
+        "  raise ValueError('backup archive hash format is invalid')\n"
+        " with path.open('rb') as source:\n"
+        "  actual_hash=hashlib.file_digest(source,'sha256').hexdigest()\n"
+        " if actual_hash!=entry['sha256']:\n"
+        "  raise ValueError('backup archive hash mismatch')\n"
+        " with tarfile.open(path,'r:') as inner:\n"
+        "  members=inner.getmembers()\n"
+        "  if not members:\n"
+        "   raise ValueError('backup archive is empty')\n"
+        "  seen=set()\n"
+        "  for member in members:\n"
+        "   raw=member.name\n"
+        "   if '\\\\' in raw:\n"
+        "    raise ValueError('unsafe backup path separator')\n"
+        "   normalized=raw[2:] if raw.startswith('./') else raw\n"
+        "   if normalized in ('','.'):\n"
+        "    if not member.isdir():\n"
+        "     raise ValueError('unsafe backup root member')\n"
+        "    continue\n"
+        "   candidate=pathlib.PurePosixPath(normalized)\n"
+        "   if candidate.is_absolute() or '..' in candidate.parts or not (member.isdir() or member.isfile()):\n"
+        "    raise ValueError('unsafe inner backup member')\n"
+        "   canonical=str(candidate)\n"
+        "   if canonical in seen:\n"
+        "    raise ValueError('duplicate inner backup member')\n"
+        "   seen.add(canonical)\n"
+        "print('mission_control_restore_payload_validated')"
+    )
+
+
+def _restore_mission_control_stack_commands(
+    server: ServerInventoryItem,
+) -> list[list[str]]:
+    """Restore the fixed current backup with automatic live-state rollback."""
+
+    if not LOCAL_MISSION_CONTROL_BACKUP_DIR.is_dir():
+        raise ActionError(
+            "Local Mission Control backup directory not found: "
+            f"{LOCAL_MISSION_CONTROL_BACKUP_DIR}"
+        )
+
+    stage_names = (
+        "mission-control.current.enc",
+        "mission-control.current.hmac",
+        "payload.tar",
+        "manifest.json",
+        "uptime-kuma.tar",
+        "ntfy.tar",
+        "rollback-uptime-kuma.tar",
+        "rollback-ntfy.tar",
+    )
+    stage_files = tuple(
+        f"{REMOTE_MISSION_CONTROL_RESTORE_STAGE}/{name}" for name in stage_names
+    )
+    cleanup_files = "rm -f -- " + " ".join(quote(path) for path in stage_files)
+    prepare = (
+        "set -eu; umask 077; "
+        f"root={quote(REMOTE_MISSION_CONTROL_BACKUP_ROOT)}; "
+        f"stage={quote(REMOTE_MISSION_CONTROL_RESTORE_STAGE)}; "
+        "install -d -m 0700 \"$root\"; test ! -L \"$root\"; "
+        "test \"$(stat -c %a \"$root\")\" = 700; "
+        "test \"$(stat -c %u \"$root\")\" = \"$(id -u)\"; "
+        "if [ -L \"$stage\" ]; then exit 1; fi; "
+        "if [ -e \"$stage\" ]; then test -d \"$stage\"; "
+        f"{cleanup_files}; rmdir -- \"$stage\"; fi; "
+        "install -d -m 0700 \"$stage\"; "
+        "printf 'mission_control_restore_stage_ready\\n'"
+    )
+
+    uptime_image = quote(MISSION_CONTROL_IMAGE_REFS["uptime-kuma"])
+    archive_options = "--sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner"
+    apply_archive = (
+        "apply_archive() { docker run --rm --network none --read-only "
+        "--user 1000:1000 --security-opt no-new-privileges:true --cap-drop ALL "
+        "--pids-limit 64 --memory 128m -v \"$1:/target\" "
+        "-v \"$stage:/restore:ro\" --entrypoint sh "
+        f"{uptime_image} -ec "
+        + _shell_single_quote(
+            "find /target -mindepth 1 -depth -delete; "
+            "tar --no-same-owner -xf \"/restore/$1\" -C /target"
+        )
+        + " sh \"$2\"; }"
+    )
+    start_and_check = (
+        "start_and_check() { "
+        f"{_mission_control_compose_command('up', '-d', '--wait', '--wait-timeout', '180')} "
+        "&& test \"$(docker inspect --type container --format "
+        "'{{.State.Health.Status}}' homeops-mission-control-uptime-kuma-1)\" = healthy "
+        "&& test \"$(docker inspect --type container --format "
+        "'{{.State.Health.Status}}' homeops-mission-control-ntfy-1)\" = healthy "
+        "&& curl -fsS http://192.168.86.58:3001/status/homeops >/dev/null "
+        "&& docker exec homeops-mission-control-ntfy-1 ntfy access homeops | "
+        "grep -F 'read-write access to topic homeops-alerts' >/dev/null; }"
+    )
+    cleanup_stage = (
+        f"cleanup_stage() {{ {cleanup_files}; "
+        f"rmdir -- {quote(REMOTE_MISSION_CONTROL_RESTORE_STAGE)} "
+        ">/dev/null 2>&1 || true; }"
+    )
+    recovery = (
+        "status=$?; trap - HUP INT TERM EXIT; set +e; "
+        "if [ \"$mutated\" = 1 ]; then "
+        "docker stop homeops-mission-control-uptime-kuma-1 "
+        "homeops-mission-control-ntfy-1 >/dev/null 2>&1; "
+        "apply_archive homeops-mission-control_uptime-kuma-data "
+        "rollback-uptime-kuma.tar || status=1; "
+        "apply_archive homeops-mission-control_ntfy-data "
+        "rollback-ntfy.tar || status=1; "
+        "start_and_check || status=1; "
+        "elif [ \"$stopped\" = 1 ]; then start_and_check || status=1; fi; "
+        "cleanup_stage; exit \"$status\""
+    )
+    bootstrap_json = (
+        "import json,pathlib,sys;"
+        f"root=pathlib.Path({REMOTE_MISSION_CONTROL_SECRET_DIR!r});"
+        "json.dump({'uptimeKumaAdminPassword':(root/'uptime_kuma_admin_password').read_text().strip(),"
+        "'ntfyAccessToken':(root/'ntfy_access_token').read_text().strip()},sys.stdout)"
+    )
+    bootstrap = (
+        f"python3 -c {_shell_single_quote(bootstrap_json)} | "
+        "docker exec -i homeops-mission-control-uptime-kuma-1 "
+        "node /app/homeops-bootstrap.js"
+    )
+    restore = (
+        "set -eu; umask 077; stopped=0; mutated=0; "
+        f"stage={quote(REMOTE_MISSION_CONTROL_RESTORE_STAGE)}; "
+        f"key={quote(REMOTE_MISSION_CONTROL_BACKUP_KEY)}; "
+        f"{apply_archive}; {start_and_check}; {cleanup_stage}; "
+        f"trap {_shell_single_quote(recovery)} HUP INT TERM EXIT; "
+        "test -d \"$stage\"; test ! -L \"$stage\"; "
+        "test \"$(stat -c %a \"$stage\")\" = 700; "
+        "test \"$(stat -c %u \"$stage\")\" = \"$(id -u)\"; "
+        "for input in mission-control.current.enc mission-control.current.hmac; do "
+        "test -s \"$stage/$input\"; test -f \"$stage/$input\"; "
+        "test ! -L \"$stage/$input\"; chmod 0600 \"$stage/$input\"; done; "
+        "test -s \"$key\"; test -f \"$key\"; test ! -L \"$key\"; "
+        "test \"$(stat -c %a \"$key\")\" = 600; "
+        "test \"$(stat -c %u \"$key\")\" = \"$(id -u)\"; "
+        "grep -Eq '^[A-Za-z0-9_-]{64}$' \"$key\"; "
+        "openssl version >/dev/null; python3 --version >/dev/null; "
+        f"docker image inspect {uptime_image} >/dev/null; "
+        "docker run --rm --network none --read-only --user 1000:1000 "
+        "--security-opt no-new-privileges:true --cap-drop ALL "
+        "--pids-limit 16 --memory 32m --entrypoint sh "
+        f"{uptime_image} -ec 'command -v find >/dev/null; command -v tar >/dev/null'; "
+        "awk 'NR==2 {exit !($4 >= 524288)}' < <(df -Pk \"$stage\"); "
+        f"test -f {quote(REMOTE_MISSION_CONTROL_COMPOSE)}; "
+        + " ".join(
+            "test ! -L "
+            f"{quote(f'{REMOTE_MISSION_CONTROL_DIR}/{relative}')}; "
+            "test \"$(sha256sum "
+            f"{quote(f'{REMOTE_MISSION_CONTROL_DIR}/{relative}')} | "
+            f"cut -d ' ' -f 1)\" = "
+            f"{quote(hashlib.sha256(source.read_bytes()).hexdigest())};"
+            for source, relative in MISSION_CONTROL_DEPLOY_FILES
+        )
+        + " "
+        + " ".join(
+            f"test -s {quote(secret)}; test -f {quote(secret)}; "
+            f"test ! -L {quote(secret)}; "
+            f"test \"$(stat -c %a {quote(secret)})\" = 600; "
+            f"test \"$(stat -c %u {quote(secret)})\" = \"$(id -u)\";"
+            for secret in REMOTE_MISSION_CONTROL_SECRET_FILES.values()
+        )
+        + " "
+        f"{_mission_control_compose_command('config', '--quiet')}; "
+        + " ".join(
+            "test \"$(docker inspect --type container --format "
+            f"'{{{{.Config.Image}}}}' {quote(name)})\" = {quote(image)}; "
+            "test \"$(docker inspect --type container --format "
+            f"'{{{{.State.Health.Status}}}}' {quote(name)})\" = healthy;"
+            for name, image in MISSION_CONTROL_CONTAINER_IMAGES.items()
+        )
+        + " "
+        + " ".join(
+            f"docker volume inspect {quote(volume)} >/dev/null;"
+            for volume in MISSION_CONTROL_VOLUMES
+        )
+        + " "
+        f"python3 -c {_shell_single_quote(_mission_control_restore_hmac_script())}; "
+        "openssl enc -d -aes-256-cbc -pbkdf2 -iter 310000 -md sha256 "
+        "-pass \"file:$key\" -in \"$stage/mission-control.current.enc\" "
+        "-out \"$stage/payload.tar\"; "
+        f"python3 -c {_shell_single_quote(_mission_control_restore_validation_script())}; "
+        "stopped=1; docker stop homeops-mission-control-uptime-kuma-1 "
+        "homeops-mission-control-ntfy-1 >/dev/null; "
+        "docker run --rm --network none --read-only --user 1000:1000 "
+        "--security-opt no-new-privileges:true --cap-drop ALL --pids-limit 64 --memory 128m "
+        "-v homeops-mission-control_uptime-kuma-data:/source:ro "
+        "-v \"$stage:/restore\" --entrypoint tar "
+        f"{uptime_image} {archive_options} -cf /restore/rollback-uptime-kuma.tar -C /source .; "
+        "docker run --rm --network none --read-only --user 1000:1000 "
+        "--security-opt no-new-privileges:true --cap-drop ALL --pids-limit 64 --memory 128m "
+        "-v homeops-mission-control_ntfy-data:/source:ro "
+        "-v \"$stage:/restore\" --entrypoint tar "
+        f"{uptime_image} {archive_options} -cf /restore/rollback-ntfy.tar -C /source .; "
+        "test -s \"$stage/rollback-uptime-kuma.tar\"; "
+        "test -s \"$stage/rollback-ntfy.tar\"; "
+        "mutated=1; "
+        "apply_archive homeops-mission-control_uptime-kuma-data uptime-kuma.tar; "
+        "apply_archive homeops-mission-control_ntfy-data ntfy.tar; "
+        f"{_mission_control_compose_command('up', '-d', '--wait', '--wait-timeout', '180')}; "
+        f"{bootstrap}; start_and_check; "
+        "for binding in "
+        "'homeops-mission-control-homepage-1 3000 192.168.86.58:8081' "
+        "'homeops-mission-control-uptime-kuma-1 3001 192.168.86.58:3001' "
+        "'homeops-mission-control-ntfy-1 8080 192.168.86.58:8082'; do "
+        "set -- $binding; test \"$(docker port \"$1\" \"$2/tcp\")\" = \"$3\"; done; "
+        "mutated=0; stopped=0; cleanup_stage; trap - HUP INT TERM EXIT; "
+        "printf 'mission_control_restore_verified\\n'"
+    )
+    return [
+        [
+            sys.executable,
+            "-m",
+            "controller.backup_artifact",
+            "validate-current",
+            "--destination",
+            str(LOCAL_MISSION_CONTROL_BACKUP_DIR),
+            "--key",
+            str(LOCAL_MISSION_CONTROL_BACKUP_KEY),
+        ],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("sh", "-lc", prepare)],
+        _build_scp_base_command(server)
+        + [
+            str(LOCAL_MISSION_CONTROL_BACKUP_CURRENT),
+            str(LOCAL_MISSION_CONTROL_BACKUP_HMAC_CURRENT),
+            f"{server.ssh_target}:{REMOTE_MISSION_CONTROL_RESTORE_STAGE}/",
+        ],
+        build_ssh_base_command(server)
+        + [server.ssh_target, _remote_command("bash", "-lc", restore)],
     ]
 
 

@@ -10,6 +10,7 @@ from controller.backup_artifact import (
     prepare_incoming,
     promote_incoming,
     read_key,
+    validate_current,
 )
 
 
@@ -82,6 +83,26 @@ class BackupArtifactTests(unittest.TestCase):
 
         with self.assertRaisesRegex(BackupArtifactError, "invalid format"):
             read_key(self.key)
+
+    def test_validate_current_authenticates_without_rotating(self):
+        self._write_incoming(b"known-good")
+        (self.root / "mission-control.incoming.enc").replace(
+            self.root / "mission-control.current.enc"
+        )
+        (self.root / "mission-control.incoming.hmac").replace(
+            self.root / "mission-control.current.hmac"
+        )
+
+        size = validate_current(self.root, self.key)
+
+        self.assertEqual(size, len(b"known-good"))
+        self.assertFalse((self.root / "mission-control.previous.enc").exists())
+
+    def test_validate_current_rejects_incomplete_pair(self):
+        (self.root / "mission-control.current.enc").write_bytes(b"ciphertext")
+
+        with self.assertRaisesRegex(BackupArtifactError, "invalid"):
+            validate_current(self.root, self.key)
 
 
 if __name__ == "__main__":

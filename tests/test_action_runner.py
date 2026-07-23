@@ -1,15 +1,24 @@
 from pathlib import Path
+import datetime
+import hashlib
+import hmac
+import io
 import json
 import shutil
 import subprocess
+import tarfile
+import tempfile
 import unittest
 from unittest.mock import patch
 
 from controller import approvals
 from controller.action_runner import (
     ActionError,
+    MISSION_CONTROL_IMAGE_REFS,
     _mission_control_backup_hmac_script,
     _mission_control_backup_manifest_script,
+    _mission_control_restore_hmac_script,
+    _mission_control_restore_validation_script,
     _summary,
     run_action,
 )
@@ -470,9 +479,171 @@ class ActionRunnerTests(unittest.TestCase):
                 actions_dir=self.actions_dir,
             )
 
+    def test_restore_mission_control_stack_is_bounded_and_recoverable(self):
+        attempt = run_action(
+            "restore_mission_control_stack",
+            "container-host",
+            [self._container_server()],
+            {},
+            dry_run=True,
+            actions_dir=self.actions_dir,
+        )
+
+        record = json.loads(attempt.record_path.read_text(encoding="utf-8"))
+        rendered = "\n".join(" ".join(command) for command in record["commands"])
+
+        self.assertEqual(len(record["commands"]), 4)
+        self.assertEqual(sum(command[0] == "scp" for command in record["commands"]), 1)
+        self.assertIn("validate-current", rendered)
+        self.assertIn("mission-control.current.enc", rendered)
+        self.assertIn("hmac.compare_digest", rendered)
+        self.assertIn("openssl enc -d -aes-256-cbc", rendered)
+        self.assertIn("unsafe inner backup member", rendered)
+        self.assertIn("backup archive hash mismatch", rendered)
+        self.assertIn("sha256sum", rendered)
+        self.assertIn("uptime_kuma_admin_password", rendered)
+        self.assertIn("docker compose", rendered)
+        self.assertIn("rollback-uptime-kuma.tar", rendered)
+        self.assertIn("rollback-ntfy.tar", rendered)
+        self.assertIn("find /target -mindepth 1 -depth -delete", rendered)
+        self.assertIn("apply_archive homeops-mission-control_uptime-kuma-data rollback-uptime-kuma.tar", rendered)
+        self.assertIn("node /app/homeops-bootstrap.js", rendered)
+        self.assertIn("trap", rendered)
+        self.assertNotIn("rm -rf", rendered)
+        self.assertNotIn("docker volume rm", rendered)
+        self.assertEqual(
+            record["expected_approval"],
+            "Approve action restore_mission_control_stack on container-host",
+        )
+
+    def test_restore_mission_control_stack_rejects_arguments(self):
+        with self.assertRaisesRegex(ActionError, "does not accept arguments"):
+            run_action(
+                "restore_mission_control_stack",
+                "container-host",
+                [self._container_server()],
+                {"source": "unbounded"},
+                dry_run=True,
+                actions_dir=self.actions_dir,
+            )
+
+    def _write_restore_payload(self, stage: Path, *, unsafe: bool = False) -> None:
+        archive_bytes: dict[str, bytes] = {}
+        for archive_name in ("uptime-kuma.tar", "ntfy.tar"):
+            buffer = io.BytesIO()
+            with tarfile.open(fileobj=buffer, mode="w") as archive:
+                payload = b"state"
+                member = tarfile.TarInfo(
+                    "../escape" if unsafe and archive_name == "ntfy.tar" else "./state"
+                )
+                member.size = len(payload)
+                archive.addfile(member, io.BytesIO(payload))
+            archive_bytes[archive_name] = buffer.getvalue()
+
+        volume_names = (
+            "homeops-mission-control_uptime-kuma-data",
+            "homeops-mission-control_ntfy-data",
+        )
+        manifest = {
+            "schema_version": 1,
+            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "images": dict(sorted(MISSION_CONTROL_IMAGE_REFS.items())),
+            "volumes": [
+                {
+                    "name": volume_name,
+                    "archive": archive_name,
+                    "size": len(archive_bytes[archive_name]),
+                    "sha256": hashlib.sha256(
+                        archive_bytes[archive_name]
+                    ).hexdigest(),
+                }
+                for volume_name, archive_name in zip(
+                    volume_names, archive_bytes, strict=True
+                )
+            ],
+        }
+        payload_members = {
+            "manifest.json": (
+                json.dumps(manifest, sort_keys=True, indent=2) + "\n"
+            ).encode(),
+            **archive_bytes,
+        }
+        with tarfile.open(stage / "payload.tar", mode="w") as payload_archive:
+            for name, value in payload_members.items():
+                member = tarfile.TarInfo(name)
+                member.size = len(value)
+                payload_archive.addfile(member, io.BytesIO(value))
+
     def test_mission_control_backup_python_fragments_compile(self):
         compile(_mission_control_backup_manifest_script(), "<manifest>", "exec")
         compile(_mission_control_backup_hmac_script(), "<hmac>", "exec")
+        compile(_mission_control_restore_hmac_script(), "<restore-hmac>", "exec")
+        compile(
+            _mission_control_restore_validation_script(),
+            "<restore-validation>",
+            "exec",
+        )
+
+    def test_restore_payload_validator_accepts_expected_artifact(self):
+        with tempfile.TemporaryDirectory() as temp:
+            stage = Path(temp)
+            self._write_restore_payload(stage)
+
+            exec(
+                compile(
+                    _mission_control_restore_validation_script(str(stage)),
+                    "<restore-validation>",
+                    "exec",
+                )
+            )
+
+            self.assertTrue((stage / "manifest.json").is_file())
+            self.assertTrue((stage / "uptime-kuma.tar").is_file())
+            self.assertTrue((stage / "ntfy.tar").is_file())
+
+    def test_restore_payload_validator_rejects_traversal_member(self):
+        with tempfile.TemporaryDirectory() as temp:
+            stage = Path(temp)
+            self._write_restore_payload(stage, unsafe=True)
+
+            with self.assertRaisesRegex(ValueError, "unsafe inner backup member"):
+                exec(
+                    compile(
+                        _mission_control_restore_validation_script(str(stage)),
+                        "<restore-validation>",
+                        "exec",
+                    )
+                )
+
+    def test_restore_hmac_fragment_accepts_valid_and_rejects_tampered(self):
+        with tempfile.TemporaryDirectory() as temp:
+            stage = Path(temp)
+            key = stage / "backup_key"
+            key.write_bytes(b"A" * 64 + b"\n")
+            ciphertext = stage / "mission-control.current.enc"
+            ciphertext.write_bytes(b"ciphertext")
+            hmac_key = hmac.new(
+                b"A" * 64,
+                b"homeops-mission-control-backup-hmac-v1",
+                hashlib.sha256,
+            ).digest()
+            sidecar = stage / "mission-control.current.hmac"
+            sidecar.write_text(
+                hmac.new(hmac_key, b"ciphertext", hashlib.sha256).hexdigest() + "\n",
+                encoding="ascii",
+            )
+            script = compile(
+                _mission_control_restore_hmac_script(str(stage), str(key)),
+                "<restore-hmac>",
+                "exec",
+            )
+
+            namespace: dict[str, object] = {}
+            exec(script, namespace, namespace)
+            ciphertext.write_bytes(b"tampered")
+
+            with self.assertRaisesRegex(ValueError, "HMAC verification failed"):
+                exec(script, namespace, namespace)
 
     def test_deploy_mission_control_stack_is_bounded_and_recoverable(self):
         attempt = run_action(

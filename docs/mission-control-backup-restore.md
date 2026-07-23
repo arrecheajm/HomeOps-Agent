@@ -1,9 +1,10 @@
 # Mission Control Backup And Restore Contract
 
 Status: protected key provisioning completed at `2026-07-22T22:02:19Z`, and the
-authenticated encrypted backup action is implemented and locally validated. The
-first live backup, destructive restore action, and restore proof are still
-required before Mission Control may hold retained household state.
+authenticated encrypted backup and bounded destructive restore actions are
+implemented and locally validated. The first live backup and destructive restore
+proof are still required before Mission Control may hold retained household
+state.
 
 ## Lifecycle Boundary
 
@@ -103,3 +104,27 @@ restore drill completes and the resulting services pass all deployment checks.
 - Exact-file cleanup removes plaintext staging on every remote exit. A recovery
   trap restarts Uptime Kuma and ntfy and waits for Compose health if backup
   creation fails after they stop.
+
+## Implemented Restore Mechanics
+
+- `restore_mission_control_stack` accepts no paths or source arguments and uses
+  only the authenticated workstation `current` pair, the fixed protected server
+  staging directory, and the two fixed named volumes.
+- The workstation validates the HMAC before transfer. The server validates it
+  again before decryption, then requires the exact schema, pinned images, volume
+  names, archive names, byte sizes, and inner SHA-256 hashes.
+- The validator permits only regular files and directories at safe relative
+  paths. It rejects links, devices, traversal, absolute paths, duplicates,
+  unexpected outer members, and malformed or incomplete manifests before
+  service downtime.
+- After validation, only Uptime Kuma and ntfy stop. The action creates plaintext
+  rollback archives of both live volumes inside protected server staging before
+  changing either volume; those temporary files never transfer to the
+  workstation and are removed on every exit.
+- Restore clears and repopulates each fixed volume as UID/GID `1000:1000`
+  without deleting or renaming Docker volumes. It then reruns Compose health,
+  idempotent Kuma bootstrap, status-page, ntfy ACL, and fixed LAN-port checks.
+- Any failure after mutation stops both services, restores both pre-action
+  rollback archives, restarts the stack, checks health/status/ACL, and returns a
+  failed action record. Generated Bash passed `bash -n` on `container-host`
+  without execution; executable valid and unsafe-archive tests pass locally.

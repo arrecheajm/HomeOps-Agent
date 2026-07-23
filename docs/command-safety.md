@@ -227,6 +227,23 @@ python -m controller.main actions run backup_mission_control_stack --server cont
 Approve action backup_mission_control_stack on container-host
 ```
 
+Destructive restore is a separate exact-approval boundary. It accepts no
+operator-supplied paths: it authenticates the fixed `current` pair locally,
+copies it into one protected server staging directory, authenticates it again,
+decrypts it, and rejects manifest, image, hash, volume, unsafe-member, and
+duplicate-member drift before stopping services. It then snapshots both live
+volumes, restores both fixed archives in place, and reruns Compose health,
+Uptime Kuma bootstrap, status-page, ntfy ACL, and LAN-port checks. A recovery
+trap restores both pre-action snapshots if mutation or acceptance fails:
+
+```powershell
+python -m controller.main actions run restore_mission_control_stack --server container-host --dry-run
+```
+
+```text
+Approve action restore_mission_control_stack on container-host
+```
+
 The first Mission Control deployment is also approval-gated. It is explicitly
 disposable acceptance state: the action stages and hashes the fixed files,
 validates all five protected secrets and pinned images, starts on loopback,
