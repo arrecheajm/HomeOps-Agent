@@ -255,7 +255,13 @@ backup target.
   `current` pair was promoted to the Git-ignored workstation destination,
   independently re-authenticated at 1,136,672 bytes, and removed from remote
   export staging. All three services were healthy with zero restarts afterward.
-  Only the separately approved destructive restore proof remains open.
+  The approved destructive restore drill completed at
+  `2026-07-23T13:33:01Z`: it authenticated and safely validated the backup
+  before mutation, restored both volumes, preserved Kuma's status page and
+  ntfy's scoped ACL, passed bootstrap, LAN-binding, and health acceptance, and
+  removed protected restore staging. Independent artifact, container, state,
+  and browser checks also passed. Mission Control may now hold retained
+  household state.
 - The first live-backup attempt failed closed before archive creation because
   Homepage entered a configuration crash loop. Approved inspection found that
   v1.13.2 requires three additional skeleton files even with a read-only config
@@ -265,8 +271,7 @@ backup target.
   eliminated the required-config/read-only errors, and held healthy with zero
   restarts. Independent container and browser checks confirmed all three
   services healthy and the intended Home Operations dashboard content visible.
-  The encrypted backup subsequently passed; the destructive restore drill is
-  the next recovery-proof boundary.
+  The encrypted backup and destructive restore subsequently passed.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.
@@ -357,8 +362,7 @@ proposed capabilities, not currently implemented action IDs:
 - [ ] Dedicated lifecycle operations for every stack phase. Monitoring
   preflight, secret provisioning, deployment, Grafana repair, rollback, and
   final removal are implemented. Mission Control backup and restore are
-  implemented but not live-proven; upgrades and later-stack lifecycles remain
-  open.
+  implemented and live-proven; upgrades and later-stack lifecycles remain open.
 - [ ] Health verification after deployment, upgrade, host reboot, and restore.
 - [ ] Pinned application versions and controlled HomeOps upgrades. Automatic
   Watchtower updates should remain opt-in and should not be enabled for
@@ -374,8 +378,8 @@ proposed capabilities, not currently implemented action IDs:
 3. Implement desired-state stack definitions, sanitized inventory, and the
    USB-storage preflight.
 4. Prepare and verify the 1 TB USB drive and the second-copy backup target.
-5. Mission Control deploy and reboot acceptance passed. Next, prove encrypted
-   backup and destructive restore.
+5. Mission Control deploy, reboot, encrypted backup, and destructive restore
+   acceptance passed.
 6. Deploy Home Assistant and integrate the known Wi-Fi devices conservatively.
 7. Deploy Mealie and prove backup and restore.
 8. Deploy Paperless-ngx, prove export and restore, then begin importing

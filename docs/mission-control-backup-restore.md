@@ -3,9 +3,9 @@
 Status: protected key provisioning completed at `2026-07-22T22:02:19Z`, the
 Homepage read-only configuration repair passed live acceptance at
 `2026-07-23T13:25:13Z`, and the authenticated encrypted live backup passed at
-`2026-07-23T13:29:54Z`. The bounded destructive restore action is implemented
-and locally validated, but its live proof is still required before Mission
-Control may hold retained household state.
+`2026-07-23T13:29:54Z`. The bounded destructive restore drill passed at
+`2026-07-23T13:33:01Z`, including independent artifact, service-state, and
+browser verification. Mission Control may now hold retained household state.
 
 The first approved live-backup attempt on 2026-07-23 failed before archive
 creation because Homepage was restarting during preflight. No encrypted export
@@ -18,6 +18,16 @@ promoted an authenticated encrypted `current` pair on the workstation. An
 independent validation authenticated the 1,136,672-byte ciphertext, remote
 export staging was absent, and Homepage, Kuma, and ntfy were healthy with zero
 restarts afterward.
+
+The approved destructive restore then re-authenticated and decrypted that
+`current` pair, validated its fixed manifest, pinned images, archive hashes,
+sizes, and safe member paths before downtime, snapshotted both live volumes for
+automatic rollback, and replaced both volumes from the backup. Kuma bootstrap
+idempotence, its `homeops` status page, ntfy's scoped `homeops-alerts` ACL, all
+LAN bindings, and all container health checks passed. Protected restore staging
+was removed. Independent checks again authenticated the local artifact and
+confirmed all three containers healthy with zero restarts, preserved state, and
+HTTP 200 service cards in Homepage.
 
 ## Lifecycle Boundary
 

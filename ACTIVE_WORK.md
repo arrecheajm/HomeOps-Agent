@@ -137,8 +137,8 @@ Recommended thinking level for the next work:
   `192.168.86.58`: Homepage `8081`, Uptime Kuma `3001`, and ntfy `8082`.
   Homepage has no Docker socket, ntfy defaults to deny-all, and all services
   have health, restart, resource, PID, and log limits. Deployment and reboot
-  acceptance passed; retained household use remains gated until encrypted
-  backup and destructive restore are proven.
+  acceptance passed. The encrypted backup and destructive restore gates are
+  also now proven, so Mission Control may hold retained household state.
 - The corrected `preflight_mission_control_images` execution completed at
   `2026-07-22T16:49:20Z`. All three exact images, amd64 architecture, required
   tools, and the bootstrap's `bcryptjs` and `socket.io-client` dependencies
@@ -211,8 +211,14 @@ Recommended thinking level for the next work:
   safe archive members before downtime, snapshots both live volumes, restores
   in place, and automatically restores both snapshots on failure. Its generated
   Bash passed remote syntax checking, and the full 173-test suite passed. The
-  destructive live drill remains separately approval-gated and must follow a
-  successful live backup.
+  approved destructive live drill completed at `2026-07-23T13:33:01Z`: the
+  current artifact re-authenticated, both volume archives and their safe members
+  validated before mutation, Kuma and ntfy data restored, bootstrap idempotence,
+  status page, ACL, LAN bindings, and all health checks passed, and protected
+  restore staging was removed. Independent checks again authenticated the local
+  artifact and confirmed all three containers healthy with zero restarts,
+  preserved Kuma/ntfy state, HTTP 200 Homepage cards, and no remaining restore
+  stage.
 - The first approved live backup attempt at `2026-07-23T13:03:21Z` failed
   closed before archive/export because Homepage was restarting during the
   all-services-healthy preflight. Kuma and ntfy remained healthy, no workstation
@@ -231,8 +237,8 @@ Recommended thinking level for the next work:
   errors remained, and it stayed healthy with zero restarts. Independent
   container inspection confirmed Homepage, Kuma, and ntfy healthy with zero
   restarts, while a fresh browser load showed the intended Home Operations and
-  Server Tools groups with responsive status cards. The next boundary is a
-  separately approved destructive restore drill.
+  Server Tools groups with responsive status cards. The encrypted backup and
+  destructive restore subsequently passed.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the
@@ -338,10 +344,10 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Run and prove the separately approved destructive Mission Control restore
-   drill.
-2. Add local HTTPS before routine credentialed phone access.
-3. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
+1. Add local HTTPS before routine credentialed phone access.
+2. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
+3. Identify the Wi-Fi switch and garage brands/models plus phone platform for
+   conservative Home Assistant integration planning.
 5. Record smart-switch and garage-controller brands/apps and phone platform.
 6. Deploy in stages: Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.
