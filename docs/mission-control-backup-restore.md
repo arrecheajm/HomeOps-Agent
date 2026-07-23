@@ -1,16 +1,20 @@
 # Mission Control Backup And Restore Contract
 
-Status: protected key provisioning completed at `2026-07-22T22:02:19Z`, and the
-authenticated encrypted backup and bounded destructive restore actions are
-implemented and locally validated. The first live backup and destructive restore
-proof are still required before Mission Control may hold retained household
-state.
+Status: protected key provisioning completed at `2026-07-22T22:02:19Z`, the
+Homepage read-only configuration repair passed live acceptance at
+`2026-07-23T13:25:13Z`, and the authenticated encrypted backup and bounded
+destructive restore actions are implemented and locally validated. A fresh live
+backup and destructive restore proof are still required before Mission Control
+may hold retained household state.
 
 The first approved live-backup attempt on 2026-07-23 failed before archive
 creation because Homepage was restarting during preflight. No encrypted export
 or workstation artifact was created. Inspection isolated a missing-required-file
-failure in Homepage's read-only configuration; the tracked repair must pass
-before backup is retried.
+failure in Homepage's read-only configuration. The bounded repair subsequently
+installed the three required tracked skeleton files, recreated only Homepage,
+and passed API, log, health, and zero-restart acceptance. Independent container
+and browser checks also passed. Backup retry remains a fresh approval boundary;
+the failed backup approval is not reused.
 
 ## Lifecycle Boundary
 

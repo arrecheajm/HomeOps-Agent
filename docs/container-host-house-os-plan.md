@@ -256,7 +256,12 @@ backup target.
   Homepage entered a configuration crash loop. Approved inspection found that
   v1.13.2 requires three additional skeleton files even with a read-only config
   mount. Those files and real API-content acceptance are now tracked; a bounded
-  Homepage-only repair is ready for approval before backup retry.
+  Homepage-only repair completed at `2026-07-23T13:25:13Z`. It recreated only
+  Homepage, preserved Kuma and ntfy, loaded the intended services/widgets APIs,
+  eliminated the required-config/read-only errors, and held healthy with zero
+  restarts. Independent container and browser checks confirmed all three
+  services healthy and the intended Home Operations dashboard content visible.
+  A fresh encrypted backup approval is the next recovery-proof boundary.
 - The operator confirmed File Browser is empty and both legacy databases contain
   disposable application-development test data. No backup is required for
   these three workloads.

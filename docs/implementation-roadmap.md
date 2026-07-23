@@ -160,7 +160,10 @@ Status: in progress. The registry exists, `actions list` works, and
 `apply_package_updates`, `apply_security_updates`, and `reboot_server` have
 dry-run, exact approval, execution, and action history support. The health
 script deployment action has been exercised successfully on all configured
-servers. `apply_security_updates` uses the server's unattended-upgrades policy,
+servers. The bounded Homepage repair was exercised successfully on
+`container-host` at `2026-07-23T13:25:13Z`, with Homepage-only recreation and
+independent health/browser acceptance. `apply_security_updates` uses the
+server's unattended-upgrades policy,
 `apply_package_updates` is scoped to the container lab host, and
 `reboot_server` uses an exact-approval one-minute delayed reboot command.
 

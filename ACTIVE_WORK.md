@@ -221,7 +221,14 @@ Recommended thinking level for the next work:
   or an OOM failure. The three harmless files are now tracked, future deployment
   verifies real services/widgets API content, and the bounded
   `repair_mission_control_homepage` action is implemented and dry-run/syntax
-  validated. Its live execution requires separate approval before backup retry.
+  validated. Its approved live execution completed at
+  `2026-07-23T13:25:13Z`: Homepage was the only recreated service, its intended
+  services/widgets APIs loaded, no required-config or read-only filesystem
+  errors remained, and it stayed healthy with zero restarts. Independent
+  container inspection confirmed Homepage, Kuma, and ntfy healthy with zero
+  restarts, while a fresh browser load showed the intended Home Operations and
+  Server Tools groups with responsive status cards. The next boundary is a
+  fresh, separately approved encrypted backup retry.
 - The operator approved a clean monitoring rebuild because the basic Grafana
   configuration and Prometheus history did not need migration. The replacement
   passed health, LAN-exposure, dashboard, reboot, and rollback acceptance; the
