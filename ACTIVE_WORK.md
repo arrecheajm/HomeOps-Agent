@@ -139,6 +139,16 @@ Recommended thinking level for the next work:
   have health, restart, resource, PID, and log limits. Deployment and reboot
   acceptance passed. The encrypted backup and destructive restore gates are
   also now proven, so Mission Control may hold retained household state.
+- Local HTTPS is now planned in
+  `docs/local-https-implementation-plan.md`. The existing Free No-IP hostname
+  `homevpnserver.myftp.biz` remains dedicated to OpenVPN: that plan cannot
+  create per-service subdomains or DNS-01 records, while public-certificate
+  HTTP/TLS validation would require WAN exposure that conflicts with LAN-only
+  scope. The selected design is pinned Caddy, private `home.arpa` service
+  names, a dedicated Docker ingress network, private backend ports, protected
+  CA backup/restore, and one manual CA-trust step per client. Router model/local
+  DNS capability and phone platform are the remaining discovery inputs; no
+  live HTTPS or DNS change has been made.
 - The corrected `preflight_mission_control_images` execution completed at
   `2026-07-22T16:49:20Z`. All three exact images, amd64 architecture, required
   tools, and the bootstrap's `bcryptjs` and `socket.io-client` dependencies
@@ -344,10 +354,13 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Add local HTTPS before routine credentialed phone access.
-2. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
-3. Identify the Wi-Fi switch and garage brands/models plus phone platform for
-   conservative Home Assistant integration planning.
+1. Record the router make/model and phone platform, then resolve the local DNS
+   gate in `docs/local-https-implementation-plan.md`.
+2. Implement and locally test the pinned ingress bundle and bounded lifecycle
+   actions without deploying them.
+3. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
+4. Identify the Wi-Fi switch and garage brands/models for conservative Home
+   Assistant integration planning.
 5. Record smart-switch and garage-controller brands/apps and phone platform.
 6. Deploy in stages: Home Assistant, Mealie, Paperless-ngx,
    then Forgejo and an optional limited CI runner.

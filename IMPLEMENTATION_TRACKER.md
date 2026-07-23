@@ -60,8 +60,8 @@ Live status:
   1.13.2, Uptime Kuma 2.4.0, and ntfy 2.23.0 pinned to resolved Linux/amd64
   digests. It defines LAN-only direct ports, static Homepage links without a
   Docker socket, deny-by-default ntfy configuration, local named volumes, and
-  bounded health/resources/PIDs/logs. Retained use remains disabled until
-  backup/restore is implemented and proven.
+  bounded health/resources/PIDs/logs. Its encrypted backup and destructive
+  restore are now proven, so it may hold retained household state.
 - The corrected `preflight_mission_control_images` execution passed at
   `2026-07-22T16:49:20Z`. All three immutable images, required tooling,
   `bcryptjs`, `socket.io-client`, amd64 architecture, and
@@ -98,12 +98,18 @@ Live status:
   passed the full loopback-to-LAN acceptance lifecycle. An independent
   post-check confirmed all three containers healthy and anonymous ntfy
   publishing denied.
-- The encrypted Mission Control backup lifecycle is implemented and locally
+- The encrypted Mission Control backup lifecycle is implemented and live
   validated. Approved `provision_mission_control_backup_secret` execution
   completed at `2026-07-22T22:02:19Z`; metadata-only checks confirmed the server
   key is a regular owner-only `0600` file of the required format and the valid
-  workstation recovery copy is Git-ignored. The separately approved first live
-  backup and the destructive restore implementation/proof remain open.
+  workstation recovery copy is Git-ignored. The approved backup passed at
+  `2026-07-23T13:29:54Z`, and the approved destructive restore passed at
+  `2026-07-23T13:33:01Z`, including independent artifact, state, service, and
+  browser verification.
+- Local HTTPS is planned in `docs/local-https-implementation-plan.md`. The Free
+  No-IP hostname stays with OpenVPN; pinned Caddy and private `home.arpa`
+  service names are selected for LAN/VPN ingress. Router/local-DNS discovery
+  and phone platform remain open before implementation.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -367,16 +373,12 @@ fifth approved deployment passed full acceptance. The approved reboot completed
 on 2026-07-22: the boot ID changed, all seven Mission Control and monitoring
 containers returned healthy, the Kuma status page and ntfy ACL persisted, and
 private Prometheus remained healthy. The protected backup key was provisioned
-and independently metadata-checked at `2026-07-22T22:02:19Z`. The bounded
-restore action is implemented, remotely syntax-checked without execution, and
-covered by valid, tampered, incomplete, and unsafe-archive tests. Next, run and
-verify the separately approved encrypted backup, then prove the separately
-approved destructive restore drill before adding local HTTPS. The first backup
-attempt failed before archive creation when Homepage entered a non-OOM
-configuration crash loop. Inspection proved its read-only directory lacked the
-three empty/default files required by v1.13.2. The tracked bundle and deploy
-acceptance now cover them, and a Homepage-only repair action is ready for exact
-approval before the backup retry. Use
+and independently metadata-checked at `2026-07-22T22:02:19Z`. The Homepage
+repair, encrypted backup, and destructive restore all subsequently passed live
+and independent acceptance. Next, resolve the router/local-DNS and
+phone-platform inputs in `docs/local-https-implementation-plan.md`, then
+implement the pinned ingress bundle and bounded lifecycle actions in Git
+without live deployment. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

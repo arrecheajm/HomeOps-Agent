@@ -167,7 +167,11 @@ exercised successfully at `2026-07-23T13:29:54Z`, including independent local
 authentication and post-backup service checks. The destructive restore was
 exercised successfully at `2026-07-23T13:33:01Z`, including automatic-rollback
 snapshots, restored-state acceptance, staging cleanup, and independent
-artifact/service/browser checks. `apply_security_updates` uses the server's
+artifact/service/browser checks. The next hardening boundary is planned in
+`docs/local-https-implementation-plan.md`: pinned Caddy, private `home.arpa`
+names, protected CA recovery, and private application backends after staged
+acceptance. Router/local-DNS capability and phone platform must be recorded
+before implementation. `apply_security_updates` uses the server's
 unattended-upgrades policy,
 `apply_package_updates` is scoped to the container lab host, and
 `reboot_server` uses an exact-approval one-minute delayed reboot command.

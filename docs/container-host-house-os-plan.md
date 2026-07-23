@@ -60,6 +60,11 @@ initial scope.
 - Add ntfy or an equivalent local notification service.
 - Use LAN-only routing. Add a friendly local name and local HTTPS after the
   first working deployment.
+- Implement that boundary from `docs/local-https-implementation-plan.md`:
+  pinned Caddy, private `home.arpa` names, no WAN port forwarding, a dedicated
+  Docker ingress network, private application backends, and backed-up local-CA
+  state. The Free No-IP hostname remains dedicated to OpenVPN because it cannot
+  provide the per-service/TXT record control needed by this design.
 
 ### Smart Home
 
@@ -402,6 +407,7 @@ proposed capabilities, not currently implemented action IDs:
 
 ## Open Inputs For The Next Session
 
+- Home router make/model and whether it supports local DNS host records.
 - Brand and app name for each Wi-Fi switch and the Wi-Fi garage controller.
 - Whether the scanning phone is iPhone or Android.
 - Exact 1 TB USB drive or enclosure and whether it is HDD or SSD.

@@ -441,3 +441,39 @@ Consequences:
   with Kuma's primitive `needSetup` acknowledgement.
 - The corrected full-stack deployment passed on 2026-07-22, including both
   bootstrap runs, LAN cutover, ntfy ACL checks, and runtime assertions.
+
+## 0017: Local HTTPS Uses Private Home Names And A Dedicated Caddy Ingress
+
+Status: accepted for implementation planning
+
+Date: 2026-07-23
+
+Decision:
+
+Keep the Free No-IP hostname `homevpnserver.myftp.biz` dedicated to OpenVPN.
+Use a pinned Caddy container, private `home.arpa` service names, and Caddy's
+local CA for LAN/VPN HTTPS. Route to application containers over a dedicated
+Docker ingress network, then remove their direct LAN HTTP bindings only after
+client trust plus encrypted CA backup/restore acceptance passes.
+
+Reasoning:
+
+- Free No-IP hostnames cannot create the fourth-level per-service names needed
+  here and do not provide TXT records for DNS-01.
+- HTTP-01 or TLS-ALPN-01 for the one public hostname would require WAN exposure
+  of port 80 or 443, conflicting with the LAN-only boundary.
+- A single ingress centralizes certificate state and policy while keeping
+  application health checks and integration traffic private to Docker.
+- Local CA trust requires one explicit client action, but avoids public
+  exposure, a recurring domain dependency, and router hairpin behavior.
+
+Consequences:
+
+- Router/local-DNS capability and phone platform must be recorded before
+  implementation.
+- The Caddy CA private key is sensitive retained state; its data volume requires
+  authenticated encrypted backup and a proved restore before backend cutover.
+- No No-IP credential enters the repository or Caddy configuration.
+- OpenVPN and router WAN configuration remain outside the ingress actions.
+- Full requirements and rollback sequencing live in
+  `docs/local-https-implementation-plan.md`.
