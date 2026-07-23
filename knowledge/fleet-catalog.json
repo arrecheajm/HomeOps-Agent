@@ -4,16 +4,16 @@
     "cpu_threads": 10,
     "docker_hosts": 1,
     "not_collected": 0,
-    "pending_updates": 9,
+    "pending_updates": 2,
     "reboots_required": 0,
     "running_containers": 9,
     "servers": 3
   },
-  "generated_at": "2026-07-23T14:17:43Z",
+  "generated_at": "2026-07-23T14:36:27Z",
   "recommendations": [
     "Keep VPN access isolated on openvpn-server and avoid experimental workloads there.",
     "Keep camera recording isolated on ispy-server unless resource trends prove there is safe spare capacity.",
-    "Keep container-host maintenance current before increasing Docker workload.",
+    "Use container-host as the Codex lab and default Docker experiment target.",
     "Apply pending package maintenance before using current capacity numbers for long-term planning."
   ],
   "schema_version": "1.0",
@@ -24,7 +24,7 @@
         "Low background workload",
         "Small CPU footprint"
       ],
-      "collected_at": "2026-07-23T14:17:46Z",
+      "collected_at": "2026-07-23T14:36:31Z",
       "constraints": [
         "2 package updates pending",
         "VPN availability affects remote access"
@@ -67,8 +67,8 @@
       ],
       "resources": {
         "cpu_count": 2,
-        "load_1m": 1.39,
-        "memory_used_percent": 21.3,
+        "load_1m": 1.82,
+        "memory_used_percent": 20.9,
         "swap_used_percent": 0.0,
         "uptime_days": 4.9
       },
@@ -113,7 +113,7 @@
         "AgentDVR workload",
         "Moderate CPU headroom"
       ],
-      "collected_at": "2026-07-23T14:17:50Z",
+      "collected_at": "2026-07-23T14:36:34Z",
       "constraints": [
         "Camera recording interruption risk"
       ],
@@ -149,8 +149,8 @@
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.32,
-        "memory_used_percent": 8.7,
+        "load_1m": 0.64,
+        "memory_used_percent": 9.0,
         "swap_used_percent": 0.0,
         "uptime_days": 4.9
       },
@@ -203,17 +203,9 @@
         "Moderate CPU headroom",
         "Docker installed with 9 running containers"
       ],
-      "collected_at": "2026-07-23T14:18:00Z",
-      "constraints": [
-        "7 package updates pending"
-      ],
-      "current_findings": [
-        {
-          "code": "security_updates_pending",
-          "message": "7 security updates are pending.",
-          "severity": "warning"
-        }
-      ],
+      "collected_at": "2026-07-23T14:36:45Z",
+      "constraints": [],
+      "current_findings": [],
       "docker": {
         "containers": [
           {
@@ -586,8 +578,8 @@
       },
       "hostname": "containerserver",
       "maintenance": {
-        "pending_security_updates": 7,
-        "pending_updates": 7,
+        "pending_security_updates": 0,
+        "pending_updates": 0,
         "reboot_required": false
       },
       "os": {
@@ -597,12 +589,12 @@
       },
       "placement_guidance": [
         "Prefer this host for Codex lab experiments and Docker-backed applications.",
-        "Clear host maintenance before increasing workload."
+        "Current host maintenance is clean; suitable for lab workloads."
       ],
       "resources": {
         "cpu_count": 4,
-        "load_1m": 0.32,
-        "memory_used_percent": 16.1,
+        "load_1m": 0.27,
+        "memory_used_percent": 15.8,
         "swap_used_percent": 0.0,
         "uptime_days": 0.7
       },
@@ -649,8 +641,8 @@
     }
   ],
   "source": {
-    "fleet_path": "history/runs/2026-07-23T14-17-43Z/fleet-health.json",
-    "generated_at": "2026-07-23T14:17:43Z",
-    "run_id": "2026-07-23T14-17-43Z"
+    "fleet_path": "history/runs/2026-07-23T14-36-27Z/fleet-health.json",
+    "generated_at": "2026-07-23T14:36:27Z",
+    "run_id": "2026-07-23T14-36-27Z"
   }
 }

@@ -64,22 +64,17 @@ Recommended thinking level for the next work:
 ## Current Resume State
 
 - Check `git status --short --branch` at session start for branch cleanliness.
-- Latest fleet report run: `2026-07-21T12-13-24Z`; all 3 servers collected
-  without errors.
-- Latest targeted `container-host` run: `2026-07-22T15-46-36Z`; sanitized
-  inventory confirmed the four desired monitoring containers plus Portainer
-  and Watchtower running, with no legacy monitoring containers remaining.
-- Latest targeted `container-host` status: 0 critical, 0 warning, and 0
-  informational findings.
-- Latest fleet status: 0 critical, 1 warning, and 2 informational findings.
-- `openvpn-server` has 3 non-security package updates pending; no reboot is
-  required.
-- Latest targeted `ispy-server` run: `2026-07-22T14-26-31Z`; AgentDVR is active,
-  no package updates are pending, no reboot is required, and there are no
-  findings. The previously observed five security updates and one normal update
-  no longer require action; the collection does not identify what cleared them.
-- `container-host` has no pending package updates with Docker active, 6 of 6
-  containers running, no unhealthy containers, and no required reboot.
+- Latest fleet run `2026-07-23T14-36-27Z` collected all three servers without
+  errors and reported 0 critical, 0 warning, and 1 informational finding.
+- `openvpn-server` has 2 non-security package updates pending; no security
+  update or reboot is required. Those ordinary updates are intentionally
+  deferred while it is the operator's remote-access path.
+- `ispy-server` has AgentDVR active, no pending updates, no reboot requirement,
+  and no findings.
+- Approved `apply_security_updates` completed on `container-host` at
+  `2026-07-23T14:35:54Z`. The fresh fleet collection confirmed zero pending
+  normal or security updates, no reboot requirement, Docker active, and 9 of 9
+  containers running with none unhealthy.
 - `container-host` has an i5-4210U with 4 CPU threads, about 8 GB RAM, and about
   80 GB free on the root disk. Current load and memory use are low.
 - The accepted direction is a LAN-only House OS combining Home Assistant,

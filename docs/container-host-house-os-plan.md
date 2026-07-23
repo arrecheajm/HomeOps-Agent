@@ -167,10 +167,12 @@ backup target.
 - Python regression suite passes with 150 tests, and the health script passes
   Bash syntax validation.
 - Deployment completed through the approval-gated action on 2026-07-20.
-- Full fleet run `2026-07-21T12-13-24Z` collected all three servers with 6 of 6
-  original container-host containers running. The container host has one
-  non-security package update pending; the separate fleet maintenance warning
-  is five security updates on `ispy-server`.
+- Full fleet run `2026-07-23T14-36-27Z` collected all three servers.
+  `container-host` has 9 of 9 containers running with none unhealthy; its
+  approved security update action cleared all seven pending updates without
+  requiring a reboot. `ispy-server` is current. The only fleet maintenance item
+  is two non-security packages on guarded `openvpn-server`, intentionally
+  deferred while it provides remote access.
 - Local disposition recommendations are stored in
   `config/container-classifications.yaml` and do not trigger cleanup actions.
 - Sanitized point-in-time storage and database evidence is stored in

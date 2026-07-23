@@ -115,10 +115,13 @@ Live status:
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
-  `2026-07-21T12-13-24Z`; all three servers collected successfully and
-  `container-host` has 6 of 6 containers running. Current maintenance findings
-  are 5 security updates on `ispy-server` plus non-security package updates on
-  `openvpn-server` and `container-host`; no server requires a reboot.
+  `2026-07-23T14-36-27Z`; all three servers collected successfully.
+  The approved `container-host` security update action completed at
+  `2026-07-23T14:35:54Z`, after which it reported zero pending updates, no
+  reboot requirement, and 9 of 9 containers running with none unhealthy.
+  `ispy-server` is current. The only fleet finding is 2 non-security package
+  updates on `openvpn-server`, intentionally deferred while it provides the
+  operator's remote access.
 - The `run fleet review` operator workflow is documented for Codex: collect
   live health, refresh dashboard and catalog, check the latest run explicitly,
   summarize findings, and recommend next steps without executing
