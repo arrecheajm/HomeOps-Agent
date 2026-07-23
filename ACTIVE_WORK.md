@@ -148,7 +148,10 @@ Recommended thinking level for the next work:
   names, a dedicated Docker ingress network, private backend ports, protected
   CA backup/restore, and one manual CA-trust step per client. Router model/local
   DNS capability and phone platform are the remaining discovery inputs; no
-  live HTTPS or DNS change has been made.
+  live HTTPS or DNS change has been made. The operator is currently away from
+  home, so HTTPS implementation is intentionally paused until the router can be
+  identified and the phone is available for the trust ceremony. No HTTPS
+  action approval is pending.
 - The corrected `preflight_mission_control_images` execution completed at
   `2026-07-22T16:49:20Z`. All three exact images, amd64 architecture, required
   tools, and the bootstrap's `bcryptjs` and `socket.io-client` dependencies
@@ -354,10 +357,10 @@ Recommended thinking level for the next work:
 
 ## Immediate Next Steps
 
-1. Record the router make/model and phone platform, then resolve the local DNS
-   gate in `docs/local-https-implementation-plan.md`.
-2. Implement and locally test the pinned ingress bundle and bounded lifecycle
-   actions without deploying them.
+1. When home, record the router make/model and phone platform, then resolve the
+   local DNS gate in `docs/local-https-implementation-plan.md`.
+2. After those inputs are recorded, implement and locally test the pinned
+   ingress bundle and bounded lifecycle actions without deploying them.
 3. When home, attach the 1 TB USB drive and resume UUID-bound storage setup.
 4. Identify the Wi-Fi switch and garage brands/models for conservative Home
    Assistant integration planning.

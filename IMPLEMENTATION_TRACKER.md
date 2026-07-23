@@ -109,7 +109,9 @@ Live status:
 - Local HTTPS is planned in `docs/local-https-implementation-plan.md`. The Free
   No-IP hostname stays with OpenVPN; pinned Caddy and private `home.arpa`
   service names are selected for LAN/VPN ingress. Router/local-DNS discovery
-  and phone platform remain open before implementation.
+  and phone platform remain open before implementation. Work is intentionally
+  paused while the operator is away from home; no HTTPS action approval is
+  pending.
 - The current `health_summary.sh` script was deployed through the approval-gated
   `deploy_health_script` action to all three configured servers on May 10, 2026.
 - The latest tracked fleet catalog is based on run
@@ -378,7 +380,8 @@ repair, encrypted backup, and destructive restore all subsequently passed live
 and independent acceptance. Next, resolve the router/local-DNS and
 phone-platform inputs in `docs/local-https-implementation-plan.md`, then
 implement the pinned ingress bundle and bounded lifecycle actions in Git
-without live deployment. Use
+without live deployment. This work is deferred until the operator is home and
+can identify the router and complete phone trust acceptance. Use
 `docs/container-host-house-os-plan.md` as the acceptance and delivery-order
 source.
 

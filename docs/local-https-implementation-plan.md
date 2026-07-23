@@ -1,7 +1,8 @@
 # Local HTTPS Implementation Plan
 
-Status: planned; no DNS, router, certificate, port, or live-service changes have
-been made.
+Status: planned and intentionally paused while the operator is away from home.
+No DNS, router, certificate, port, or live-service changes have been made, and
+no HTTPS action approval is pending.
 
 ## Decision Summary
 
@@ -272,3 +273,17 @@ Before implementation begins, record:
 - phone platform: Android or iPhone/iOS;
 - whether HTTPS names must work through OpenVPN immediately;
 - whether one manual root-CA installation per client is acceptable.
+
+## Exact Resume Point
+
+When the operator is home:
+
+1. Record the router make/model and whether its administration interface
+   supports local DNS host records.
+2. Record whether the phone is Android or iPhone/iOS.
+3. Confirm that one manual HomeOps root-CA installation per client is
+   acceptable.
+4. Confirm that the four `home.arpa` names must resolve through OpenVPN.
+5. Update this plan with the selected DNS method.
+6. Only then implement the pinned ingress bundle, tests, and bounded actions in
+   Git. Do not deploy until those changes have been reviewed.
